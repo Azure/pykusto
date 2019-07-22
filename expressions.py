@@ -117,6 +117,9 @@ class NumberExpression(BaseExpression):
     def __abs__(self) -> 'NumberExpression':
         return NumberExpression(KQL('abs({})'.format(self.kql)))
 
+    def between(self, lower: NumberType, upper: NumberType) -> BooleanExpression:
+        return BooleanExpression(KQL('{} between ({} .. {})'.format(self.kql, lower, upper)))
+
 
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
@@ -181,6 +184,9 @@ class DatetimeExpression(BaseExpression):
 
     def subtract_timespan(self, other: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression.binary_op(self, ' - ', other)
+
+    def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
+        return BooleanExpression(KQL('{} between ({} .. {})'.format(self.kql, lower, upper)))
 
 
 class TimespanExpression(BaseExpression):

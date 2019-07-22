@@ -20,12 +20,14 @@ class Column:
     def __getattr__(self, name: str) -> 'Column':
         return Column(self.name + '.' + name)
 
+    @staticmethod
+    def to_kql(obj):
+        if isinstance(obj, Column):
+            return obj.kql_name
+        return to_kql(obj)
+
     def __eq__(self, other: Union['Column', KustoTypes]) -> Predicate:
-        if isinstance(other, Column):
-            other_kql = other.kql_name
-        else:
-            other_kql = to_kql(other)
-        return Predicate('{}=={}'.format(self.name, other_kql))
+        return Predicate('{}=={}'.format(self.kql_name, self.to_kql(other)))
 
 
 class ColumnGenerator:

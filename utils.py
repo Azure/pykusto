@@ -39,7 +39,7 @@ KQL_CONVERTER_BY_TYPE = {
 }
 
 
-def to_kql(o: KustoTypes) -> str:
+def to_kql(obj: KustoTypes) -> str:
     for kusto_type, converter in KQL_CONVERTER_BY_TYPE.items():
-        if isinstance(o, kusto_type):
-            return converter(o)
+        if isinstance(obj, kusto_type):
+            return converter(obj)

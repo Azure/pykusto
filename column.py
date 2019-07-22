@@ -1,13 +1,11 @@
-from expressions.boolean_expression import BooleanExpression
-from expressions.number_expression import NumberExpression
-from expressions.string_expression import StringExpression
+from expressions import NumberExpression, BooleanExpression, StringExpression
 from utils import KQL
 
 
 class Column(NumberExpression, BooleanExpression, StringExpression):
     name: str
 
-    def __init__(self, name: str, kql: KQL) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__(KQL("['{}']".format(name) if '.' in name else name))
         self.name = name
 

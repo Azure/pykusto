@@ -50,3 +50,4 @@ def to_kql(obj: KustoTypes) -> KQL:
     for kusto_type, converter in KQL_CONVERTER_BY_TYPE.items():
         if isinstance(obj, kusto_type):
             return converter(obj)
+    return obj

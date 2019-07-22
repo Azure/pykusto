@@ -48,7 +48,7 @@ class BooleanExpression(BaseExpression):
     @staticmethod
     def bi_operator(left: ExpressionTypes, operator: str, right: ExpressionTypes) -> 'BooleanExpression':
         return BooleanExpression(
-            KQL('{}{}{}'.format(left._subexpression_to_kql(left), operator, right._subexpression_to_kql(right)))
+            KQL('{}{}{}'.format(BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right)))
         )
 
     def __and__(self, other: BooleanTypes) -> 'BooleanExpression':
@@ -62,7 +62,7 @@ class NumberExpression(BaseExpression):
     @staticmethod
     def bi_operator(left: NumberTypes, operator: str, right: NumberTypes) -> 'NumberExpression':
         return NumberExpression(
-            KQL('{}{}{}'.format(left._subexpression_to_kql(left), operator, right._subexpression_to_kql(right)))
+            KQL('{}{}{}'.format(BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right)))
         )
 
     def __lt__(self, other: NumberTypes) -> BooleanExpression:

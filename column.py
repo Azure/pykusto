@@ -36,16 +36,16 @@ class Column:
     def __le__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('<=', other)
 
-    def __eq__(self, other: Union['Column', KustoTypes]) -> Predicate:
+    def __eq__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('==', other)
 
-    def __ne__(self, other: Union['Column', KustoTypes]) -> Predicate:
+    def __ne__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('!=', other)
 
-    def __gt__(self, other: Union['Column', KustoTypes]) -> Predicate:
+    def __gt__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('>', other)
 
-    def __ge__(self, other: Union['Column', KustoTypes]) -> Predicate:
+    def __ge__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('>=', other)
 
     def is_in(self, other: Sequence) -> Predicate:
@@ -56,6 +56,9 @@ class Column:
         Works only on columns of type string
         """
         return Expression('string_size({})'.format(self.kql_name))
+
+    def __contains__(self, other: ColumnOrKustoType) -> Predicate:
+        return Column._generate_predicate(other, ' in ', self)
 
 
 class ColumnGenerator:

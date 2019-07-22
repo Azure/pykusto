@@ -2,8 +2,8 @@ from abc import abstractmethod
 from enum import Enum
 
 from column import Column
-from kql_wrapper import KQL
-from predicate import Predicate
+from expressions import BooleanTypes
+from utils import KQL
 
 
 class Order(Enum):
@@ -22,7 +22,7 @@ class Query:
     def __init__(self, head: 'Query' = None) -> None:
         self.head = head
 
-    def where(self, predicate: Predicate) -> 'Query':
+    def where(self, predicate: BooleanTypes) -> 'Query':
         return WhereQuery(self, predicate)
 
     def take(self, num_rows: int):
@@ -46,9 +46,9 @@ class Query:
 
 
 class WhereQuery(Query):
-    predicate: Predicate
+    predicate: BooleanTypes
 
-    def __init__(self, head: Query, predicate: Predicate):
+    def __init__(self, head: Query, predicate: BooleanTypes):
         super(WhereQuery, self).__init__(head)
         self.predicate = predicate
 
@@ -85,6 +85,3 @@ class SortQuery(Query):
         if self.nulls is not None:
             result += " nulls " + str(self.nulls.value)
         return result
-
-
-# print(Query().where(Predicate(KQL('foo>2'))).take(5).sort_by(Column('bar'), Order.ASC, Nulls.LAST).compile_all())

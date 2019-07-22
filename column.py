@@ -1,5 +1,6 @@
 from typing import Union, Sequence
 
+from expression import Expression
 from predicate import Predicate
 from utils import KustoTypes, to_kql
 
@@ -50,7 +51,11 @@ class Column:
     def is_in(self, other: Sequence) -> Predicate:
         return self._generate_predicate(' in ', other)
 
-    # def __len__(self)
+    def __len__(self) -> Expression:
+        """
+        Works only on columns of type string
+        """
+        return Expression('string_size({})'.format(self.kql_name))
 
 
 class ColumnGenerator:

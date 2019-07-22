@@ -1,7 +1,6 @@
-class Expression:
-    kql: str
+from kql_wrapper import KQLWrapper
 
-    def __init__(self, kql: str) -> None:
-        self.kql = kql
 
+class Expression(KQLWrapper):
+    pass
     # TODO: expression operators

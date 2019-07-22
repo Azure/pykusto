@@ -1,6 +1,6 @@
-from expression import Expression
+from kql_wrapper import KQLWrapper
 
 
-class Predicate(Expression):
+class Predicate(KQLWrapper):
     pass
     # TODO: predicate operators

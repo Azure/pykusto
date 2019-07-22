@@ -1,36 +1,38 @@
 import json
 from datetime import datetime, timedelta
-from typing import Union, Sequence, Mapping
+from typing import Union, Sequence, Mapping, NewType, Type, Dict, Callable, Any
 
 KustoTypes = Union[str, int, bool, datetime, Mapping, Sequence, float, timedelta]
 # TODO: Unhandled date types: guid, decimal
 
-
-def datetime_to_kql(dt: datetime) -> str:
-    return dt.strftime('datetime(%Y-%m-%d %H:%M:%S.%f)')
+KQL = NewType('KQL', str)
 
 
-def timedelta_to_kql(td: timedelta) -> str:
+def datetime_to_kql(dt: datetime) -> KQL:
+    return KQL(dt.strftime('datetime(%Y-%m-%d %H:%M:%S.%f)'))
+
+
+def timedelta_to_kql(td: timedelta) -> KQL:
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
-    return 'time({days}.{hours}:{minutes}:{seconds}.{microseconds})'.format(
+    return KQL('time({days}.{hours}:{minutes}:{seconds}.{microseconds})'.format(
         days=td.days,
         hours=hours,
         minutes=minutes,
         seconds=seconds,
         microseconds=td.microseconds,
-    )
+    ))
 
 
-def dynamic_to_kql(d: Union[Mapping, Sequence]) -> str:
-    return json.dumps(d)
+def dynamic_to_kql(d: Union[Mapping, Sequence]) -> KQL:
+    return KQL(json.dumps(d))
 
 
-def bool_to_kql(b: bool) -> str:
-    return 'true' if b else 'false'
+def bool_to_kql(b: bool) -> KQL:
+    return KQL('true') if b else KQL('false')
 
 
-KQL_CONVERTER_BY_TYPE = {
+KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[Any, KQL]] = {
     datetime: datetime_to_kql,
     timedelta: timedelta_to_kql,
     Mapping: dynamic_to_kql,
@@ -39,7 +41,7 @@ KQL_CONVERTER_BY_TYPE = {
 }
 
 
-def to_kql(obj: KustoTypes) -> str:
+def to_kql(obj: KustoTypes) -> KQL:
     for kusto_type, converter in KQL_CONVERTER_BY_TYPE.items():
         if isinstance(obj, kusto_type):
             return converter(obj)

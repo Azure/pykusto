@@ -5,6 +5,7 @@ from predicate import Predicate
 from utils import KustoTypes, to_kql
 
 ColumnOrKustoType = Union['Column', KustoTypes]
+ExpressionTypes = Union['Column', KustoTypes, Expression]
 
 
 class Column:
@@ -22,34 +23,36 @@ class Column:
         return Column(self.name + '.' + name)
 
     @staticmethod
-    def _to_kql(obj):
+    def _subexpression_to_kql(obj: ExpressionTypes) -> str:
         if isinstance(obj, Column):
             return obj.kql_name
+        if isinstance(obj, Expression):
+            return '({})'.format(obj.kql)
         return to_kql(obj)
 
     def _generate_predicate(self, operator: str, other: ColumnOrKustoType) -> Predicate:
-        return Predicate('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
+        return Predicate('{}{}{}'.format(self.kql_name, operator, self._subexpression_to_kql(other)))
 
     def _generate_expression(self, operator: str, other: ColumnOrKustoType) -> Expression:
-        return Expression('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
+        return Expression('{}{}{}'.format(self.kql_name, operator, self._subexpression_to_kql(other)))
 
     def __lt__(self, other: ColumnOrKustoType) -> Predicate:
-        return self._generate_predicate('<', other)
+        return self._generate_predicate(' < ', other)
 
     def __le__(self, other: ColumnOrKustoType) -> Predicate:
-        return self._generate_predicate('<=', other)
+        return self._generate_predicate(' <= ', other)
 
     def __eq__(self, other: ColumnOrKustoType) -> Predicate:
-        return self._generate_predicate('==', other)
+        return self._generate_predicate(' == ', other)
 
     def __ne__(self, other: ColumnOrKustoType) -> Predicate:
-        return self._generate_predicate('!=', other)
+        return self._generate_predicate(' != ', other)
 
     def __gt__(self, other: ColumnOrKustoType) -> Predicate:
-        return self._generate_predicate('>', other)
+        return self._generate_predicate(' > ', other)
 
     def __ge__(self, other: ColumnOrKustoType) -> Predicate:
-        return self._generate_predicate('>=', other)
+        return self._generate_predicate(' >= ', other)
 
     def is_in(self, other: Sequence) -> Predicate:
         return self._generate_predicate(' in ', other)
@@ -71,16 +74,19 @@ class Column:
         raise NotImplementedError()
 
     def __add__(self, other: ColumnOrKustoType) -> Expression:
-        return self._generate_expression('+', other)
+        return self._generate_expression(' + ', other)
 
     def __sub__(self, other: ColumnOrKustoType) -> Expression:
-        return self._generate_expression('-', other)
+        return self._generate_expression(' - ', other)
 
     def __mul__(self, other: ColumnOrKustoType) -> Expression:
-        return self._generate_expression('*', other)
+        return self._generate_expression(' * ', other)
 
     def __truediv__(self, other: ColumnOrKustoType) -> Expression:
-        return self._generate_expression('/', other)
+        return self._generate_expression(' / ', other)
+
+    def __mod__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression(' % ', other)
 
 
 class ColumnGenerator:

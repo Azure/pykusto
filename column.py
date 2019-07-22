@@ -12,6 +12,9 @@ class Column(NumberExpression, BooleanExpression, StringExpression):
     def __getattr__(self, name: str) -> 'Column':
         return Column(self.name + '.' + name)
 
+    def as_subexpression(self) -> KQL:
+        return self.kql
+
 
 class ColumnGenerator:
     def __getattr__(self, name: str) -> Column:

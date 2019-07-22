@@ -1,47 +1,65 @@
 from abc import abstractmethod
+from enum import Enum
 
 from column import Column
+from kql_wrapper import KQL
 from predicate import Predicate
 
 
+class Order(Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
+class Nulls(Enum):
+    FIRST = "first"
+    LAST = "last"
+
+
 class Query:
-    def __init__(self, head : 'Query' = None) -> None:
+    head: 'Query'
+
+    def __init__(self, head: 'Query' = None) -> None:
         self.head = head
 
     def where(self, predicate: Predicate) -> 'Query':
         return WhereQuery(self, predicate)
 
-    def take(self, num_rows : int):
+    def take(self, num_rows: int):
         return TakeQuery(self, num_rows)
 
-    def sort_by(self, col : Column):
-        return SortQuery(self, col)
+    def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None):
+        return SortQuery(self, col, order, nulls)
 
     def project(self) -> 'Query':
         pass
 
     @abstractmethod
-    def compile(self) -> str:
+    def compile(self) -> KQL:
         pass
 
-    def compile_all(self) -> str:
+    def compile_all(self) -> KQL:
         if self.head is None:
-            return ""
+            return KQL("")
         else:
-            return "{} | {}".format(self.head.compile_all(), self.compile())
+            return KQL("{} | {}".format(self.head.compile_all(), self.compile()))
 
 
 class WhereQuery(Query):
-    def __init__(self, head : 'Query', predicate : 'Predicate'):
+    predicate: Predicate
+
+    def __init__(self, head: Query, predicate: Predicate):
         super(WhereQuery, self).__init__(head)
         self.predicate = predicate
 
     def compile(self):
-        return 'where {}'.format(self.predicate)
+        return 'where {}'.format(self.predicate.kql)
 
 
 class TakeQuery(Query):
-    def __init__(self, head : 'Query', num_rows : int):
+    num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
         super(TakeQuery, self).__init__(head)
         self.num_rows = num_rows
 
@@ -49,21 +67,24 @@ class TakeQuery(Query):
         return 'take {}'.format(self.num_rows)
 
 
-# TODO asc/desc, nulls
 class SortQuery(Query):
-    def __init__(self, head: 'Query', col: 'Column'):
+    col: Column
+    order: Order
+    nulls: Nulls
+
+    def __init__(self, head: Query, col: Column, order: Order, nulls: Nulls):
         super(SortQuery, self).__init__(head)
         self.col = col
+        self.order = order
+        self.nulls = nulls
 
     def compile(self):
-        return 'sort by {}'.format(self.col)
+        result = 'sort by {}'.format(self.col.kql_name, self.order.value)
+        if self.order is not None:
+            result += " " + str(self.order.value)
+        if self.nulls is not None:
+            result += " nulls " + str(self.nulls.value)
+        return result
 
 
-
-
-
-
-
-
-
-# example usage: print(Query().where(Predicate('bla')).take(5).sort_by(Column('bla')).compile_all())
+# print(Query().where(Predicate(KQL('foo>2'))).take(5).sort_by(Column('bar'), Order.ASC, Nulls.LAST).compile_all())

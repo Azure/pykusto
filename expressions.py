@@ -42,7 +42,7 @@ class BaseExpression:
         Deliberately not implemented, because "not in" inverses the result of this method, and there is no way to
         override it
         """
-        raise ValueError()  # Not raising NotImplementedError because then subclasses will be required to override it
+        raise NotImplementedError()
 
 
 class BooleanExpression(BaseExpression):

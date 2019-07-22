@@ -11,5 +11,6 @@ class ColumnGenerator:
         return Column(name)
 
 
+# Recommended usage: from pykusto.column import columnGenerator as c
 # TODO: Is there a way to enforce this to be a singleton?
-generator = ColumnGenerator()
+columnGenerator = ColumnGenerator()

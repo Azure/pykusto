@@ -1,4 +1,7 @@
+from typing import Union
+
 from predicate import Predicate
+from utils import KustoTypes
 
 
 class Column:
@@ -11,8 +14,10 @@ class Column:
     def __getattr__(self, name: str) -> 'Column':
         return Column(self.name + '.' + name)
 
-    def __eq__(self, other: 'Column') -> Predicate:
-        return Predicate('{}=={}'.format(self.name, other.name))
+    def __eq__(self, other: Union['Column', KustoTypes]) -> Predicate:
+        if isinstance(other, Column):
+            return Predicate('{}=={}'.format(self.name, other.name))
+        # TODO: Handle the rest of the types
 
 
 class ColumnGenerator:

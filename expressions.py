@@ -9,6 +9,7 @@ StringTypes = Union[str, 'StringExpression', 'Column']
 BooleanTypes = Union[bool, 'BooleanExpression', 'Column']
 NumberTypes = Union[int, float, 'NumberExpression', 'Column']
 
+
 # All classes in the same file to prevent circular dependencies
 
 
@@ -48,8 +49,9 @@ class BooleanExpression(BaseExpression):
     @staticmethod
     def bi_operator(left: ExpressionTypes, operator: str, right: ExpressionTypes) -> 'BooleanExpression':
         return BooleanExpression(
-            KQL('{}{}{}'.format(BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right)))
-        )
+            KQL('{}{}{}'.format(
+                BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
+                ))
 
     def __and__(self, other: BooleanTypes) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' and ', other)
@@ -65,8 +67,9 @@ class NumberExpression(BaseExpression):
     @staticmethod
     def bi_operator(left: NumberTypes, operator: str, right: NumberTypes) -> 'NumberExpression':
         return NumberExpression(
-            KQL('{}{}{}'.format(BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right)))
-        )
+            KQL('{}{}{}'.format(
+                BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
+                ))
 
     def __lt__(self, other: NumberTypes) -> BooleanExpression:
         return BooleanExpression.bi_operator(self, ' < ', other)
@@ -105,6 +108,10 @@ class NumberExpression(BaseExpression):
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
+
+    @staticmethod
+    def concat(*args: StringTypes) -> 'StringExpression':
+        return StringExpression(KQL('strcat({})'.format(', '.join('"{}"'.format(s) for s in args))))
 
 
 class ArrayExpression(BaseExpression):

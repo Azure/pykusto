@@ -52,10 +52,13 @@ class BooleanExpression(BaseExpression):
         )
 
     def __and__(self, other: BooleanTypes) -> 'BooleanExpression':
-        return BooleanTypes(self, ' and ', other)
+        return BooleanExpression.bi_operator(self, ' and ', other)
 
     def __or__(self, other: BooleanTypes) -> 'BooleanExpression':
-        return BooleanTypes(self, ' or ', other)
+        return BooleanExpression.bi_operator(self, ' or ', other)
+
+    def __invert__(self) -> 'BooleanExpression':
+        return BooleanExpression(KQL('not({})'.format(self.kql)))
 
 
 class NumberExpression(BaseExpression):
@@ -91,6 +94,12 @@ class NumberExpression(BaseExpression):
 
     def __mod__(self, other: NumberTypes) -> 'NumberExpression':
         return NumberExpression.bi_operator(self, ' % ', other)
+
+    def __neg__(self) -> 'NumberExpression':
+        return NumberExpression(KQL('-{}'.format(self.kql)))
+
+    def __abs__(self) -> 'NumberExpression':
+        return NumberExpression(KQL('abs({})'.format(self.kql)))
 
 
 class StringExpression(BaseExpression):

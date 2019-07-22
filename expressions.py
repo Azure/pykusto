@@ -139,7 +139,9 @@ class StringExpression(BaseExpression):
 
     @staticmethod
     def concat(*args: StringType) -> 'StringExpression':
-        return StringExpression(KQL('strcat({})'.format(', '.join('"{}"'.format(s) for s in args))))
+        return StringExpression(KQL('strcat({})'.format(', '.join('{}'.format(
+            BaseExpression._subexpression_to_kql(s)
+        ) for s in args))))
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
@@ -232,7 +234,19 @@ class ArrayExpression(BaseExpression):
     def contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(other, ' in ', self)
 
+    @staticmethod
+    def pack_array(*args: ExpressionType) -> 'ArrayExpression':
+        return ArrayExpression(KQL('pack_array({})'.format(
+            ', '.join('{}'.format(BaseExpression._subexpression_to_kql(e) for e in args))
+        )))
+
 
 class MappingExpression(BaseExpression):
     def keys(self) -> ArrayExpression:
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
+
+    @staticmethod
+    def pack(**kwargs: ExpressionType) -> 'MappingExpression':
+        return MappingExpression(KQL('pack({})'.format(
+            ', '.join('"{}", {}'.format(k, BaseExpression._subexpression_to_kql(v)) for k, v in kwargs)
+        )))

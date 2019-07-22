@@ -12,6 +12,8 @@ class ColumnGenerator:
     def __getattribute__(self, name: str) -> Column:
         return Column(name)
 
+    # TODO: also allow  c['fieldName']
+
 
 # Recommended usage: from pykusto.column import columnGenerator as c
 # TODO: Is there a way to enforce this to be a singleton?

@@ -30,6 +30,9 @@ class Column:
     def _generate_predicate(self, operator: str, other: ColumnOrKustoType) -> Predicate:
         return Predicate('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
 
+    def _generate_expression(self, operator: str, other: ColumnOrKustoType) -> Expression:
+        return Expression('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
+
     def __lt__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('<', other)
 
@@ -59,6 +62,18 @@ class Column:
 
     def __contains__(self, other: ColumnOrKustoType) -> Predicate:
         return Column._generate_predicate(other, ' in ', self)
+
+    def __add__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('+', other)
+
+    def __sub__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('-', other)
+
+    def __mul__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('*', other)
+
+    def __truediv__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('/', other)
 
 
 class ColumnGenerator:

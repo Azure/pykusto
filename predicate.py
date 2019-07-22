@@ -1,5 +1,7 @@
 class Predicate:
-    def __init__(self, kql) -> None:
+    kql: str
+
+    def __init__(self, kql: str) -> None:
         self.kql = kql
 
     # TODO: predicate operators

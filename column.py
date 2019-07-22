@@ -1,5 +1,3 @@
-from typing import Any
-
 
 class Column:
     def __init__(self, name: str) -> None:
@@ -7,7 +5,7 @@ class Column:
 
 
 class ColumnGenerator:
-    def __getattribute__(self, name: str) -> Any:
+    def __getattribute__(self, name: str) -> Column:
         return Column(name)
 
 

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Sequence
 from typing import Union
 
 from utils import KQL
@@ -8,6 +8,7 @@ ExpressionTypes = Union[KustoTypes, 'BaseExpression', 'Column']
 StringTypes = Union[str, 'StringExpression', 'Column']
 BooleanTypes = Union[bool, 'BooleanExpression', 'Column']
 NumberTypes = Union[int, float, 'NumberExpression', 'Column']
+ArrayTypes = Union[Sequence, 'ArrayExpression', 'Column']
 
 
 # All classes in the same file to prevent circular dependencies
@@ -34,7 +35,7 @@ class BaseExpression:
     def __ne__(self, other: ExpressionTypes) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' != ', other)
 
-    def is_in(self, other: ExpressionTypes) -> 'BooleanExpression':
+    def is_in(self, other: ArrayTypes) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' in ', other)
 
     def __contains__(self, other: Any) -> bool:
@@ -107,6 +108,9 @@ class NumberExpression(BaseExpression):
 
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
+        return self.string_size()
+
+    def string_size(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
 
     @staticmethod
@@ -116,7 +120,13 @@ class StringExpression(BaseExpression):
 
 class ArrayExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
+        return self.array_length()
+
+    def array_length(self) -> NumberExpression:
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
+
+    def contains(self, other: ExpressionTypes) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(other, ' in ', self)
 
 
 class MappingExpression(BaseExpression):

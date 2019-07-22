@@ -15,6 +15,9 @@ class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpress
     def as_subexpression(self) -> KQL:
         return self.kql
 
+    def __len__(self) -> NumberExpression:
+        raise NotImplementedError("Column type unknown")
+
 
 class ColumnGenerator:
     def __getattr__(self, name: str) -> Column:

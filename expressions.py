@@ -9,6 +9,8 @@ StringTypes = Union[str, 'StringExpression', 'Column']
 BooleanTypes = Union[bool, 'BooleanExpression', 'Column']
 NumberTypes = Union[int, float, 'NumberExpression', 'Column']
 
+# All classes in the same file to prevent circular dependencies
+
 
 class BaseExpression:
     kql: KQL

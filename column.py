@@ -1,23 +1,31 @@
 from typing import Union
 
 from predicate import Predicate
-from utils import KustoTypes
+from utils import KustoTypes, to_kql
 
 
 class Column:
+    kql_name: str
+    contains_dot: bool
     name: str
 
     def __init__(self, name: str) -> None:
         self.name = name
+        self.contains_dot = '.' in name
+        if self.contains_dot:
+            self.kql_name = "['{}']".format(self.name)
+        else:
+            self.kql_name = self.name
 
-    # Using a string as the return type spec works around the circular reference problem
     def __getattr__(self, name: str) -> 'Column':
         return Column(self.name + '.' + name)
 
     def __eq__(self, other: Union['Column', KustoTypes]) -> Predicate:
         if isinstance(other, Column):
-            return Predicate('{}=={}'.format(self.name, other.name))
-        # TODO: Handle the rest of the types
+            other_kql = other.kql_name
+        else:
+            other_kql = to_kql(other)
+        return Predicate('{}=={}'.format(self.name, other_kql))
 
 
 class ColumnGenerator:

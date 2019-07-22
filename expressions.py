@@ -105,3 +105,13 @@ class NumberExpression(BaseExpression):
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
+
+
+class ArrayExpression(BaseExpression):
+    def __len__(self) -> NumberExpression:
+        return NumberExpression(KQL('array_length({})'.format(self.kql)))
+
+
+class MappingExpression(BaseExpression):
+    def keys(self) -> ArrayExpression:
+        return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))

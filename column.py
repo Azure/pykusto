@@ -1,8 +1,8 @@
-from expressions import NumberExpression, BooleanExpression, StringExpression
+from expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, ArrayExpression
 from utils import KQL
 
 
-class Column(NumberExpression, BooleanExpression, StringExpression):
+class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpression, MappingExpression):
     name: str
 
     def __init__(self, name: str) -> None:

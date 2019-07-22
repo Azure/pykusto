@@ -34,8 +34,20 @@ class Column:
     def __lt__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate('<', other)
 
+    def __le__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('<=', other)
+
     def __eq__(self, other: Union['Column', KustoTypes]) -> Predicate:
         return self._generate_predicate('==', other)
+
+    def __ne__(self, other: Union['Column', KustoTypes]) -> Predicate:
+        return self._generate_predicate('!=', other)
+
+    def __gt__(self, other: Union['Column', KustoTypes]) -> Predicate:
+        return self._generate_predicate('>', other)
+
+    def __ge__(self, other: Union['Column', KustoTypes]) -> Predicate:
+        return self._generate_predicate('>=', other)
 
 
 class ColumnGenerator:

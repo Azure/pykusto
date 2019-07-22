@@ -54,6 +54,9 @@ class BooleanExpression(BaseExpression):
     def __and__(self, other: BooleanTypes) -> 'BooleanExpression':
         return BooleanTypes(self, ' and ', other)
 
+    def __or__(self, other: BooleanTypes) -> 'BooleanExpression':
+        return BooleanTypes(self, ' or ', other)
+
 
 class NumberExpression(BaseExpression):
     @staticmethod

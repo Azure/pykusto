@@ -32,7 +32,7 @@ def bool_to_kql(b: bool) -> KQL:
     return KQL('true') if b else KQL('false')
 
 
-KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[Any, KQL]] = {
+KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[[Any], KQL]] = {
     datetime: datetime_to_kql,
     timedelta: timedelta_to_kql,
     Mapping: dynamic_to_kql,

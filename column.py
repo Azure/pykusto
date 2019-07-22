@@ -2,39 +2,36 @@ from typing import Union, Sequence, Any
 
 from expression import Expression
 from predicate import Predicate
-from utils import KustoTypes, to_kql
+from utils import KustoTypes, to_kql, KQL
 
 ColumnOrKustoType = Union['Column', KustoTypes]
 ExpressionTypes = Union['Column', KustoTypes, Expression]
 
 
 class Column:
-    kql_name: str
+    kql_name: KQL
     name: str
 
     def __init__(self, name: str) -> None:
         self.name = name
-        if '.' in name:
-            self.kql_name = "['{}']".format(self.name)
-        else:
-            self.kql_name = self.name
+        self.kql_name = KQL("['{}']".format(self.name) if '.' in name else self.name)
 
     def __getattr__(self, name: str) -> 'Column':
         return Column(self.name + '.' + name)
 
     @staticmethod
-    def _subexpression_to_kql(obj: ExpressionTypes) -> str:
+    def _subexpression_to_kql(obj: ExpressionTypes) -> KQL:
         if isinstance(obj, Column):
             return obj.kql_name
         if isinstance(obj, Expression):
-            return '({})'.format(obj.kql)
+            return KQL('({})'.format(obj.kql))
         return to_kql(obj)
 
-    def _generate_predicate(self, operator: str, other: ColumnOrKustoType) -> Predicate:
-        return Predicate('{}{}{}'.format(self.kql_name, operator, self._subexpression_to_kql(other)))
+    def _generate_predicate(self, operator: str, other: ExpressionTypes) -> Predicate:
+        return Predicate(KQL('{}{}{}'.format(self.kql_name, operator, self._subexpression_to_kql(other))))
 
     def _generate_expression(self, operator: str, other: ColumnOrKustoType) -> Expression:
-        return Expression('{}{}{}'.format(self.kql_name, operator, self._subexpression_to_kql(other)))
+        return Expression(KQL('{}{}{}'.format(self.kql_name, operator, self._subexpression_to_kql(other))))
 
     def __lt__(self, other: ColumnOrKustoType) -> Predicate:
         return self._generate_predicate(' < ', other)
@@ -64,7 +61,7 @@ class Column:
         """
         Works only on columns of type string
         """
-        return Expression('string_size({})'.format(self.kql_name))
+        return Expression(KQL('string_size({})'.format(self.kql_name)))
 
     def __contains__(self, other: Any) -> bool:
         """

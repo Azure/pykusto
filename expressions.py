@@ -131,6 +131,24 @@ class StringExpression(BaseExpression):
             return ArrayExpression(KQL('split({}, {}'.format(self.kql, delimiter)))
         return ArrayExpression(KQL('split({}, {}, {}'.format(self.kql, delimiter, requested_index)))
 
+    def equals(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(self, ' == ' if case_sensitive else ' =~ ', other)
+
+    def not_equals(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(self, ' !=' if case_sensitive else ' !~ ', other)
+
+    def matches(self, regex: StringType) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(self, ' matches regex ', regex)
+
+    def contains(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(self, 'contains_cs' if case_sensitive else 'contains', other)
+
+    def startswith(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(self, 'startswith_cs' if case_sensitive else 'startswith', other)
+
+    def endswith(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+        return BooleanExpression.bi_operator(self, 'endswith_cs' if case_sensitive else 'endswith', other)
+
 
 class ArrayExpression(BaseExpression):
     def __len__(self) -> NumberExpression:

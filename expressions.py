@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Any, Sequence
 from typing import Union
 
@@ -9,6 +10,8 @@ StringType = Union[str, 'StringExpression', 'Column']
 BooleanType = Union[bool, 'BooleanExpression', 'Column']
 NumberType = Union[int, float, 'NumberExpression', 'Column']
 ArrayType = Union[Sequence, 'ArrayExpression', 'Column']
+DatetimeType = Union[datetime, 'DatetimeExpression', 'Column']
+TimespanType = Union[timedelta, 'TimespanExpression', 'Column']
 
 
 # All classes in the same file to prevent circular dependencies
@@ -32,14 +35,20 @@ class BaseExpression:
             return obj.as_subexpression()
         return to_kql(obj)
 
+    @staticmethod
+    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> KQL:
+        return KQL('{}{}{}'.format(
+            BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
+        )
+
     def __eq__(self, other: ExpressionType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' == ', other)
+        return BooleanExpression.binary_op(self, ' == ', other)
 
     def __ne__(self, other: ExpressionType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' != ', other)
+        return BooleanExpression.binary_op(self, ' != ', other)
 
     def is_in(self, other: ArrayType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' in ', other)
+        return BooleanExpression.binary_op(self, ' in ', other)
 
     def is_null(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('isnull({})'.format(self.kql)))
@@ -52,22 +61,19 @@ class BaseExpression:
         Deliberately not implemented, because "not in" inverses the result of this method, and there is no way to
         override it
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Instead use 'is_in' or 'contains'")
 
 
 class BooleanExpression(BaseExpression):
     @staticmethod
-    def bi_operator(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
-        return BooleanExpression(
-            KQL('{}{}{}'.format(
-                BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
-                ))
+    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
+        return BooleanExpression(BaseExpression.binary_op(left, operator, right))
 
     def __and__(self, other: BooleanType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' and ', other)
+        return BooleanExpression.binary_op(self, ' and ', other)
 
     def __or__(self, other: BooleanType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' or ', other)
+        return BooleanExpression.binary_op(self, ' or ', other)
 
     def __invert__(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('not({})'.format(self.kql)))
@@ -75,38 +81,35 @@ class BooleanExpression(BaseExpression):
 
 class NumberExpression(BaseExpression):
     @staticmethod
-    def bi_operator(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
-        return NumberExpression(
-            KQL('{}{}{}'.format(
-                BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
-                ))
+    def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
+        return NumberExpression(BaseExpression.binary_op(left, operator, right))
 
     def __lt__(self, other: NumberType) -> BooleanExpression:
-        return BooleanExpression.bi_operator(self, ' < ', other)
+        return BooleanExpression.binary_op(self, ' < ', other)
 
     def __le__(self, other: NumberType) -> BooleanExpression:
-        return BooleanExpression.bi_operator(self, ' <= ', other)
+        return BooleanExpression.binary_op(self, ' <= ', other)
 
     def __gt__(self, other: NumberType) -> BooleanExpression:
-        return BooleanExpression.bi_operator(self, ' > ', other)
+        return BooleanExpression.binary_op(self, ' > ', other)
 
     def __ge__(self, other: NumberType) -> BooleanExpression:
-        return BooleanExpression.bi_operator(self, ' >= ', other)
+        return BooleanExpression.binary_op(self, ' >= ', other)
 
     def __add__(self, other: NumberType) -> 'NumberExpression':
-        return NumberExpression.bi_operator(self, ' + ', other)
+        return NumberExpression.binary_op(self, ' + ', other)
 
     def __sub__(self, other: NumberType) -> 'NumberExpression':
-        return NumberExpression.bi_operator(self, ' - ', other)
+        return NumberExpression.binary_op(self, ' - ', other)
 
     def __mul__(self, other: NumberType) -> 'NumberExpression':
-        return NumberExpression.bi_operator(self, ' * ', other)
+        return NumberExpression.binary_op(self, ' * ', other)
 
     def __truediv__(self, other: NumberType) -> 'NumberExpression':
-        return NumberExpression.bi_operator(self, ' / ', other)
+        return NumberExpression.binary_op(self, ' / ', other)
 
     def __mod__(self, other: NumberType) -> 'NumberExpression':
-        return NumberExpression.bi_operator(self, ' % ', other)
+        return NumberExpression.binary_op(self, ' % ', other)
 
     def __neg__(self) -> 'NumberExpression':
         return NumberExpression(KQL('-{}'.format(self.kql)))
@@ -132,22 +135,64 @@ class StringExpression(BaseExpression):
         return ArrayExpression(KQL('split({}, {}, {}'.format(self.kql, delimiter, requested_index)))
 
     def equals(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' == ' if case_sensitive else ' =~ ', other)
+        return BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)
 
     def not_equals(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' !=' if case_sensitive else ' !~ ', other)
+        return BooleanExpression.binary_op(self, ' !=' if case_sensitive else ' !~ ', other)
 
     def matches(self, regex: StringType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, ' matches regex ', regex)
+        return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
     def contains(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, 'contains_cs' if case_sensitive else 'contains', other)
+        return BooleanExpression.binary_op(self, 'contains_cs' if case_sensitive else 'contains', other)
 
     def startswith(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, 'startswith_cs' if case_sensitive else 'startswith', other)
+        return BooleanExpression.binary_op(self, 'startswith_cs' if case_sensitive else 'startswith', other)
 
     def endswith(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(self, 'endswith_cs' if case_sensitive else 'endswith', other)
+        return BooleanExpression.binary_op(self, 'endswith_cs' if case_sensitive else 'endswith', other)
+
+
+class DatetimeExpression(BaseExpression):
+    @staticmethod
+    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'DatetimeExpression':
+        return DatetimeExpression(BaseExpression.binary_op(left, operator, right))
+
+    def __lt__(self, other: DatetimeType) -> BooleanExpression:
+        return BooleanExpression.binary_op(self, ' < ', other)
+
+    def __le__(self, other: DatetimeType) -> BooleanExpression:
+        return BooleanExpression.binary_op(self, ' <= ', other)
+
+    def __gt__(self, other: DatetimeType) -> BooleanExpression:
+        return BooleanExpression.binary_op(self, ' > ', other)
+
+    def __ge__(self, other: DatetimeType) -> BooleanExpression:
+        return BooleanExpression.binary_op(self, ' >= ', other)
+
+    def __add__(self, other: TimespanType) -> 'DatetimeExpression':
+        return DatetimeExpression.binary_op(self, ' + ', other)
+
+    def __sub__(self, other: Any) -> BaseExpression:
+        raise NotImplementedError("Instead use 'date_diff' or 'subtract_timespan'")
+
+    def date_diff(self, other: DatetimeType) -> 'TimespanExpression':
+        return TimespanExpression.binary_op(self, ' - ', other)
+
+    def subtract_timespan(self, other: TimespanType) -> 'DatetimeExpression':
+        return DatetimeExpression.binary_op(self, ' - ', other)
+
+
+class TimespanExpression(BaseExpression):
+    @staticmethod
+    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'TimespanExpression':
+        return TimespanExpression(BaseExpression.binary_op(left, operator, right))
+
+    def __add__(self, other: TimespanType) -> 'TimespanExpression':
+        return TimespanExpression.binary_op(self, ' + ', other)
+
+    def __sub__(self, other: TimespanType) -> 'TimespanExpression':
+        return TimespanExpression.binary_op(self, ' - ', other)
 
 
 class ArrayExpression(BaseExpression):
@@ -158,7 +203,7 @@ class ArrayExpression(BaseExpression):
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
     def contains(self, other: ExpressionType) -> 'BooleanExpression':
-        return BooleanExpression.bi_operator(other, ' in ', self)
+        return BooleanExpression.binary_op(other, ' in ', self)
 
 
 class MappingExpression(BaseExpression):

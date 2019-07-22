@@ -4,11 +4,11 @@ from typing import Union
 from utils import KQL
 from utils import KustoTypes, to_kql
 
-ExpressionTypes = Union[KustoTypes, 'BaseExpression', 'Column']
-StringTypes = Union[str, 'StringExpression', 'Column']
-BooleanTypes = Union[bool, 'BooleanExpression', 'Column']
-NumberTypes = Union[int, float, 'NumberExpression', 'Column']
-ArrayTypes = Union[Sequence, 'ArrayExpression', 'Column']
+ExpressionType = Union[KustoTypes, 'BaseExpression', 'Column']
+StringType = Union[str, 'StringExpression', 'Column']
+BooleanType = Union[bool, 'BooleanExpression', 'Column']
+NumberType = Union[int, float, 'NumberExpression', 'Column']
+ArrayType = Union[Sequence, 'ArrayExpression', 'Column']
 
 
 # All classes in the same file to prevent circular dependencies
@@ -27,18 +27,18 @@ class BaseExpression:
         return KQL('({})'.format(self.kql))
 
     @staticmethod
-    def _subexpression_to_kql(obj: ExpressionTypes) -> KQL:
+    def _subexpression_to_kql(obj: ExpressionType) -> KQL:
         if isinstance(obj, BaseExpression):
             return obj.as_subexpression()
         return to_kql(obj)
 
-    def __eq__(self, other: ExpressionTypes) -> 'BooleanExpression':
+    def __eq__(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' == ', other)
 
-    def __ne__(self, other: ExpressionTypes) -> 'BooleanExpression':
+    def __ne__(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' != ', other)
 
-    def is_in(self, other: ArrayTypes) -> 'BooleanExpression':
+    def is_in(self, other: ArrayType) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' in ', other)
 
     def is_null(self) -> 'BooleanExpression':
@@ -57,16 +57,16 @@ class BaseExpression:
 
 class BooleanExpression(BaseExpression):
     @staticmethod
-    def bi_operator(left: ExpressionTypes, operator: str, right: ExpressionTypes) -> 'BooleanExpression':
+    def bi_operator(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression(
             KQL('{}{}{}'.format(
                 BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
                 ))
 
-    def __and__(self, other: BooleanTypes) -> 'BooleanExpression':
+    def __and__(self, other: BooleanType) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' and ', other)
 
-    def __or__(self, other: BooleanTypes) -> 'BooleanExpression':
+    def __or__(self, other: BooleanType) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' or ', other)
 
     def __invert__(self) -> 'BooleanExpression':
@@ -75,37 +75,37 @@ class BooleanExpression(BaseExpression):
 
 class NumberExpression(BaseExpression):
     @staticmethod
-    def bi_operator(left: NumberTypes, operator: str, right: NumberTypes) -> 'NumberExpression':
+    def bi_operator(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
         return NumberExpression(
             KQL('{}{}{}'.format(
                 BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
                 ))
 
-    def __lt__(self, other: NumberTypes) -> BooleanExpression:
+    def __lt__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.bi_operator(self, ' < ', other)
 
-    def __le__(self, other: NumberTypes) -> BooleanExpression:
+    def __le__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.bi_operator(self, ' <= ', other)
 
-    def __gt__(self, other: NumberTypes) -> BooleanExpression:
+    def __gt__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.bi_operator(self, ' > ', other)
 
-    def __ge__(self, other: NumberTypes) -> BooleanExpression:
+    def __ge__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.bi_operator(self, ' >= ', other)
 
-    def __add__(self, other: NumberTypes) -> 'NumberExpression':
+    def __add__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.bi_operator(self, ' + ', other)
 
-    def __sub__(self, other: NumberTypes) -> 'NumberExpression':
+    def __sub__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.bi_operator(self, ' - ', other)
 
-    def __mul__(self, other: NumberTypes) -> 'NumberExpression':
+    def __mul__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.bi_operator(self, ' * ', other)
 
-    def __truediv__(self, other: NumberTypes) -> 'NumberExpression':
+    def __truediv__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.bi_operator(self, ' / ', other)
 
-    def __mod__(self, other: NumberTypes) -> 'NumberExpression':
+    def __mod__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.bi_operator(self, ' % ', other)
 
     def __neg__(self) -> 'NumberExpression':
@@ -123,8 +123,13 @@ class StringExpression(BaseExpression):
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
 
     @staticmethod
-    def concat(*args: StringTypes) -> 'StringExpression':
+    def concat(*args: StringType) -> 'StringExpression':
         return StringExpression(KQL('strcat({})'.format(', '.join('"{}"'.format(s) for s in args))))
+
+    def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
+        if requested_index is None:
+            return ArrayExpression(KQL('split({}, {}'.format(self.kql, delimiter)))
+        return ArrayExpression(KQL('split({}, {}, {}'.format(self.kql, delimiter, requested_index)))
 
 
 class ArrayExpression(BaseExpression):
@@ -134,7 +139,7 @@ class ArrayExpression(BaseExpression):
     def array_length(self) -> NumberExpression:
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
-    def contains(self, other: ExpressionTypes) -> 'BooleanExpression':
+    def contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(other, ' in ', self)
 
 

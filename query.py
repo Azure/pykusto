@@ -2,7 +2,7 @@ from abc import abstractmethod
 from enum import Enum
 
 from column import Column
-from expressions import BooleanTypes
+from expressions import BooleanType
 from utils import KQL
 
 
@@ -22,7 +22,7 @@ class Query:
     def __init__(self, head: 'Query' = None) -> None:
         self.head = head
 
-    def where(self, predicate: BooleanTypes) -> 'Query':
+    def where(self, predicate: BooleanType) -> 'Query':
         return WhereQuery(self, predicate)
 
     def take(self, num_rows: int):
@@ -46,9 +46,9 @@ class Query:
 
 
 class WhereQuery(Query):
-    predicate: BooleanTypes
+    predicate: BooleanType
 
-    def __init__(self, head: Query, predicate: BooleanTypes):
+    def __init__(self, head: Query, predicate: BooleanType):
         super(WhereQuery, self).__init__(head)
         self.predicate = predicate
 

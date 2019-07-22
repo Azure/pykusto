@@ -79,7 +79,7 @@ class SortQuery(Query):
         self.nulls = nulls
 
     def compile(self):
-        result = 'sort by {}'.format(self.col.kql_name, self.order.value)
+        result = 'sort by {}'.format(self.col.kql, self.order.value)
         if self.order is not None:
             result += " " + str(self.order.value)
         if self.nulls is not None:

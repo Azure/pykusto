@@ -20,6 +20,9 @@ class BaseExpression:
     def __init__(self, kql: KQL) -> None:
         self.kql = kql
 
+    def __str__(self) -> str:
+        return self.kql
+
     def as_subexpression(self) -> KQL:
         return KQL('({})'.format(self.kql))
 

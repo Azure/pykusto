@@ -41,6 +41,12 @@ class BaseExpression:
     def is_in(self, other: ArrayTypes) -> 'BooleanExpression':
         return BooleanExpression.bi_operator(self, ' in ', other)
 
+    def is_null(self) -> 'BooleanExpression':
+        return BooleanExpression(KQL('isnull({})'.format(self.kql)))
+
+    def is_not_null(self) -> 'BooleanExpression':
+        return BooleanExpression(KQL('isnotnull({})'.format(self.kql)))
+
     def __contains__(self, other: Any) -> bool:
         """
         Deliberately not implemented, because "not in" inverses the result of this method, and there is no way to

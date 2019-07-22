@@ -8,5 +8,5 @@ setup(
     license='MIT License',
     author='yomost',
     author_email='yomost@microsoft',
-    description='Advnaced python SDK for Azure Data Explorer'
+    description='Advanced python SDK for Azure Data Explorer'
 )

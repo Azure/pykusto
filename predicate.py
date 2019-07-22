@@ -1,5 +1,6 @@
-class Predicate:
-    def __init__(self, kql) -> None:
-        self.kql = kql
+from kql_wrapper import KQLWrapper
 
+
+class Predicate(KQLWrapper):
+    pass
     # TODO: predicate operators

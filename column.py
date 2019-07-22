@@ -1,18 +1,87 @@
+from typing import Union, Sequence
+
+from expression import Expression
+from predicate import Predicate
+from utils import KustoTypes, to_kql
+
+ColumnOrKustoType = Union['Column', KustoTypes]
+
 
 class Column:
+    kql_name: str
+    name: str
+
     def __init__(self, name: str) -> None:
         self.name = name
+        if '.' in name:
+            self.kql_name = "['{}']".format(self.name)
+        else:
+            self.kql_name = self.name
 
-    # Using a string as the return type spec works around the circular reference problem
     def __getattr__(self, name: str) -> 'Column':
         return Column(self.name + '.' + name)
 
+    @staticmethod
+    def _to_kql(obj):
+        if isinstance(obj, Column):
+            return obj.kql_name
+        return to_kql(obj)
+
+    def _generate_predicate(self, operator: str, other: ColumnOrKustoType) -> Predicate:
+        return Predicate('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
+
+    def _generate_expression(self, operator: str, other: ColumnOrKustoType) -> Expression:
+        return Expression('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
+
+    def __lt__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('<', other)
+
+    def __le__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('<=', other)
+
+    def __eq__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('==', other)
+
+    def __ne__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('!=', other)
+
+    def __gt__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('>', other)
+
+    def __ge__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('>=', other)
+
+    def is_in(self, other: Sequence) -> Predicate:
+        return self._generate_predicate(' in ', other)
+
+    def __len__(self) -> Expression:
+        """
+        Works only on columns of type string
+        """
+        return Expression('string_size({})'.format(self.kql_name))
+
+    def __contains__(self, other: ColumnOrKustoType) -> Predicate:
+        return Column._generate_predicate(other, ' in ', self)
+
+    def __add__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('+', other)
+
+    def __sub__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('-', other)
+
+    def __mul__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('*', other)
+
+    def __truediv__(self, other: ColumnOrKustoType) -> Expression:
+        return self._generate_expression('/', other)
+
 
 class ColumnGenerator:
-    def __getattribute__(self, name: str) -> Column:
+    def __getattr__(self, name: str) -> Column:
         return Column(name)
 
-    # TODO: also allow  c['fieldName']
+    def __getitem__(self, name: str) -> Column:
+        return Column[name]
 
 
 # Recommended usage: from pykusto.column import columnGenerator as c

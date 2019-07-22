@@ -9,10 +9,11 @@ class Column:
 
 
 class ColumnGenerator:
-    def __getattribute__(self, name: str) -> Column:
+    def __getattr__(self, name: str) -> Column:
         return Column(name)
 
-    # TODO: also allow  c['fieldName']
+    def __getitem__(self, name: str) -> Column:
+        return Column[name]
 
 
 # Recommended usage: from pykusto.column import columnGenerator as c

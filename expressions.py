@@ -63,6 +63,12 @@ class BaseExpression:
         """
         raise NotImplementedError("Instead use 'is_in' or 'contains'")
 
+    def to_bool(self) -> 'BooleanExpression':
+        return BooleanExpression(KQL('tobool({})'.format(self.kql)))
+
+    def to_string(self) -> 'StringExpression':
+        return StringExpression(KQL('tostring({})'.format(self.kql)))
+
 
 class BooleanExpression(BaseExpression):
     @staticmethod
@@ -128,6 +134,9 @@ class StringExpression(BaseExpression):
     def string_size(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
 
+    def is_empty(self) -> BooleanExpression:
+        return BooleanExpression(KQL('isempty({})'.format(self.kql)))
+
     @staticmethod
     def concat(*args: StringType) -> 'StringExpression':
         return StringExpression(KQL('strcat({})'.format(', '.join('"{}"'.format(s) for s in args))))
@@ -137,23 +146,35 @@ class StringExpression(BaseExpression):
             return ArrayExpression(KQL('split({}, {}'.format(self.kql, delimiter)))
         return ArrayExpression(KQL('split({}, {}, {}'.format(self.kql, delimiter, requested_index)))
 
-    def equals(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+    def equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)
 
-    def not_equals(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+    def not_equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' !=' if case_sensitive else ' !~ ', other)
 
     def matches(self, regex: StringType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
-    def contains(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+    def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, 'contains_cs' if case_sensitive else 'contains', other)
 
-    def startswith(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+    def startswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, 'startswith_cs' if case_sensitive else 'startswith', other)
 
-    def endswith(self, other: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+    def endswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, 'endswith_cs' if case_sensitive else 'endswith', other)
+
+    def to_int(self) -> NumberExpression:
+        return NumberExpression(KQL('toint({})'.format(self.kql)))
+
+    def to_long(self) -> NumberExpression:
+        return NumberExpression(KQL('tolong({})'.format(self.kql)))
+
+    def lower(self) -> 'StringExpression':
+        return StringExpression(KQL('tolower({})'.format(self.kql)))
+
+    def upper(self) -> 'StringExpression':
+        return StringExpression(KQL('toupper({})'.format(self.kql)))
 
 
 class DatetimeExpression(BaseExpression):

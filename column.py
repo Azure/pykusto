@@ -56,6 +56,9 @@ class Column:
     def contained(self, other: ExpressionTypes) -> Predicate:
         return Column._generate_predicate(other, ' in ', self)
 
+    def __and__(self, other: ExpressionTypes) -> Predicate:
+        return self._generate_predicate(' and ', other)
+
     def __len__(self) -> Expression:
         """
         Works only on columns of type string

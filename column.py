@@ -3,6 +3,8 @@ from typing import Union
 from predicate import Predicate
 from utils import KustoTypes, to_kql
 
+ColumnOrKustoType = Union['Column', KustoTypes]
+
 
 class Column:
     kql_name: str
@@ -21,13 +23,19 @@ class Column:
         return Column(self.name + '.' + name)
 
     @staticmethod
-    def to_kql(obj):
+    def _to_kql(obj):
         if isinstance(obj, Column):
             return obj.kql_name
         return to_kql(obj)
 
+    def _generate_predicate(self, operator: str, other: ColumnOrKustoType) -> Predicate:
+        return Predicate('{}{}{}'.format(self.kql_name, operator, self._to_kql(other)))
+
+    def __lt__(self, other: ColumnOrKustoType) -> Predicate:
+        return self._generate_predicate('<', other)
+
     def __eq__(self, other: Union['Column', KustoTypes]) -> Predicate:
-        return Predicate('{}=={}'.format(self.kql_name, self.to_kql(other)))
+        return self._generate_predicate('==', other)
 
 
 class ColumnGenerator:

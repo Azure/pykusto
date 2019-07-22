@@ -1,4 +1,4 @@
-from typing import Union, Sequence
+from typing import Union, Sequence, Any
 
 from expression import Expression
 from predicate import Predicate
@@ -54,14 +54,21 @@ class Column:
     def is_in(self, other: Sequence) -> Predicate:
         return self._generate_predicate(' in ', other)
 
+    def contained(self, other: ColumnOrKustoType) -> Predicate:
+        return Column._generate_predicate(other, ' in ', self)
+
     def __len__(self) -> Expression:
         """
         Works only on columns of type string
         """
         return Expression('string_size({})'.format(self.kql_name))
 
-    def __contains__(self, other: ColumnOrKustoType) -> Predicate:
-        return Column._generate_predicate(other, ' in ', self)
+    def __contains__(self, other: Any) -> bool:
+        """
+        Deliberately not implemented, because "not in" inverses the result of this method, and there is no way to
+        override it
+        """
+        raise NotImplementedError()
 
     def __add__(self, other: ColumnOrKustoType) -> Expression:
         return self._generate_expression('+', other)

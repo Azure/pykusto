@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Sequence
 
 from predicate import Predicate
 from utils import KustoTypes, to_kql
@@ -8,13 +8,11 @@ ColumnOrKustoType = Union['Column', KustoTypes]
 
 class Column:
     kql_name: str
-    contains_dot: bool
     name: str
 
     def __init__(self, name: str) -> None:
         self.name = name
-        self.contains_dot = '.' in name
-        if self.contains_dot:
+        if '.' in name:
             self.kql_name = "['{}']".format(self.name)
         else:
             self.kql_name = self.name
@@ -48,6 +46,11 @@ class Column:
 
     def __ge__(self, other: Union['Column', KustoTypes]) -> Predicate:
         return self._generate_predicate('>=', other)
+
+    def is_in(self, other: Sequence) -> Predicate:
+        return self._generate_predicate(' in ', other)
+
+    # def __len__(self)
 
 
 class ColumnGenerator:

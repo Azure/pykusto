@@ -1,7 +1,6 @@
-class Predicate:
-    kql: str
+from expression import Expression
 
-    def __init__(self, kql: str) -> None:
-        self.kql = kql
 
+class Predicate(Expression):
+    pass
     # TODO: predicate operators

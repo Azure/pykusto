@@ -1,3 +1,4 @@
+from typing import Tuple
 from abc import abstractmethod
 from enum import Enum
 
@@ -16,6 +17,21 @@ class Nulls(Enum):
     LAST = "last"
 
 
+class JoinKind(Enum):
+    INNERUNIQUE = "innerunique"
+    INNER = "inner"
+    LEFTOUTER = "leftouter"
+    RIGHTOUTER = "rightouter"
+    FULLOUTER = "fullouter"
+    LEFTANTI = "leftanti"
+    ANTI = "anti"
+    LEFTANTISEMI = "leftantisemi"
+    RIGHTANTI = "rightanti"
+    RIGHTANTISEMI = "rightantisemi"
+    LEFTSEMI = "leftsemi"
+    RIGHTSEMI = "rightsemi"
+
+
 class Query:
     head: 'Query'
 
@@ -30,6 +46,9 @@ class Query:
 
     def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None):
         return SortQuery(self, col, order, nulls)
+
+    def join(self, query: 'Query', kind: JoinKind = None):
+        return JoinQuery(self, query, kind)
 
     def project(self) -> 'Query':
         pass
@@ -90,3 +109,35 @@ class SortQuery(Query):
         if self.nulls is not None:
             result += " nulls " + str(self.nulls.value)
         return result
+
+
+class JoinQuery(Query):
+    query: Query
+    kind: JoinKind
+    on_attributes: Tuple[Tuple[Column, ...], ...]
+
+    def __init__(self, head: Query, query: Query, kind: JoinKind,
+                 on_attributes: Tuple[Tuple[Column, ...], ...] = tuple()):
+        super(JoinQuery, self).__init__(head)
+        self.query = query
+        self.kind = kind
+        self.on_attributes = on_attributes
+
+    def on(self, col1: Column, col2: Column = None) -> 'JoinQuery':
+        self.on_attributes = self.on_attributes + (((col1,),) if col2 is None else ((col1, col2),))
+        return self
+
+    @staticmethod
+    def _compile_on_attribute(attribute: Tuple[Column]):
+        assert len(attribute) in (1, 2)
+        if len(attribute) == 1:
+            return attribute[0].kql
+        else:
+            return "$left.{}==$right.{}".format(attribute[0].kql, attribute[1].kql)
+
+    def _compile(self) -> KQL:
+        assert self.on_attributes, "A call to join() must be followed by a call to on()"
+        return KQL("join {} ({}) on {}".format(
+            "" if self.kind is None else "kind={}".format(self.kind.value),
+            self.query.render(),
+            ", ".join([self._compile_on_attribute(attr) for attr in self.on_attributes])))

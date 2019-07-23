@@ -1,3 +1,4 @@
+from pykusto import utils
 from pykusto.expressions import *
 from pykusto.utils import KQL
 
@@ -7,8 +8,8 @@ def acos(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL('acos({})'.format(expr)))
 
 
-def ago(expr: TimespanType) -> TimespanExpression:
-    return TimespanExpression(KQL('ago({})'.format(expr)))
+def ago(expr: TimespanType) -> DatetimeExpression:
+    return DatetimeExpression(KQL('ago({})'.format(utils.timedelta_to_kql(expr))))
 
 
 # def array_concat(): return
@@ -17,8 +18,8 @@ def ago(expr: TimespanType) -> TimespanExpression:
 # def array_iif(): return
 
 
-def array_length(expr: ArrayType) -> ArrayExpression:
-    return ArrayExpression(KQL('array_length({})'.format(expr)))
+def array_length(expr: ArrayType) -> NumberExpression:
+    return NumberExpression(KQL('array_length({})'.format(expr)))
 
 
 # def array_slice(): return
@@ -153,20 +154,28 @@ def dcount_hll(expr: ExpressionType) -> BaseExpression:
 # def degrees(self): return
 
 
-def endofday(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('endofday({}, {})'.format(expr, offset)))
+def endofday(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    if offset:
+        return DatetimeExpression(KQL('endofday({}, {})'.format(expr, offset)))
+    return DatetimeExpression(KQL('endofday({})'.format(expr)))
 
 
-def endofmonth(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('endofmonth({}, {})'.format(expr, offset)))
+def endofmonth(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    if offset:
+        return DatetimeExpression(KQL('endofmonth({}, {})'.format(expr, offset)))
+    return DatetimeExpression(KQL('endofmonth({})'.format(expr)))
 
 
-def endofweek(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('endofweek({}, {})'.format(expr, offset)))
+def endofweek(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    if offset:
+        return DatetimeExpression(KQL('endofweek({}, {})'.format(expr, offset)))
+    return DatetimeExpression(KQL('endofweek({})'.format(expr)))
 
 
-def endofyear(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('endoftyear({}, {})'.format(expr, offset)))
+def endofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    if offset:
+        return DatetimeExpression(KQL('endoftyear({}, {})'.format(expr, offset)))
+    return DatetimeExpression(KQL('endoftyear({})'.format(expr)))
 
 
 # def estimate_data_size(self): return
@@ -204,26 +213,26 @@ def floor(expr: ExpressionType, round_to: NumberType) -> BaseExpression:
 
 
 def format_datetime(expr: DatetimeType, format_string: StringType) -> StringExpression:
-    return StringExpression(KQL('format_datetime({}, {})'.format(expr, format_string)))
+    return StringExpression(KQL('format_datetime({}, \'{}\')'.format(expr, format_string)))
 
 
 def format_timespan(expr: TimespanType, format_string: StringType) -> StringExpression:
-    return StringExpression(KQL('format_timespan({}, {})'.format(expr, format_string)))
+    return StringExpression(KQL('format_timespan({}, \'{}\')'.format(expr, format_string)))
 
 
 # def gamma(self): return
 
 
-def getmonth(expr: DatetimeType) -> DatetimeExpression:
-    return DatetimeExpression(KQL('getmonth({})'.format(expr)))
+def getmonth(expr: DatetimeType) -> NumberExpression:
+    return NumberExpression(KQL('getmonth({})'.format(expr)))
 
 
-def gettype(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('gettype({})'.format(expr)))
+def gettype(expr: ExpressionType) -> StringExpression:
+    return StringExpression(KQL('gettype({})'.format(expr)))
 
 
-def getyear(expr: DatetimeType) -> DatetimeExpression:
-    return DatetimeExpression(KQL('getyear({})'.format(expr)))
+def getyear(expr: DatetimeType) -> NumberExpression:
+    return NumberExpression(KQL('getyear({})'.format(expr)))
 
 
 def hash(self): return  # TODO
@@ -315,10 +324,10 @@ def make_datetime(year: NumberType,
             KQL('make_datetime({}, {}, {}, {}, {})'.format(year, month, day, hour, minute)))
     if hour:
         return DatetimeExpression(
-            KQL('make_datetime({}, {}, {}, {}, 0})'.format(year, month, day, hour)))
+            KQL('make_datetime({}, {}, {}, {}, 0)'.format(year, month, day, hour)))
     else:
         return DatetimeExpression(
-            KQL('make_datetime({}, {}, {}})'.format(year, month, day)))
+            KQL('make_datetime({}, {}, {})'.format(year, month, day)))
 
 
 def make_string(self): return  # TODO
@@ -339,8 +348,10 @@ def monthofyear(self): return  # TODO
 def new_guid(self): return  # TODO
 
 
-def now(offset: TimespanType = 0) -> StringExpression:
-    return StringExpression(KQL('now()'.format(offset)))
+def now(offset: TimespanType = None) -> StringExpression:
+    if offset:
+        return StringExpression(KQL('now({})'.format(utils.timedelta_to_kql(offset))))
+    return StringExpression(KQL('now()'))
 
 
 # def pack(self): return

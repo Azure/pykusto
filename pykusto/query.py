@@ -1,11 +1,14 @@
 from abc import abstractmethod
 from enum import Enum
 from itertools import chain
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Optional
+
+from azure.kusto.data.helpers import dataframe_from_result_table
 
 from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn
 from pykusto.column import Column
 from pykusto.expressions import BooleanType, ExpressionType
+from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
 
@@ -35,10 +38,12 @@ class JoinKind(Enum):
 
 
 class Query:
-    _head: 'Query'
+    _head: Optional['Query']
+    _table: Optional[Table]
 
-    def __init__(self, head: 'Query' = None) -> None:
-        self._head = head
+    def __init__(self, head=None) -> None:
+        self._head = head if isinstance(head, Query) else None
+        self._table = head if isinstance(head, Table) else None
 
     def where(self, predicate: BooleanType) -> 'WhereQuery':
         return WhereQuery(self, predicate)
@@ -84,14 +89,32 @@ class Query:
 
     def _compile_all(self) -> KQL:
         if self._head is None:
-            return KQL("")
+            if self._table is None:
+                return KQL("")
+            else:
+                return self._table.table
         else:
             return KQL("{} | {}".format(self._head._compile_all(), self._compile()))
+
+    def get_table(self):
+        if self._head is None:
+            return self._table
+        else:
+            return self._head.get_table()
 
     def render(self) -> KQL:
         result = self._compile_all()
         logger.debug("Complied query: " + result)
         return result
+
+    def execute(self):
+        rendered_query = self.render()
+        logger.debug("Running query: " + rendered_query)
+        return self.get_table().execute(rendered_query)
+
+    def execute_to_dataframe(self):
+        res = self.execute()
+        return dataframe_from_result_table(res.primary_results[0])
 
 
 class ProjectQuery(Query):
@@ -163,6 +186,10 @@ class SortQuery(Query):
         return KQL(result)
 
 
+class JoinException(Exception):
+    pass
+
+
 class JoinQuery(Query):
     _query: Query
     _kind: JoinKind
@@ -188,7 +215,11 @@ class JoinQuery(Query):
             return "$left.{}==$right.{}".format(attribute[0].kql, attribute[1].kql)
 
     def _compile(self) -> KQL:
-        assert self._on_attributes, "A call to join() must be followed by a call to on()"
+        if len(self._on_attributes) == 0:
+            raise JoinException("A call to join() must be followed by a call to on()")
+        if self._query.get_table() is None:
+            raise JoinException("The joined query must have a table")
+
         return KQL("join {} ({}) on {}".format(
             "" if self._kind is None else "kind={}".format(self._kind.value),
             self._query.render(),

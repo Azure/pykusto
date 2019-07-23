@@ -52,6 +52,15 @@ class Query:
     def take(self, num_rows: int) -> 'TakeQuery':
         return TakeQuery(self, num_rows)
 
+    def limit(self, num_rows: int) -> 'LimitQuery':
+        return LimitQuery(self, num_rows)
+
+    def sample(self, num_rows: int) -> 'SampleQuery':
+        return SampleQuery(self, num_rows)
+
+    def count(self) -> 'CountQuery':
+        return CountQuery(self)
+
     def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
         return SortQuery(self, col, order, nulls)
 
@@ -180,15 +189,48 @@ class WhereQuery(Query):
         return KQL('where {}'.format(self._predicate.kql))
 
 
-class TakeQuery(Query):
+class SingleNumberQuery(Query):
     _num_rows: int
+    _query_name: str
 
-    def __init__(self, head: Query, num_rows: int):
-        super(TakeQuery, self).__init__(head)
+    def __init__(self, head: Query, query_name: str, num_rows: int):
+        super(SingleNumberQuery, self).__init__(head)
+        self._query_name = query_name
         self._num_rows = num_rows
 
     def _compile(self) -> KQL:
-        return KQL('take {}'.format(self._num_rows))
+        return KQL('{} {}'.format(self._query_name, self._num_rows))
+
+
+class TakeQuery(SingleNumberQuery):
+    _num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
+        super(TakeQuery, self).__init__(head, 'take', num_rows)
+
+
+class LimitQuery(SingleNumberQuery):
+    _num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
+        super(LimitQuery, self).__init__(head, 'limit', num_rows)
+
+
+class SampleQuery(SingleNumberQuery):
+    _num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
+        super(SampleQuery, self).__init__(head, 'sample', num_rows)
+
+
+class CountQuery(Query):
+    _num_rows: int
+
+    def __init__(self, head: Query):
+        super(CountQuery, self).__init__(head)
+
+    def _compile(self) -> KQL:
+        return KQL('count')
 
 
 class SortQuery(Query):

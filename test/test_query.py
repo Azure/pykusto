@@ -68,3 +68,21 @@ class TestQuery(TestBase):
                                                                               time_range=f.bin(col.time, 10)).render(),
             " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
         )
+
+    def test_limit(self):
+        self.assertEqual(
+            Query().limit(3).render(),
+            " | limit 3"
+        )
+
+    def test_sample(self):
+        self.assertEqual(
+            Query().sample(3).render(),
+            " | sample 3"
+        )
+
+    def test_count(self):
+        self.assertEqual(
+            Query().count().render(),
+            " | count"
+        )

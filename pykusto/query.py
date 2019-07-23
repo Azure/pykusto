@@ -107,13 +107,22 @@ class Query:
         logger.debug("Complied query: " + result)
         return result
 
-    def execute(self):
-        rendered_query = self.render()
-        logger.debug("Running query: " + rendered_query)
-        return self.get_table().execute(rendered_query)
+    def execute(self, table: Table = None):
+        if self.get_table() is None:
+            if table is None:
+                raise RuntimeError("No table supplied")
+            rendered_query = table.table + self.render()
+        else:
+            if table is not None:
+                raise RuntimeError("This table is already bound to a query")
+            table = self.get_table()
+            rendered_query = self.render()
 
-    def execute_to_dataframe(self):
-        res = self.execute()
+        logger.debug("Running query: " + rendered_query)
+        return table.execute(rendered_query)
+
+    def execute_to_dataframe(self, table: Table = None):
+        res = self.execute(table)
         return dataframe_from_result_table(res.primary_results[0])
 
 

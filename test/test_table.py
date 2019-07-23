@@ -28,6 +28,31 @@ class TestTable(TestBase):
             [('test_db', 'test_table | take 5', None)]
         )
 
+    def test_execute_no_table(self):
+        self.assertRaises(
+            RuntimeError,
+            Query().take(5).execute
+        )
+
+    def test_execute_already_bound(self):
+        mock_kusto_client = MockKustoClient()
+        table = Table(mock_kusto_client, 'test_db', 'test_table')
+
+        self.assertRaises(
+            RuntimeError,
+            Query(table).take(5).execute,
+            table
+        )
+
+    def test_single_table_on_execute(self):
+        mock_kusto_client = MockKustoClient()
+        table = Table(mock_kusto_client, 'test_db', 'test_table')
+        Query().take(5).execute(table)
+        self.assertEqual(
+            mock_kusto_client.executions,
+            [('test_db', 'test_table | take 5', None)]
+        )
+
     def test_union_table(self):
         mock_kusto_client = MockKustoClient()
         table = Table(mock_kusto_client, 'test_db', ('test_table1', 'test_table2'))

@@ -5,25 +5,25 @@ from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient
 
 from pykusto.query import Query
-from pykusto.utils import logger
+from pykusto.utils import logger, KQL
 
 
 class Table:
     client: KustoClient
     database: str
-    table: str
+    _table: KQL
 
     def __init__(self, client: KustoClient, database: str, tables: Union[str, List[str], Tuple[str, ...]]) -> None:
         self.client = client
         self.database = database
         if isinstance(tables, (List, Tuple)):
-            self.table = ', '.join(tables)
+            self._table = KQL(', '.join(tables))
         else:
-            self.table = tables
-        if '*' in self.table or ',' in self.table:
-            self.table = 'union ' + self.table
+            self._table = KQL(tables)
+        if '*' in self._table or ',' in self._table:
+            self._table = KQL('union ' + self._table)
 
     def execute(self, query: Query) -> KustoResponseDataSet:
-        rendered_query = self.table + query.render()
+        rendered_query = self._table + query.render()
         logger.debug("Running query: " + rendered_query)
         return self.client.execute(self.database, rendered_query)

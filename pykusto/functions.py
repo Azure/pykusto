@@ -344,9 +344,7 @@ def now(offset: TimespanType = 0) -> StringExpression:
 # def parse_ipv4(self): return
 
 
-def parse_json(expr: ExpressionType) -> Ar:
-    return StringExpression(KQL('now()'.format(offset)))
-
+def parse_json(expr: ExpressionType): return  # TODO
 
 # def parse_path(self): return
 #

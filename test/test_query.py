@@ -9,8 +9,8 @@ from test.test_base import TestBase
 class TestQuery(TestBase):
     def test_sanity(self):
         self.assertEqual(
-            " | where (abs(foo)) > 4 | take 5 | sort by bar asc nulls last",
-            Query().where(f.abs(Col.foo) > 4).take(5).sort_by(Col.bar, Order.ASC, Nulls.LAST).render()
+            " | where foo > 4 | take 5 | sort by bar asc nulls last",
+            Query().where(Col.foo > 4).take(5).sort_by(Col.bar, Order.ASC, Nulls.LAST).render()
         )
 
     def test_join(self):

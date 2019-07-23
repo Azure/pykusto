@@ -16,6 +16,14 @@ class AssigmentBase:
     def to_kql(self) -> KQL:
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
+    @staticmethod
+    def assign(expression: BaseExpression, *columns: 'Column') -> 'AssigmentBase':
+        if len(columns) == 0:
+            raise ValueError("Provide at least one column")
+        if len(columns) == 1:
+            return AssignmentToSingleColumn(columns[0], expression)
+        return AssignmentToMultipleColumns(columns, expression)
+
 
 class AssignmentToSingleColumn(AssigmentBase):
     def __init__(self, column: Column, expression: BaseExpression) -> None:

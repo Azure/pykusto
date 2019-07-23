@@ -5,13 +5,13 @@ from typing import Union
 from utils import KQL
 from utils import KustoTypes, to_kql
 
-ExpressionType = Union[KustoTypes, 'BaseExpression', 'Column']
-StringType = Union[str, 'StringExpression', 'Column']
-BooleanType = Union[bool, 'BooleanExpression', 'Column']
-NumberType = Union[int, float, 'NumberExpression', 'Column']
-ArrayType = Union[Sequence, 'ArrayExpression', 'Column']
-DatetimeType = Union[datetime, 'DatetimeExpression', 'Column']
-TimespanType = Union[timedelta, 'TimespanExpression', 'Column']
+ExpressionType = Union[KustoTypes, 'BaseExpression']
+StringType = Union[str, 'StringExpression']
+BooleanType = Union[bool, 'BooleanExpression']
+NumberType = Union[int, float, 'NumberExpression']
+ArrayType = Union[Sequence, 'ArrayExpression']
+DatetimeType = Union[datetime, 'DatetimeExpression']
+TimespanType = Union[timedelta, 'TimespanExpression']
 
 
 # All classes in the same file to prevent circular dependencies

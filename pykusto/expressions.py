@@ -13,6 +13,8 @@ ArrayType = Union[List, Tuple, 'ArrayExpression']
 MappingType = Union[Mapping, 'MappingExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
+AggregationType = Union['AggregationExpression']
+GroupExpressionType = Union['GroupExpression']
 DynamicType = Union[ArrayType, MappingType]
 
 
@@ -49,6 +51,7 @@ class BaseExpression:
     def __ne__(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' != ', other)
 
+    # TODO move these three methods to functions module
     def is_in(self, other: ArrayType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' in ', other)
 
@@ -255,3 +258,11 @@ class MappingExpression(BaseExpression):
         return MappingExpression(KQL('pack({})'.format(
             ', '.join('"{}", {}'.format(k, BaseExpression._subexpression_to_kql(v)) for k, v in kwargs)
         )))
+
+
+class AggregationExpression(BaseExpression):
+    pass
+
+
+class GroupExpression(BaseExpression):
+    pass

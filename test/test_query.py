@@ -2,6 +2,7 @@ from pykusto.assignments import AssigmentBase
 from pykusto.column import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException
 from pykusto.tables import Table
+from pykusto import functions as f
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
 
@@ -49,9 +50,39 @@ class TestQuery(TestBase):
                 Query().take(2), kind=JoinKind.INNER).render
         )
 
-
     def test_extend(self):
         self.assertEqual(
             Query().extend(AssigmentBase.assign(col.v1 + col.v2, col.sum), foo=col.bar * 4).take(5).render(),
             " | extend sum = (v1 + v2), foo = (bar * 4) | take 5",
+        )
+
+    def test_summarize(self):
+        self.assertEqual(
+            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
+            " | summarize count(foo), my_count = (count(bar))",
+        )
+
+    def test_summarize_by(self):
+        self.assertEqual(
+            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
+                                                                              time_range=f.bin(col.time, 10)).render(),
+            " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
+        )
+
+    def test_limit(self):
+        self.assertEqual(
+            Query().limit(3).render(),
+            " | limit 3"
+        )
+
+    def test_sample(self):
+        self.assertEqual(
+            Query().sample(3).render(),
+            " | sample 3"
+        )
+
+    def test_count(self):
+        self.assertEqual(
+            Query().count().render(),
+            " | count"
         )

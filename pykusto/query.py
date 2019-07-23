@@ -5,9 +5,10 @@ from typing import Tuple, List, Union, Optional
 
 from azure.kusto.data.helpers import dataframe_from_result_table
 
-from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn
+from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn, \
+    AssignmentFromGroupExpressionToColumn
 from pykusto.column import Column
-from pykusto.expressions import BooleanType, ExpressionType
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression
 from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
@@ -51,6 +52,15 @@ class Query:
     def take(self, num_rows: int) -> 'TakeQuery':
         return TakeQuery(self, num_rows)
 
+    def limit(self, num_rows: int) -> 'LimitQuery':
+        return LimitQuery(self, num_rows)
+
+    def sample(self, num_rows: int) -> 'SampleQuery':
+        return SampleQuery(self, num_rows)
+
+    def count(self) -> 'CountQuery':
+        return CountQuery(self)
+
     def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
         return SortQuery(self, col, order, nulls)
 
@@ -82,6 +92,21 @@ class Query:
         for column_name, expression in kwargs.items():
             assignments.append(AssignmentToSingleColumn(Column(column_name), expression))
         return ExtendQuery(self, *assignments)
+
+    def summarize(self, *args: Union[AggregationExpression, AssignmentFromAggregationToColumn],
+                  **kwargs: AggregationExpression) -> 'SummarizeQuery':
+        aggs: List[AggregationExpression] = []
+        assignments: List[AssignmentFromAggregationToColumn] = []
+        for arg in args:
+            if isinstance(arg, AggregationExpression):
+                aggs.append(arg)
+            elif isinstance(arg, AssignmentFromAggregationToColumn):
+                assignments.append(arg)
+            else:
+                raise ValueError("Invalid assignment: " + arg.to_kql())
+        for column_name, agg in kwargs.items():
+            assignments.append(AssignmentFromAggregationToColumn(Column(column_name), agg))
+        return SummarizeQuery(self, aggs, assignments)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -164,15 +189,48 @@ class WhereQuery(Query):
         return KQL('where {}'.format(self._predicate.kql))
 
 
-class TakeQuery(Query):
+class SingleNumberQuery(Query):
     _num_rows: int
+    _query_name: str
 
-    def __init__(self, head: Query, num_rows: int):
-        super(TakeQuery, self).__init__(head)
+    def __init__(self, head: Query, query_name: str, num_rows: int):
+        super(SingleNumberQuery, self).__init__(head)
+        self._query_name = query_name
         self._num_rows = num_rows
 
     def _compile(self) -> KQL:
-        return KQL('take {}'.format(self._num_rows))
+        return KQL('{} {}'.format(self._query_name, self._num_rows))
+
+
+class TakeQuery(SingleNumberQuery):
+    _num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
+        super(TakeQuery, self).__init__(head, 'take', num_rows)
+
+
+class LimitQuery(SingleNumberQuery):
+    _num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
+        super(LimitQuery, self).__init__(head, 'limit', num_rows)
+
+
+class SampleQuery(SingleNumberQuery):
+    _num_rows: int
+
+    def __init__(self, head: Query, num_rows: int):
+        super(SampleQuery, self).__init__(head, 'sample', num_rows)
+
+
+class CountQuery(Query):
+    _num_rows: int
+
+    def __init__(self, head: Query):
+        super(CountQuery, self).__init__(head)
+
+    def _compile(self) -> KQL:
+        return KQL('count')
 
 
 class SortQuery(Query):
@@ -200,14 +258,14 @@ class JoinException(Exception):
 
 
 class JoinQuery(Query):
-    _query: Query
+    _joined_query: Query
     _kind: JoinKind
     _on_attributes: Tuple[Tuple[Column, ...], ...]
 
-    def __init__(self, head: Query, query: Query, kind: JoinKind,
+    def __init__(self, head: Query, joined_query: Query, kind: JoinKind,
                  on_attributes: Tuple[Tuple[Column, ...], ...] = tuple()):
         super(JoinQuery, self).__init__(head)
-        self._query = query
+        self._joined_query = joined_query
         self._kind = kind
         self._on_attributes = on_attributes
 
@@ -226,10 +284,48 @@ class JoinQuery(Query):
     def _compile(self) -> KQL:
         if len(self._on_attributes) == 0:
             raise JoinException("A call to join() must be followed by a call to on()")
-        if self._query.get_table() is None:
+        if self._joined_query.get_table() is None:
             raise JoinException("The joined query must have a table")
 
         return KQL("join {} ({}) on {}".format(
             "" if self._kind is None else "kind={}".format(self._kind.value),
-            self._query.render(),
+            self._joined_query.render(),
             ", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])))
+
+
+class SummarizeQuery(Query):
+    _aggs: List[AggregationExpression] = []
+    _assignments: List[AssignmentFromAggregationToColumn] = []
+    _by_columns: List[Union[Column, GroupExpression]] = []
+    _by_assignments: List[AssignmentFromGroupExpressionToColumn] = []
+
+    def __init__(self, head: Query, aggs: List[AggregationExpression],
+                 assignments: List[AssignmentFromAggregationToColumn]):
+        super(SummarizeQuery, self).__init__(head)
+        self._aggs = aggs
+        self._assignments = assignments
+
+    def by(self, *args: Union[AssignmentFromGroupExpressionToColumn, Column, GroupExpression],
+           **kwargs: GroupExpression):
+        for arg in args:
+            if isinstance(arg, Column) or isinstance(arg, GroupExpression):
+                self._by_columns.append(arg)
+            elif isinstance(arg, AssignmentFromGroupExpressionToColumn):
+                self._by_assignments.append(arg)
+            else:
+                raise ValueError("Invalid assignment: " + arg.to_kql())
+        for column_name, group_exp in kwargs.items():
+            self._by_assignments.append(AssignmentFromGroupExpressionToColumn(Column(column_name), group_exp))
+        return self
+
+    def _compile(self) -> KQL:
+        result = 'summarize {}'.format(', '.join(chain(
+            (c.kql for c in self._aggs),
+            (a.to_kql() for a in self._assignments)
+        )))
+        if len(self._by_assignments) != 0 or len(self._by_columns) != 0:
+            result += ' by {}'.format(', '.join(chain(
+                (c.kql for c in self._by_columns),
+                (a.to_kql() for a in self._by_assignments)
+            )))
+        return KQL(result)

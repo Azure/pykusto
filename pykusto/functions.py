@@ -1,4 +1,5 @@
 from pykusto import utils
+from pykusto.column import Column
 from pykusto.expressions import *
 from pykusto.utils import KQL
 
@@ -58,8 +59,8 @@ def array_length(expr: ArrayType) -> NumberExpression:
 # def beta_pdf(self): return
 
 
-def bin(expr: ExpressionType, round_to: NumberType) -> BaseExpression:
-    return BaseExpression(KQL('bin({}, {})'.format(expr, round_to)))
+def bin(expr: ExpressionType, round_to: NumberType) -> GroupExpression:
+    return GroupExpression(KQL('bin({}, {})'.format(expr, round_to)))
 
 
 def bin_at(expr: ExpressionType, bin_size: NumberType, fixed_point: NumberType) -> BaseExpression:
@@ -373,6 +374,7 @@ def now(offset: TimespanType = None) -> StringExpression:
 
 
 def parse_json(expr: ExpressionType): return  # TODO
+
 
 # def parse_path(self): return
 #
@@ -693,8 +695,10 @@ def avgif(expr: NumberType, predicate: BooleanType) -> NumberExpression:
 #     return
 
 
-def count() -> NumberExpression:  # TODO
-    return NumberExpression(KQL('count()'))
+def count(col: Column = None):
+    res = "count()" if col is None else "count({})".format(col.kql)
+    return AggregationExpression(KQL(res))
+
 
 
 def countif(predicate: BooleanType) -> NumberExpression:

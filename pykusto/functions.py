@@ -156,27 +156,23 @@ def dcount_hll(expr: ExpressionType) -> BaseExpression:
 
 
 def endofday(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    if offset:
-        return DatetimeExpression(KQL('endofday({}, {})'.format(expr, offset)))
-    return DatetimeExpression(KQL('endofday({})'.format(expr)))
+    return DatetimeExpression(KQL(
+        ('endofday({})' if offset is None else 'endofday({}, {})').format(expr, offset)))
 
 
 def endofmonth(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    if offset:
-        return DatetimeExpression(KQL('endofmonth({}, {})'.format(expr, offset)))
-    return DatetimeExpression(KQL('endofmonth({})'.format(expr)))
+    return DatetimeExpression(KQL(
+        ('endofmonth({})' if offset is None else 'endofmonth({}, {})').format(expr, offset)))
 
 
 def endofweek(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    if offset:
-        return DatetimeExpression(KQL('endofweek({}, {})'.format(expr, offset)))
-    return DatetimeExpression(KQL('endofweek({})'.format(expr)))
+    return DatetimeExpression(KQL(
+        ('endofweek({})' if offset is None else 'endofweek({}, {})').format(expr, offset)))
 
 
 def endofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    if offset:
-        return DatetimeExpression(KQL('endoftyear({}, {})'.format(expr, offset)))
-    return DatetimeExpression(KQL('endoftyear({})'.format(expr)))
+    return DatetimeExpression(KQL(
+        ('endoftyear({})' if offset is None else 'endoftyear({}, {})').format(expr, offset)))
 
 
 # def estimate_data_size(self): return
@@ -317,18 +313,16 @@ def make_datetime(year: NumberType,
                   hour: NumberType = None,
                   minute: NumberType = None,
                   second: NumberType = None) -> DatetimeExpression:
-    if second:
-        return DatetimeExpression(
-            KQL('make_datetime({}, {}, {}, {}, {}, {})'.format(year, month, day, hour, minute, second)))
-    if minute:
-        return DatetimeExpression(
-            KQL('make_datetime({}, {}, {}, {}, {})'.format(year, month, day, hour, minute)))
+    str = 'make_datetime({}, {}, {}'
     if hour:
-        return DatetimeExpression(
-            KQL('make_datetime({}, {}, {}, {}, 0)'.format(year, month, day, hour)))
-    else:
-        return DatetimeExpression(
-            KQL('make_datetime({}, {}, {})'.format(year, month, day)))
+        str += ', {}, 0'
+    if minute:
+        str = str[:-1] + '{}'
+    if second:
+        str += ', {}'
+    str += ')'
+    return DatetimeExpression(
+        KQL(str.format(year, month, day, hour, minute, second)))
 
 
 def make_string(self): return  # TODO
@@ -425,8 +419,9 @@ def pow(expr1: NumberType, expr2: NumberType) -> NumberExpression:
 # def reverse(self): return
 
 
-def round(expr: NumberType, precision: NumberType = 0) -> NumberExpression:
-    return NumberExpression(KQL('round({}, {})'.format(expr, precision)))
+def round(expr: NumberType, precision: NumberType = None) -> NumberExpression:
+    return NumberExpression(KQL(
+        ('round({}, {})' if precision is None else 'round({}, {})').format(expr, precision)))
 
 
 # def series_add(self): return
@@ -528,6 +523,7 @@ def round(expr: NumberType, precision: NumberType = 0) -> NumberExpression:
 def sign(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL('sign({})'.format(expr)))
 
+
 # def sin(self): return
 #
 #
@@ -538,27 +534,31 @@ def sqrt(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL('sqrt({})'.format(expr)))
 
 
-def startofday(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('startofday({}, {})'.format(expr, offset)))
+def startofday(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    return DatetimeExpression(KQL(
+        ('startofday({})' if offset is None else 'startofday({}, {})').format(expr, offset)))
 
 
-def startofmonth(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('startofmonth({}, {})'.format(expr, offset)))
+def startofmonth(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    return DatetimeExpression(KQL(
+        ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(expr, offset)))
 
 
-def startofweek(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('startofweek({}, {})'.format(expr, offset)))
+def startofweek(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    return DatetimeExpression(KQL(
+        ('startofweek({})' if offset is None else 'startofweek({}, {})').format(expr, offset)))
 
 
-def startofyear(expr: DatetimeType, offset: NumberType = 0) -> DatetimeExpression:
-    return DatetimeExpression(KQL('startofyear({}, {})'.format(expr, offset)))
+def startofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+    return DatetimeExpression(KQL(
+        ('startofyear({})' if offset is None else 'startofyear({}, {})').format(expr, offset)))
 
 
 def strcat(self): return  # TODO
 
 
 def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
-    return StringExpression(KQL('strcat_array({}, {})'.format(expr, delimiter)))
+    return StringExpression(KQL('strcat_array({}, \'{}\')'.format(expr, delimiter)))
 
 
 def strcat_delim(): raise NotImplemented  # TODO
@@ -584,6 +584,7 @@ def substring(expr: StringType, start_index: NumberType, length: NumberType = No
     if length:
         return StringExpression(KQL('substring({}, {}, {})'.format(expr, start_index, length)))
     return StringExpression(KQL('substring({}, {})'.format(expr, start_index)))
+
 
 # def tan(self): return
 #
@@ -673,8 +674,12 @@ def zip(self): return  # TODO
 
 
 # aggregative functions
-def any(expr: ExpressionType, *args):
-    return BaseExpression(KQL('any()'))
+def any(*args: ExpressionType) -> GroupExpression:
+    str = 'any('
+    for expr in args:
+        str += expr + ', '
+    str += ')'
+    return GroupExpression(KQL(str))
 
 
 def arg_max(self):  raise NotImplemented  # TODO
@@ -698,7 +703,6 @@ def avgif(expr: NumberType, predicate: BooleanType) -> NumberExpression:
 def count(col: Column = None):
     res = "count()" if col is None else "count({})".format(col.kql)
     return AggregationExpression(KQL(res))
-
 
 
 def countif(predicate: BooleanType) -> NumberExpression:

@@ -182,3 +182,60 @@ class TestFunction(TestBase):
         self.assertEqual(
             Query().where(col.foo < f.now(datetime.timedelta(-3))).render(),
             " | where foo < (now(time(-3.0:0:0.0)))")
+
+    def test_pow(self):
+        self.assertEqual(
+            Query().where(f.pow(col.foo, col.bar) > 3).render(),
+            " | where (pow(foo, bar)) > 3")
+
+    def test_round(self):
+        self.assertEqual(
+            Query().where(f.round(col.foo, col.bar) == 3).render(),
+            " | where (round(foo, bar)) == 3")
+
+    def test_sign(self):
+        self.assertEqual(
+            Query().where(f.sign(col.foo) == 1).render(),
+            " | where (sign(foo)) == 1")
+
+    def test_sqrt(self):
+        self.assertEqual(
+            Query().where(f.sqrt(col.foo) > 1).render(),
+            " | where (sqrt(foo)) > 1")
+
+    def test_startofday(self):
+        self.assertEqual(
+            Query().where(f.startofday(col.foo) > datetime.datetime(2019, 7, 23)).render(),
+            " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)")
+
+    def test_startofmonth(self):
+        self.assertEqual(
+            Query().where(f.startofmonth(col.foo) > datetime.datetime(2019, 7, 1)).render(),
+            " | where (startofmonth(foo)) > datetime(2019-07-01 00:00:00.000000)")
+
+    def test_startofweek(self):
+        self.assertEqual(
+            Query().where(f.startofweek(col.foo) > datetime.datetime(2019, 7, 8)).render(),
+            " | where (startofweek(foo)) > datetime(2019-07-08 00:00:00.000000)")
+
+    def test_startofyear(self):
+        self.assertEqual(
+            Query().where(f.startofyear(col.foo) > datetime.datetime(2019, 1, 1)).render(),
+            " | where (startofyear(foo)) > datetime(2019-01-01 00:00:00.000000)")
+
+    def test_strcat_array(self):
+        self.assertEqual(
+            Query().where(f.strcat_array(col.foo, ',') == 'A,B,C').render(),
+            " | where (strcat_array(foo, ',')) == \"A,B,C\"")
+        self.assertEqual(
+            Query().where(f.strcat_array(['A', 'B', 'C'], ',') == 'A,B,C').render(),
+            " | where (strcat_array(['A', 'B', 'C'], ',')) == \"A,B,C\"")
+
+    # ------------------------------------------------------
+    # Aggregative Functions
+    # ------------------------------------------------------
+
+    def test_any(self):
+        self.assertEqual(
+            Query().summarize(f.any).render(),
+            " | where (strcat_array(foo, ',')) == \"A,B,C\"")

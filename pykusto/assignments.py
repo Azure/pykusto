@@ -32,4 +32,4 @@ class AssignmentToSingleColumn(AssigmentBase):
 
 class AssignmentToMultipleColumns(AssigmentBase):
     def __init__(self, columns: Union[List[Column], Tuple[Column]], expression: ArrayType) -> None:
-        super().__init__(KQL(', '.join(c.kql for c in columns)), expression)
+        super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)

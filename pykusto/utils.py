@@ -46,6 +46,8 @@ KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[[Any], KQL]] = {
     Sequence: dynamic_to_kql,
     bool: bool_to_kql,
     str: str_to_kql,
+    int: KQL,
+    float: KQL,
 }
 
 
@@ -53,4 +55,4 @@ def to_kql(obj: KustoTypes) -> KQL:
     for kusto_type, converter in KQL_CONVERTER_BY_TYPE.items():
         if isinstance(obj, kusto_type):
             return converter(obj)
-    return obj
+    raise ValueError("No KQL converter found for object {} of type {}".format(obj, type(obj)))

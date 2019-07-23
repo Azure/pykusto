@@ -2,6 +2,7 @@ from typing import Union, List, Tuple
 
 # noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
+from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.request import KustoClient
 
 from pykusto.query import Query
@@ -27,3 +28,7 @@ class Table:
         rendered_query = self._table + query.render()
         logger.debug("Running query: " + rendered_query)
         return self.client.execute(self.database, rendered_query)
+
+    def execute_to_dataframe(self, query: Query):
+        res = self.execute(query)
+        return dataframe_from_result_table(res.primary_results[0])

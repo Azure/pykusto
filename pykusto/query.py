@@ -1,9 +1,8 @@
-from typing import Tuple
 from abc import abstractmethod
 from enum import Enum
-from typing import Dict
+from typing import Tuple, List
 
-from pykusto.assignments import AssigmentBase
+from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn
 from pykusto.column import Column
 from pykusto.expressions import BooleanType, BaseExpression
 from pykusto.utils import KQL, logger
@@ -55,8 +54,11 @@ class Query:
     def project(self) -> 'Query':
         pass
 
-    def extend(self, *args: BaseExpression, **kwargs: BaseExpression) -> 'Query':
-        pass
+    def extend(self, *args: AssigmentBase, **kwargs: BaseExpression) -> 'ExtendQuery':
+        assignments: List[AssigmentBase] = list(args)
+        for column_name, expression in kwargs.items():
+            assignments.append(AssignmentToSingleColumn(Column(column_name), expression))
+        return ExtendQuery(self, *assignments)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -75,10 +77,14 @@ class Query:
 
 
 class ExtendQuery(Query):
-    extend_spec: Dict[Column, BaseExpression]
+    _assignments: Tuple[AssigmentBase, ...]
 
-    def __init__(self, head: 'Query', *args: AssigmentBase) -> None:
+    def __init__(self, head: 'Query', *assignments: AssigmentBase) -> None:
         super().__init__(head)
+        self._assignments = assignments
+
+    def _compile(self) -> KQL:
+        return KQL('extend {}'.format(', '.join(a.to_kql()) for a in self._assignments))
 
 
 class WhereQuery(Query):
@@ -88,8 +94,8 @@ class WhereQuery(Query):
         super(WhereQuery, self).__init__(head)
         self._predicate = predicate
 
-    def _compile(self):
-        return 'where {}'.format(self._predicate.kql)
+    def _compile(self) -> KQL:
+        return KQL('where {}'.format(self._predicate.kql))
 
 
 class TakeQuery(Query):
@@ -99,8 +105,8 @@ class TakeQuery(Query):
         super(TakeQuery, self).__init__(head)
         self._num_rows = num_rows
 
-    def _compile(self):
-        return 'take {}'.format(self._num_rows)
+    def _compile(self) -> KQL:
+        return KQL('take {}'.format(self._num_rows))
 
 
 class SortQuery(Query):
@@ -114,13 +120,13 @@ class SortQuery(Query):
         self._order = order
         self._nulls = nulls
 
-    def _compile(self):
+    def _compile(self) -> KQL:
         result = 'sort by {}'.format(self._col.kql, self._order.value)
         if self._order is not None:
             result += " " + str(self._order.value)
         if self._nulls is not None:
             result += " nulls " + str(self._nulls.value)
-        return result
+        return KQL(result)
 
 
 class JoinQuery(Query):

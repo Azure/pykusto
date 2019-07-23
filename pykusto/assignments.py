@@ -13,7 +13,7 @@ class AssigmentBase:
         self._lvalue = lvalue
         self._rvalue = rvalue.as_subexpression()
 
-    def _compile(self) -> KQL:
+    def to_kql(self) -> KQL:
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
 

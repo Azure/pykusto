@@ -19,11 +19,20 @@ class MockKustoClient(KustoClient):
 
 
 class TestTable(TestBase):
-    def test_execute(self):
+    def test_single_table(self):
         mock_kusto_client = MockKustoClient()
         table = Table(mock_kusto_client, 'test_db', 'test_table')
         table.execute(Query().take(5))
         self.assertEqual(
             mock_kusto_client.executions,
             [('test_db', 'test_table | take 5', None)]
+        )
+
+    def test_union_table(self):
+        mock_kusto_client = MockKustoClient()
+        table = Table(mock_kusto_client, 'test_db', ('test_table1', 'test_table2'))
+        table.execute(Query().take(5))
+        self.assertEqual(
+            mock_kusto_client.executions,
+            [('test_db', 'union test_table1, test_table2 | take 5', None)]
         )

@@ -13,7 +13,7 @@ class Table:
     database: str
     table: str
 
-    def __init__(self, client: KustoClient, database: str, tables: Union[str, List[str], Tuple[str]]) -> None:
+    def __init__(self, client: KustoClient, database: str, tables: Union[str, List[str], Tuple[str, ...]]) -> None:
         self.client = client
         self.database = database
         if isinstance(tables, (List, Tuple)):

@@ -16,7 +16,7 @@ class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpress
         return self.kql
 
     def __len__(self) -> NumberExpression:
-        raise NotImplementedError("Column type unknown")
+        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
 
 
 class ColumnGenerator:

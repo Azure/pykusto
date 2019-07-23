@@ -33,10 +33,10 @@ class JoinKind(Enum):
 
 
 class Query:
-    head: 'Query'
+    _head: 'Query'
 
     def __init__(self, head: 'Query' = None) -> None:
-        self.head = head
+        self._head = head
 
     def where(self, predicate: BooleanType) -> 'Query':
         return WhereQuery(self, predicate)
@@ -58,10 +58,10 @@ class Query:
         pass
 
     def _compile_all(self) -> KQL:
-        if self.head is None:
+        if self._head is None:
             return KQL("")
         else:
-            return KQL("{} | {}".format(self.head._compile_all(), self._compile()))
+            return KQL("{} | {}".format(self._head._compile_all(), self._compile()))
 
     def render(self) -> KQL:
         result = self._compile_all()
@@ -70,61 +70,61 @@ class Query:
 
 
 class WhereQuery(Query):
-    predicate: BooleanType
+    _predicate: BooleanType
 
     def __init__(self, head: Query, predicate: BooleanType):
         super(WhereQuery, self).__init__(head)
-        self.predicate = predicate
+        self._predicate = predicate
 
     def _compile(self):
-        return 'where {}'.format(self.predicate.kql)
+        return 'where {}'.format(self._predicate.kql)
 
 
 class TakeQuery(Query):
-    num_rows: int
+    _num_rows: int
 
     def __init__(self, head: Query, num_rows: int):
         super(TakeQuery, self).__init__(head)
-        self.num_rows = num_rows
+        self._num_rows = num_rows
 
     def _compile(self):
-        return 'take {}'.format(self.num_rows)
+        return 'take {}'.format(self._num_rows)
 
 
 class SortQuery(Query):
-    col: Column
-    order: Order
-    nulls: Nulls
+    _col: Column
+    _order: Order
+    _nulls: Nulls
 
     def __init__(self, head: Query, col: Column, order: Order, nulls: Nulls):
         super(SortQuery, self).__init__(head)
-        self.col = col
-        self.order = order
-        self.nulls = nulls
+        self._col = col
+        self._order = order
+        self._nulls = nulls
 
     def _compile(self):
-        result = 'sort by {}'.format(self.col.kql, self.order.value)
-        if self.order is not None:
-            result += " " + str(self.order.value)
-        if self.nulls is not None:
-            result += " nulls " + str(self.nulls.value)
+        result = 'sort by {}'.format(self._col.kql, self._order.value)
+        if self._order is not None:
+            result += " " + str(self._order.value)
+        if self._nulls is not None:
+            result += " nulls " + str(self._nulls.value)
         return result
 
 
 class JoinQuery(Query):
-    query: Query
-    kind: JoinKind
-    on_attributes: Tuple[Tuple[Column, ...], ...]
+    _query: Query
+    _kind: JoinKind
+    _on_attributes: Tuple[Tuple[Column, ...], ...]
 
     def __init__(self, head: Query, query: Query, kind: JoinKind,
                  on_attributes: Tuple[Tuple[Column, ...], ...] = tuple()):
         super(JoinQuery, self).__init__(head)
-        self.query = query
-        self.kind = kind
-        self.on_attributes = on_attributes
+        self._query = query
+        self._kind = kind
+        self._on_attributes = on_attributes
 
     def on(self, col1: Column, col2: Column = None) -> 'JoinQuery':
-        self.on_attributes = self.on_attributes + (((col1,),) if col2 is None else ((col1, col2),))
+        self._on_attributes = self._on_attributes + (((col1,),) if col2 is None else ((col1, col2),))
         return self
 
     @staticmethod
@@ -136,8 +136,8 @@ class JoinQuery(Query):
             return "$left.{}==$right.{}".format(attribute[0].kql, attribute[1].kql)
 
     def _compile(self) -> KQL:
-        assert self.on_attributes, "A call to join() must be followed by a call to on()"
+        assert self._on_attributes, "A call to join() must be followed by a call to on()"
         return KQL("join {} ({}) on {}".format(
-            "" if self.kind is None else "kind={}".format(self.kind.value),
-            self.query.render(),
-            ", ".join([self._compile_on_attribute(attr) for attr in self.on_attributes])))
+            "" if self._kind is None else "kind={}".format(self._kind.value),
+            self._query.render(),
+            ", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])))

@@ -67,3 +67,9 @@ class TestQuery(TestBase):
             Query().extend(AssigmentBase.assign(col.v1 + col.v2, col.sum), foo=col.bar * 4).take(5).render(),
             " | extend sum = (v1 + v2), foo = (bar * 4) | take 5",
         )
+
+    def test_summarize(self):
+        self.assertEqual(
+            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
+            " | summarize count(foo), my_count = (count(bar))",
+        )

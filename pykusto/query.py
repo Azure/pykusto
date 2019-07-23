@@ -5,9 +5,9 @@ from typing import Tuple, List, Union, Optional
 
 from azure.kusto.data.helpers import dataframe_from_result_table
 
-from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn
+from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn
 from pykusto.column import Column
-from pykusto.expressions import BooleanType, ExpressionType
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression
 from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
@@ -82,6 +82,21 @@ class Query:
         for column_name, expression in kwargs.items():
             assignments.append(AssignmentToSingleColumn(Column(column_name), expression))
         return ExtendQuery(self, *assignments)
+
+    def summarize(self, *args: Union[AggregationExpression, AssignmentFromAggregationToColumn],
+                  **kwargs: AggregationExpression) -> 'SummarizeQuery':
+        aggs: List[AggregationExpression] = []
+        assignments: List[AssignmentFromAggregationToColumn] = []
+        for arg in args:
+            if isinstance(arg, AggregationExpression):
+                aggs.append(arg)
+            elif isinstance(arg, AssignmentFromAggregationToColumn):
+                assignments.append(arg)
+            else:
+                raise ValueError("Invalid assignment: " + arg.to_kql())
+        for column_name, agg in kwargs.items():
+            assignments.append(AssignmentFromAggregationToColumn(Column(column_name), agg))
+        return SummarizeQuery(self, aggs, assignments)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -200,14 +215,14 @@ class JoinException(Exception):
 
 
 class JoinQuery(Query):
-    _query: Query
+    _joined_query: Query
     _kind: JoinKind
     _on_attributes: Tuple[Tuple[Column, ...], ...]
 
-    def __init__(self, head: Query, query: Query, kind: JoinKind,
+    def __init__(self, head: Query, joined_query: Query, kind: JoinKind,
                  on_attributes: Tuple[Tuple[Column, ...], ...] = tuple()):
         super(JoinQuery, self).__init__(head)
-        self._query = query
+        self._joined_query = joined_query
         self._kind = kind
         self._on_attributes = on_attributes
 
@@ -226,10 +241,27 @@ class JoinQuery(Query):
     def _compile(self) -> KQL:
         if len(self._on_attributes) == 0:
             raise JoinException("A call to join() must be followed by a call to on()")
-        if self._query.get_table() is None:
+        if self._joined_query.get_table() is None:
             raise JoinException("The joined query must have a table")
 
         return KQL("join {} ({}) on {}".format(
             "" if self._kind is None else "kind={}".format(self._kind.value),
-            self._query.render(),
+            self._joined_query.render(),
             ", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])))
+
+
+class SummarizeQuery(Query):
+    _aggs: List[AggregationExpression] = []
+    _assignments: List[AssignmentFromAggregationToColumn] = []
+
+    def __init__(self, head: Query, aggs: List[AggregationExpression],
+                 assignments: List[AssignmentFromAggregationToColumn]):
+        super(SummarizeQuery, self).__init__(head)
+        self._aggs = aggs
+        self._assignments = assignments
+
+    def _compile(self) -> KQL:
+        return KQL('summarize {}'.format(', '.join(chain(
+            (c.kql for c in self._aggs),
+            (a.to_kql() for a in self._assignments)
+        ))))

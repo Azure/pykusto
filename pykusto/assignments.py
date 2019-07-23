@@ -1,7 +1,7 @@
 from typing import Union, List, Tuple
 
 from pykusto.column import Column
-from pykusto.expressions import ArrayType, ExpressionType
+from pykusto.expressions import ArrayType, ExpressionType, AggregationType
 from pykusto.utils import KQL
 
 
@@ -33,3 +33,8 @@ class AssignmentToSingleColumn(AssigmentBase):
 class AssignmentToMultipleColumns(AssigmentBase):
     def __init__(self, columns: Union[List[Column], Tuple[Column]], expression: ArrayType) -> None:
         super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
+
+
+class AssignmentFromAggregationToColumn(AssigmentBase):
+    def __init__(self, column: Column, aggregation: AggregationType) -> None:
+        super().__init__(column.kql, aggregation)

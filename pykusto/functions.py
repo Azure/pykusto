@@ -1,3 +1,4 @@
+from pykusto.column import Column
 from pykusto.expressions import *
 from pykusto.utils import KQL
 
@@ -346,6 +347,7 @@ def now(offset: TimespanType = 0) -> StringExpression:
 
 def parse_json(expr: ExpressionType): return  # TODO
 
+
 # def parse_path(self): return
 #
 #
@@ -650,8 +652,9 @@ def avgif(self):  # TODO
 #     return
 
 
-def count(self):  # TODO
-    return
+def count(col: Column = None):
+    res = "count()" if col is None else "count({})".format(col.kql)
+    return AggregationExpression(KQL(res))
 
 
 def countif(self):  # TODO
@@ -670,7 +673,7 @@ def hll(self):  # TODO
     return
 
 
-def hll_merge(self):  #TODO
+def hll_merge(self):  # TODO
     return
 
 

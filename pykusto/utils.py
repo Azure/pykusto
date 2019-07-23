@@ -1,6 +1,9 @@
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Union, Sequence, Mapping, NewType, Type, Dict, Callable, Any
+
+logger = logging.getLogger("pykusto")
 
 KustoTypes = Union[str, int, bool, datetime, Mapping, Sequence, float, timedelta]
 # TODO: Unhandled date types: guid, decimal
@@ -32,12 +35,17 @@ def bool_to_kql(b: bool) -> KQL:
     return KQL('true') if b else KQL('false')
 
 
+def str_to_kql(s: str) -> KQL:
+    return KQL('"{}"'.format(s))
+
+
 KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[[Any], KQL]] = {
     datetime: datetime_to_kql,
     timedelta: timedelta_to_kql,
     Mapping: dynamic_to_kql,
     Sequence: dynamic_to_kql,
     bool: bool_to_kql,
+    str: str_to_kql,
 }
 
 
@@ -45,3 +53,4 @@ def to_kql(obj: KustoTypes) -> KQL:
     for kusto_type, converter in KQL_CONVERTER_BY_TYPE.items():
         if isinstance(obj, kusto_type):
             return converter(obj)
+    return obj

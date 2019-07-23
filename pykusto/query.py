@@ -1,9 +1,9 @@
 from abc import abstractmethod
 from enum import Enum
 
-from column import Column
-from expressions import BooleanTypes
-from utils import KQL
+from pykusto.column import Column
+from pykusto.expressions import BooleanType
+from pykusto.utils import KQL, logger
 
 
 class Order(Enum):
@@ -22,7 +22,7 @@ class Query:
     def __init__(self, head: 'Query' = None) -> None:
         self.head = head
 
-    def where(self, predicate: BooleanTypes) -> 'Query':
+    def where(self, predicate: BooleanType) -> 'Query':
         return WhereQuery(self, predicate)
 
     def take(self, num_rows: int):
@@ -35,24 +35,29 @@ class Query:
         pass
 
     @abstractmethod
-    def compile(self) -> KQL:
+    def _compile(self) -> KQL:
         pass
 
-    def compile_all(self) -> KQL:
+    def _compile_all(self) -> KQL:
         if self.head is None:
             return KQL("")
         else:
-            return KQL("{} | {}".format(self.head.compile_all(), self.compile()))
+            return KQL("{} | {}".format(self.head._compile_all(), self._compile()))
+
+    def render(self) -> KQL:
+        result = self._compile_all()
+        logger.debug("Complied query: " + result)
+        return result
 
 
 class WhereQuery(Query):
-    predicate: BooleanTypes
+    predicate: BooleanType
 
-    def __init__(self, head: Query, predicate: BooleanTypes):
+    def __init__(self, head: Query, predicate: BooleanType):
         super(WhereQuery, self).__init__(head)
         self.predicate = predicate
 
-    def compile(self):
+    def _compile(self):
         return 'where {}'.format(self.predicate.kql)
 
 
@@ -63,7 +68,7 @@ class TakeQuery(Query):
         super(TakeQuery, self).__init__(head)
         self.num_rows = num_rows
 
-    def compile(self):
+    def _compile(self):
         return 'take {}'.format(self.num_rows)
 
 
@@ -78,8 +83,8 @@ class SortQuery(Query):
         self.order = order
         self.nulls = nulls
 
-    def compile(self):
-        result = 'sort by {}'.format(self.col.kql_name, self.order.value)
+    def _compile(self):
+        result = 'sort by {}'.format(self.col.kql, self.order.value)
         if self.order is not None:
             result += " " + str(self.order.value)
         if self.nulls is not None:

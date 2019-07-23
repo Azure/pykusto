@@ -1,5 +1,6 @@
-from expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, ArrayExpression
-from utils import KQL
+from pykusto.expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, \
+    ArrayExpression
+from pykusto.utils import KQL
 
 
 class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpression, MappingExpression):
@@ -14,6 +15,9 @@ class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpress
 
     def as_subexpression(self) -> KQL:
         return self.kql
+
+    def __len__(self) -> NumberExpression:
+        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
 
 
 class ColumnGenerator:

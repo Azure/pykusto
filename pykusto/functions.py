@@ -694,15 +694,15 @@ def dcount(expr: ExpressionType, accuracy: NumberType = 1) -> NumberExpression:
     return NumberExpression(KQL('dcount({}, {})'.format(expr, accuracy)))
 
 
-def dcountif(expr: NumberType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberExpression:
+def dcountif(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberExpression:
     return NumberExpression(KQL('dcountif({}, {}, {})'.format(expr, predicate, accuracy)))
 
 
-def hll(expr: NumberType, accuracy: NumberType = 1) -> NumberExpression:
+def hll(expr: ExpressionType, accuracy: NumberType = 1) -> BaseExpression:
     return NumberExpression(KQL('hll({}, {})'.format(expr, accuracy)))
 
 
-def hll_merge(expr: NumberType) -> NumberExpression:
+def hll_merge(expr: ExpressionType) -> BaseExpression:
     return NumberExpression(KQL('hll_megre({})'.format(expr)))
 
 
@@ -740,7 +740,7 @@ def stdev(expr: ExpressionType) -> BaseExpression:
     return BaseExpression(KQL('stdev({})'.format(expr)))
 
 
-def stdevif(expr: ExpressionType, predicate: BooleanType) -> NumberExpression:
+def stdevif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
     return NumberExpression(KQL('stdevif({}, {})'.format(expr, predicate)))
 
 
@@ -748,12 +748,12 @@ def stdevp(expr: ExpressionType) -> BaseExpression:
     return BaseExpression(KQL('stdevp({})'.format(expr)))
 
 
-def sum(self):  # TODO
-    return
+def sum(expr: ExpressionType) -> BaseExpression:
+    return BaseExpression(KQL('sum({})'.format(expr)))
 
 
-def sumif(self):  # TODO
-    return
+def sumif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
+    return NumberExpression(KQL('sumif({}, {})'.format(expr, predicate)))
 
 
 # def tdigest(self):
@@ -764,31 +764,13 @@ def sumif(self):  # TODO
 #     return
 
 
-def variance(self):  # TODO
-    return
+def variance(expr: ExpressionType) -> BaseExpression:
+    return BaseExpression(KQL('variance({})'.format(expr)))
 
 
-def varianceif(self):  # TODO
-    return
+def varianceif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
+    return NumberExpression(KQL('varianceif({}, {})'.format(expr, predicate)))
 
 
-def variancep(self):  # TODO
-    return
-
-
-# Join functions
-def left(self):  # TODO
-    return
-
-
-def right(self):  # TODO
-    return
-
-
-# More functions
-def disticnt(self):  # TODO
-    return
-
-
-def col(self):  # TODO
-    return
+def variancep(expr: ExpressionType) -> BaseExpression:
+    return BaseExpression(KQL('variancep({})'.format(expr)))

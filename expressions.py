@@ -23,7 +23,7 @@ class BaseExpression:
     def __init__(self, kql: KQL) -> None:
         self.kql = kql
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return self.kql
 
     def as_subexpression(self) -> KQL:
@@ -63,10 +63,10 @@ class BaseExpression:
         """
         raise NotImplementedError("Instead use 'is_in' or 'contains'")
 
-    def to_bool(self) -> 'BooleanExpression':
+    def __bool__(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
 
-    def to_string(self) -> 'StringExpression':
+    def __str__(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
 
@@ -137,6 +137,9 @@ class StringExpression(BaseExpression):
     def is_empty(self) -> BooleanExpression:
         return BooleanExpression(KQL('isempty({})'.format(self.kql)))
 
+    def __add__(self, other: StringType) -> 'StringExpression':
+        return StringExpression(BaseExpression.binary_op(self, ' + ', other))
+
     @staticmethod
     def concat(*args: StringType) -> 'StringExpression':
         return StringExpression(KQL('strcat({})'.format(', '.join('{}'.format(
@@ -169,7 +172,7 @@ class StringExpression(BaseExpression):
     def to_int(self) -> NumberExpression:
         return NumberExpression(KQL('toint({})'.format(self.kql)))
 
-    def to_long(self) -> NumberExpression:
+    def __int__(self) -> NumberExpression:
         return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def lower(self) -> 'StringExpression':

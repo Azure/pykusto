@@ -36,3 +36,12 @@ class TestTable(TestBase):
             mock_kusto_client.executions,
             [('test_db', 'union test_table1, test_table2 | take 5', None)]
         )
+
+    def test_union_table_with_wildcard(self):
+        mock_kusto_client = MockKustoClient()
+        table = Table(mock_kusto_client, 'test_db', 'test_table_*')
+        table.execute(Query().take(5))
+        self.assertEqual(
+            mock_kusto_client.executions,
+            [('test_db', 'union test_table_* | take 5', None)]
+        )

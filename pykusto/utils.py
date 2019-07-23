@@ -1,6 +1,9 @@
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Union, Sequence, Mapping, NewType, Type, Dict, Callable, Any
+
+logger = logging.getLogger("pykusto")
 
 KustoTypes = Union[str, int, bool, datetime, Mapping, Sequence, float, timedelta]
 # TODO: Unhandled date types: guid, decimal

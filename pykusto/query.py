@@ -3,7 +3,7 @@ from enum import Enum
 
 from pykusto.column import Column
 from pykusto.expressions import BooleanType
-from pykusto.utils import KQL
+from pykusto.utils import KQL, logger
 
 
 class Order(Enum):
@@ -35,14 +35,19 @@ class Query:
         pass
 
     @abstractmethod
-    def compile(self) -> KQL:
+    def _compile(self) -> KQL:
         pass
 
-    def compile_all(self) -> KQL:
+    def _compile_all(self) -> KQL:
         if self.head is None:
             return KQL("")
         else:
-            return KQL("{} | {}".format(self.head.compile_all(), self.compile()))
+            return KQL("{} | {}".format(self.head._compile_all(), self._compile()))
+
+    def render(self) -> KQL:
+        result = self._compile_all()
+        logger.debug("Complied query: " + result)
+        return result
 
 
 class WhereQuery(Query):
@@ -52,7 +57,7 @@ class WhereQuery(Query):
         super(WhereQuery, self).__init__(head)
         self.predicate = predicate
 
-    def compile(self):
+    def _compile(self):
         return 'where {}'.format(self.predicate.kql)
 
 
@@ -63,7 +68,7 @@ class TakeQuery(Query):
         super(TakeQuery, self).__init__(head)
         self.num_rows = num_rows
 
-    def compile(self):
+    def _compile(self):
         return 'take {}'.format(self.num_rows)
 
 
@@ -78,7 +83,7 @@ class SortQuery(Query):
         self.order = order
         self.nulls = nulls
 
-    def compile(self):
+    def _compile(self):
         result = 'sort by {}'.format(self.col.kql, self.order.value)
         if self.order is not None:
             result += " " + str(self.order.value)

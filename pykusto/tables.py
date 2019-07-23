@@ -5,6 +5,7 @@ from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient
 
 from pykusto.query import Query
+from pykusto.utils import logger
 
 
 class Table:
@@ -23,4 +24,6 @@ class Table:
             self.table = 'union ' + self.table
 
     def execute(self, query: Query) -> KustoResponseDataSet:
-        return self.client.execute(self.database, self.table + query.compile_all())
+        query = self.table + query.render()
+        logger.debug("Running query: " + query)
+        return self.client.execute(self.database, query)

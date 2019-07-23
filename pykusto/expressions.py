@@ -63,7 +63,7 @@ class BaseExpression:
         """
         raise NotImplementedError("Instead use 'is_in' or 'contains'")
 
-    def __bool__(self) -> 'BooleanExpression':
+    def to_bool(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
 
     def to_string(self) -> 'StringExpression':
@@ -172,7 +172,7 @@ class StringExpression(BaseExpression):
     def to_int(self) -> NumberExpression:
         return NumberExpression(KQL('toint({})'.format(self.kql)))
 
-    def __int__(self) -> NumberExpression:
+    def to_long(self) -> NumberExpression:
         return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def lower(self) -> 'StringExpression':

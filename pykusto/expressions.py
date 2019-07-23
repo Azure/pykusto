@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 from typing import Any, Sequence
 from typing import Union
 
-from utils import KQL
-from utils import KustoTypes, to_kql
+from pykusto.utils import KQL
+from pykusto.utils import KustoTypes, to_kql
 
 ExpressionType = Union[KustoTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']

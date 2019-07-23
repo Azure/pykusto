@@ -4,7 +4,7 @@ from typing import Sequence, Union
 from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient
 
-from query import Query
+from pykusto.query import Query
 
 
 class Table:

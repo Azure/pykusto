@@ -1,5 +1,6 @@
-from expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, ArrayExpression
-from utils import KQL
+from pykusto.expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, \
+    ArrayExpression
+from pykusto.utils import KQL
 
 
 class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpression, MappingExpression):

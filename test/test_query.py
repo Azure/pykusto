@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from column import columnGenerator as Col
-from query import Query, Order, Nulls
+from pykusto.column import columnGenerator as Col
+from pykusto.query import Query, Order, Nulls
 
 
 class TestQuery(TestCase):

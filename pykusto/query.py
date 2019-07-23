@@ -1,9 +1,9 @@
 from abc import abstractmethod
 from enum import Enum
 
-from column import Column
-from expressions import BooleanType
-from utils import KQL
+from pykusto.column import Column
+from pykusto.expressions import BooleanType
+from pykusto.utils import KQL
 
 
 class Order(Enum):

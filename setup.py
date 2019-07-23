@@ -1,9 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='pykusto',
     version='0.0.1',
-    packages=[],
+    packages=find_packages(exclude=['test']),
     url='https://dev.azure.com/yomost/_git/pykusto',
     license='MIT License',
     author='yomost',

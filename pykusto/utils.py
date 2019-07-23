@@ -1,11 +1,11 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Union, Sequence, Mapping, NewType, Type, Dict, Callable, Any
+from typing import Union, Mapping, NewType, Type, Dict, Callable, Any, Tuple, List
 
 logger = logging.getLogger("pykusto")
 
-KustoTypes = Union[str, int, bool, datetime, Mapping, Sequence, float, timedelta]
+KustoTypes = Union[str, int, bool, datetime, Mapping, List, Tuple, float, timedelta]
 # TODO: Unhandled date types: guid, decimal
 
 KQL = NewType('KQL', str)
@@ -27,7 +27,7 @@ def timedelta_to_kql(td: timedelta) -> KQL:
     ))
 
 
-def dynamic_to_kql(d: Union[Mapping, Sequence]) -> KQL:
+def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     return KQL(json.dumps(d))
 
 
@@ -43,7 +43,8 @@ KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[[Any], KQL]] = {
     datetime: datetime_to_kql,
     timedelta: timedelta_to_kql,
     Mapping: dynamic_to_kql,
-    Sequence: dynamic_to_kql,
+    List: dynamic_to_kql,
+    Tuple: dynamic_to_kql,
     bool: bool_to_kql,
     str: str_to_kql,
     int: KQL,

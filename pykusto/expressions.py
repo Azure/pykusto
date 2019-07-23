@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, Sequence
+from typing import Any, List, Tuple
 from typing import Union
 
 from pykusto.utils import KQL
@@ -9,7 +9,7 @@ ExpressionType = Union[KustoTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
 BooleanType = Union[bool, 'BooleanExpression']
 NumberType = Union[int, float, 'NumberExpression']
-ArrayType = Union[Sequence, 'ArrayExpression']
+ArrayType = Union[List, Tuple, 'ArrayExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
 

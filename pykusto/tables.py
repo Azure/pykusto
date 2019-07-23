@@ -1,4 +1,4 @@
-from typing import Sequence, Union
+from typing import Union, List, Tuple
 
 # noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
@@ -13,10 +13,10 @@ class Table:
     database: str
     table: str
 
-    def __init__(self, client: KustoClient, database: str, tables: Union[str, Sequence[str]]) -> None:
+    def __init__(self, client: KustoClient, database: str, tables: Union[str, List[str], Tuple[str]]) -> None:
         self.client = client
         self.database = database
-        if isinstance(tables, Sequence):
+        if isinstance(tables, (List, Tuple)):
             self.table = ', '.join(tables)
         else:
             self.table = tables
@@ -24,6 +24,6 @@ class Table:
             self.table = 'union ' + self.table
 
     def execute(self, query: Query) -> KustoResponseDataSet:
-        query = self.table + query.render()
-        logger.debug("Running query: " + query)
-        return self.client.execute(self.database, query)
+        rendered_query = self.table + query.render()
+        logger.debug("Running query: " + rendered_query)
+        return self.client.execute(self.database, rendered_query)

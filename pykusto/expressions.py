@@ -66,7 +66,7 @@ class BaseExpression:
     def __bool__(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
 
-    def __str__(self) -> 'StringExpression':
+    def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
 

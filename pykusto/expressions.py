@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Mapping
 from typing import Union
 
 from pykusto.utils import KQL
@@ -10,8 +10,10 @@ StringType = Union[str, 'StringExpression']
 BooleanType = Union[bool, 'BooleanExpression']
 NumberType = Union[int, float, 'NumberExpression']
 ArrayType = Union[List, Tuple, 'ArrayExpression']
+MappingType = Union[Mapping, 'MappingExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
+DynamicType = Union[ArrayType, MappingType]
 
 
 # All classes in the same file to prevent circular dependencies

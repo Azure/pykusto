@@ -1,9 +1,11 @@
 from abc import abstractmethod
 from enum import Enum
+from typing import Dict
 from typing import Tuple
 
+from pykusto.assignments import AssigmentBase
 from pykusto.column import Column
-from pykusto.expressions import BooleanType
+from pykusto.expressions import BooleanType, BaseExpression
 from pykusto.utils import KQL, logger
 
 
@@ -38,19 +40,22 @@ class Query:
     def __init__(self, head: 'Query' = None) -> None:
         self._head = head
 
-    def where(self, predicate: BooleanType) -> 'Query':
+    def where(self, predicate: BooleanType) -> 'WhereQuery':
         return WhereQuery(self, predicate)
 
-    def take(self, num_rows: int):
+    def take(self, num_rows: int) -> 'TakeQuery':
         return TakeQuery(self, num_rows)
 
-    def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None):
+    def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
         return SortQuery(self, col, order, nulls)
 
     def join(self, query: 'Query', kind: JoinKind = None):
         return JoinQuery(self, query, kind)
 
     def project(self) -> 'Query':
+        pass
+
+    def extend(self, *args: BaseExpression, **kwargs: BaseExpression) -> 'Query':
         pass
 
     @abstractmethod
@@ -67,6 +72,13 @@ class Query:
         result = self._compile_all()
         logger.debug("Complied query: " + result)
         return result
+
+
+class ExtendQuery(Query):
+    extend_spec: Dict[Column, BaseExpression]
+
+    def __init__(self, head: 'Query', *args: AssigmentBase) -> None:
+        super().__init__(head)
 
 
 class WhereQuery(Query):

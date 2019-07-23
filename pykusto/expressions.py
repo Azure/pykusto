@@ -14,6 +14,7 @@ MappingType = Union[Mapping, 'MappingExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
 AggregationType = Union['AggregationExpression']
+GroupExpressionType = Union['GroupExpression']
 DynamicType = Union[ArrayType, MappingType]
 
 
@@ -260,4 +261,8 @@ class MappingExpression(BaseExpression):
 
 
 class AggregationExpression(BaseExpression):
+    pass
+
+
+class GroupExpression(BaseExpression):
     pass

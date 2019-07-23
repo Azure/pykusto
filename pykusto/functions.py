@@ -58,8 +58,8 @@ def array_length(expr: ArrayType) -> ArrayExpression:
 # def beta_pdf(self): return
 
 
-def bin(expr: ExpressionType, round_to: NumberType) -> BaseExpression:
-    return BaseExpression(KQL('bin({}, {})'.format(expr, round_to)))
+def bin(expr: ExpressionType, round_to: NumberType) -> GroupExpression:
+    return GroupExpression(KQL('bin({}, {})'.format(expr, round_to)))
 
 
 def bin_at(expr: ExpressionType, bin_size: NumberType, fixed_point: NumberType) -> BaseExpression:

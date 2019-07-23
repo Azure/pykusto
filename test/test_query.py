@@ -50,7 +50,6 @@ class TestQuery(TestBase):
                 Query().take(2), kind=JoinKind.INNER).render
         )
 
-
     def test_extend(self):
         self.assertEqual(
             Query().extend(AssigmentBase.assign(col.v1 + col.v2, col.sum), foo=col.bar * 4).take(5).render(),
@@ -61,4 +60,11 @@ class TestQuery(TestBase):
         self.assertEqual(
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
             " | summarize count(foo), my_count = (count(bar))",
+        )
+
+    def test_summarize_by(self):
+        self.assertEqual(
+            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
+                                                                              time_range=f.bin(col.time, 10)).render(),
+            " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
         )

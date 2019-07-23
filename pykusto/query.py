@@ -5,9 +5,10 @@ from typing import Tuple, List, Union, Optional
 
 from azure.kusto.data.helpers import dataframe_from_result_table
 
-from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn
+from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn, \
+    AssignmentFromGroupExpressionToColumn
 from pykusto.column import Column
-from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression
 from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
@@ -253,6 +254,8 @@ class JoinQuery(Query):
 class SummarizeQuery(Query):
     _aggs: List[AggregationExpression] = []
     _assignments: List[AssignmentFromAggregationToColumn] = []
+    _by_columns: List[Union[Column, GroupExpression]] = []
+    _by_assignments: List[AssignmentFromGroupExpressionToColumn] = []
 
     def __init__(self, head: Query, aggs: List[AggregationExpression],
                  assignments: List[AssignmentFromAggregationToColumn]):
@@ -260,8 +263,27 @@ class SummarizeQuery(Query):
         self._aggs = aggs
         self._assignments = assignments
 
+    def by(self, *args: Union[AssignmentFromGroupExpressionToColumn, Column, GroupExpression],
+           **kwargs: GroupExpression):
+        for arg in args:
+            if isinstance(arg, Column) or isinstance(arg, GroupExpression):
+                self._by_columns.append(arg)
+            elif isinstance(arg, AssignmentFromGroupExpressionToColumn):
+                self._by_assignments.append(arg)
+            else:
+                raise ValueError("Invalid assignment: " + arg.to_kql())
+        for column_name, group_exp in kwargs.items():
+            self._by_assignments.append(AssignmentFromGroupExpressionToColumn(Column(column_name), group_exp))
+        return self
+
     def _compile(self) -> KQL:
-        return KQL('summarize {}'.format(', '.join(chain(
+        result = 'summarize {}'.format(', '.join(chain(
             (c.kql for c in self._aggs),
             (a.to_kql() for a in self._assignments)
-        ))))
+        )))
+        if len(self._by_assignments) != 0 or len(self._by_columns) != 0:
+            result += ' by {}'.format(', '.join(chain(
+                (c.kql for c in self._by_columns),
+                (a.to_kql() for a in self._by_assignments)
+            )))
+        return KQL(result)

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, Sequence
+from typing import Any, List, Tuple
 from typing import Union
 
 from pykusto.utils import KQL
@@ -9,7 +9,7 @@ ExpressionType = Union[KustoTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
 BooleanType = Union[bool, 'BooleanExpression']
 NumberType = Union[int, float, 'NumberExpression']
-ArrayType = Union[Sequence, 'ArrayExpression']
+ArrayType = Union[List, Tuple, 'ArrayExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
 
@@ -63,10 +63,10 @@ class BaseExpression:
         """
         raise NotImplementedError("Instead use 'is_in' or 'contains'")
 
-    def __bool__(self) -> 'BooleanExpression':
+    def to_bool(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
 
-    def __str__(self) -> 'StringExpression':
+    def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
 
@@ -172,7 +172,7 @@ class StringExpression(BaseExpression):
     def to_int(self) -> NumberExpression:
         return NumberExpression(KQL('toint({})'.format(self.kql)))
 
-    def __int__(self) -> NumberExpression:
+    def to_long(self) -> NumberExpression:
         return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def lower(self) -> 'StringExpression':

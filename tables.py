@@ -24,6 +24,8 @@ class SingleTable(BaseTable):
 
     def __init__(self, client: KustoClient, database: str, table: str) -> None:
         super().__init__(client, database)
+        if '*' in table:
+            raise ValueError("SingleTable does not support wildcards. Instead use UnionTable")
         self.table = table
 
     def execute(self, query: Query) -> KustoResponseDataSet:

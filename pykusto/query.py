@@ -118,7 +118,7 @@ class ExtendQuery(Query):
         self._assignments = assignments
 
     def _compile(self) -> KQL:
-        return KQL('extend {}'.format(', '.join(a.to_kql()) for a in self._assignments))
+        return KQL('extend {}'.format(', '.join(a.to_kql() for a in self._assignments)))
 
 
 class WhereQuery(Query):

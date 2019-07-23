@@ -28,6 +28,6 @@ class ColumnGenerator:
         return Column[name]
 
 
-# Recommended usage: from pykusto.column import columnGenerator as c
+# Recommended usage: from pykusto.column import column_generator as col
 # TODO: Is there a way to enforce this to be a singleton?
-columnGenerator = ColumnGenerator()
+column_generator = ColumnGenerator()

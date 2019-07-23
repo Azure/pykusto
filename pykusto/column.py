@@ -1,5 +1,6 @@
+from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn, AssignmentToMultipleColumns
 from pykusto.expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, \
-    ArrayExpression
+    ArrayExpression, BaseExpression
 from pykusto.utils import KQL
 
 
@@ -18,6 +19,14 @@ class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpress
 
     def __len__(self) -> NumberExpression:
         raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
+
+    @staticmethod
+    def assign(expression: BaseExpression, *columns: 'Column') -> AssigmentBase:
+        if len(columns) == 0:
+            raise ValueError("Provide at least one column")
+        if len(columns) == 1:
+            return AssignmentToSingleColumn(columns[0], expression)
+        return AssignmentToMultipleColumns(columns, expression)
 
 
 class ColumnGenerator:

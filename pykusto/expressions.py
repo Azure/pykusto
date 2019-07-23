@@ -143,10 +143,10 @@ class StringExpression(BaseExpression):
         return StringExpression(BaseExpression.binary_op(self, ' + ', other))
 
     @staticmethod
-    def concat(*args: StringType) -> 'StringExpression':
+    def concat(*strings: StringType) -> 'StringExpression':
         return StringExpression(KQL('strcat({})'.format(', '.join('{}'.format(
             BaseExpression._subexpression_to_kql(s)
-        ) for s in args))))
+        ) for s in strings))))
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
@@ -240,9 +240,9 @@ class ArrayExpression(BaseExpression):
         return BooleanExpression.binary_op(other, ' in ', self)
 
     @staticmethod
-    def pack_array(*args: ExpressionType) -> 'ArrayExpression':
+    def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
         return ArrayExpression(KQL('pack_array({})'.format(
-            ', '.join('{}'.format(BaseExpression._subexpression_to_kql(e) for e in args))
+            ', '.join('{}'.format(BaseExpression._subexpression_to_kql(e) for e in elements))
         )))
 
 

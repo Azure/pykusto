@@ -2,6 +2,7 @@ from pykusto.assignments import AssigmentBase
 from pykusto.column import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException
 from pykusto.tables import Table
+from pykusto import functions as f
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
 

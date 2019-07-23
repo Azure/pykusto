@@ -4,7 +4,7 @@ from typing import Tuple, List
 
 from pykusto.assignments import AssigmentBase, AssignmentToSingleColumn
 from pykusto.column import Column
-from pykusto.expressions import BooleanType, BaseExpression
+from pykusto.expressions import BooleanType, ExpressionType
 from pykusto.utils import KQL, logger
 
 
@@ -54,7 +54,7 @@ class Query:
     def project(self) -> 'Query':
         pass
 
-    def extend(self, *args: AssigmentBase, **kwargs: BaseExpression) -> 'ExtendQuery':
+    def extend(self, *args: AssigmentBase, **kwargs: ExpressionType) -> 'ExtendQuery':
         assignments: List[AssigmentBase] = list(args)
         for column_name, expression in kwargs.items():
             assignments.append(AssignmentToSingleColumn(Column(column_name), expression))

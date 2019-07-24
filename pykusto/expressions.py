@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Tuple, Mapping
+from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
 from pykusto.utils import KQL
@@ -83,9 +83,10 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentToSingleColumn':
+    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
         if len(columns) == 0:
-            raise ValueError("Provide at least one column")
+            # Unspecified column name
+            AssignmentBase(None, self)
         if len(columns) == 1:
             return AssignmentToSingleColumn(columns[0], self)
         raise ValueError("Only arrays can be assigned to multiple columns")
@@ -388,7 +389,17 @@ class MappingExpression(BaseExpression):
 
 
 class AggregationExpression(BaseExpression):
-    pass
+
+    def assign_to(self, *columns: 'Column') -> 'AssignmentFromAggregationToColumn':
+        if len(columns) == 0:
+            # Unspecified column name
+            return AssignmentFromAggregationToColumn(None, self)
+        if len(columns) == 1:
+            return AssignmentFromAggregationToColumn(columns[0], self)
+        raise ValueError("Aggregations cannot be assigned to multiple columns")
+
+    def as_subexpression(self) -> KQL:
+        return self.kql
 
 
 class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
@@ -424,14 +435,17 @@ class GroupExpression(BaseExpression):
 
 
 class AssignmentBase:
-    _lvalue: KQL
+    _lvalue: Optional[KQL]
     _rvalue: KQL
 
-    def __init__(self, lvalue: KQL, rvalue: ExpressionType) -> None:
+    def __init__(self, lvalue: Optional[KQL], rvalue: ExpressionType) -> None:
         self._lvalue = lvalue
         self._rvalue = rvalue.as_subexpression()
 
     def to_kql(self) -> KQL:
+        if self._lvalue is None:
+            # Unspecified column name
+            return self._rvalue
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
     @staticmethod
@@ -454,8 +468,8 @@ class AssignmentToMultipleColumns(AssignmentBase):
 
 
 class AssignmentFromAggregationToColumn(AssignmentBase):
-    def __init__(self, column: 'Column', aggregation: AggregationType) -> None:
-        super().__init__(column.kql, aggregation)
+    def __init__(self, column: Optional['Column'], aggregation: AggregationType) -> None:
+        super().__init__(None if column is None else column.kql, aggregation)
 
 
 class AssignmentFromGroupExpressionToColumn(AssignmentBase):

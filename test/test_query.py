@@ -120,13 +120,13 @@ class TestQuery(TestBase):
 
     def test_summarize(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = (count(bar))",
+            " | summarize count(foo), my_count = count(bar)",
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
         )
 
     def test_summarize_by(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
+            " | summarize count(foo), my_count = count(bar) by bla, bin(date, 1), time_range = (bin(time, 10))",
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
                                                                               time_range=f.bin(col.time, 10)).render(),
         )

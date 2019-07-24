@@ -1,11 +1,11 @@
 from typing import Union, List, Tuple
 
 from pykusto.column import Column
-from pykusto.expressions import ArrayType, ExpressionType
+from pykusto.expressions import ArrayType, ExpressionType, AggregationType, GroupExpressionType
 from pykusto.utils import KQL
 
 
-class AssigmentBase:
+class AssignmentBase:
     _lvalue: KQL
     _rvalue: KQL
 
@@ -17,7 +17,7 @@ class AssigmentBase:
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
     @staticmethod
-    def assign(expression: ExpressionType, *columns: 'Column') -> 'AssigmentBase':
+    def assign(expression: ExpressionType, *columns: 'Column') -> 'AssignmentBase':
         if len(columns) == 0:
             raise ValueError("Provide at least one column")
         if len(columns) == 1:
@@ -25,11 +25,21 @@ class AssigmentBase:
         return AssignmentToMultipleColumns(columns, expression)
 
 
-class AssignmentToSingleColumn(AssigmentBase):
+class AssignmentToSingleColumn(AssignmentBase):
     def __init__(self, column: Column, expression: ExpressionType) -> None:
         super().__init__(column.kql, expression)
 
 
-class AssignmentToMultipleColumns(AssigmentBase):
+class AssignmentToMultipleColumns(AssignmentBase):
     def __init__(self, columns: Union[List[Column], Tuple[Column]], expression: ArrayType) -> None:
         super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
+
+
+class AssignmentFromAggregationToColumn(AssignmentBase):
+    def __init__(self, column: Column, aggregation: AggregationType) -> None:
+        super().__init__(column.kql, aggregation)
+
+
+class AssignmentFromGroupExpressionToColumn(AssignmentBase):
+    def __init__(self, column: Column, group_expression: GroupExpressionType) -> None:
+        super().__init__(column.kql, group_expression)

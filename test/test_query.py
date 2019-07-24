@@ -1,10 +1,10 @@
-from inspect import getmembers, isfunction
-
 from pykusto import functions as f
-from pykusto.assignments import AssigmentBase
+from pykusto.assignments import AssignmentBase
 from pykusto.column import column_generator as col
-from pykusto.query import Query, Order, Nulls, JoinKind
+from pykusto.query import Query, Order, Nulls, JoinKind, JoinException
+from pykusto.tables import Table
 from test.test_base import TestBase
+from test.test_table import MockKustoClient
 
 
 class TestQuery(TestBase):
@@ -14,25 +14,75 @@ class TestQuery(TestBase):
             " | where foo > 4 | take 5 | sort by bar asc nulls last"
         )
 
-    def test_join(self):
+    def test_join_with_table(self):
+        mock_kusto_client = MockKustoClient()
+        table = Table(mock_kusto_client, 'test_db', 'test_table')
+
         self.assertEqual(
             Query().where(col.foo > 4).take(5).join(
-                Query().take(2), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render(),
-            " | where foo > 4 | take 5 | join kind=inner ( | take 2) on col0, $left.col1==$right.col2"
+                Query(table), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render(),
+            " | where foo > 4 | take 5 | join kind=inner (test_table) on col0, $left.col1==$right.col2"
         )
 
-    def test_function(self):
-        for o in getmembers(f, isfunction):
-            if isfunction(o[1]) and o[1].__module__ == f.__name__:
-                try:
-                    if " | where ({}(foo)) > 4 | take 5 | sort by bar asc nulls last".format(o[0]) != \
-                            Query().where(o[1](col.foo) > 4).take(5).sort_by(col.bar, Order.ASC, Nulls.LAST).render():
-                        print(o[1])
-                except TypeError:
-                    print(o[1])
+    def test_join_with_table_and_query(self):
+        mock_kusto_client = MockKustoClient()
+        table = Table(mock_kusto_client, 'test_db', 'test_table')
+
+        self.assertEqual(
+            Query().where(col.foo > 4).take(5).join(
+                Query(table).where(col.bla == 2).take(6), kind=JoinKind.INNER).on(col.col0).on(col.col1,
+                                                                                               col.col2).render(),
+            " | where foo > 4 | take 5 | join kind=inner (test_table | where bla == 2 | take 6) on col0, "
+            "$left.col1==$right.col2"
+        )
+
+    def test_join_no_joined_table(self):
+        self.assertRaises(
+            JoinException,
+            Query().where(col.foo > 4).take(5).join(
+                Query().take(2), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render
+        )
+
+    def test_join_no_on(self):
+        self.assertRaises(
+            JoinException,
+            Query().where(col.foo > 4).take(5).join(
+                Query().take(2), kind=JoinKind.INNER).render
+        )
 
     def test_extend(self):
         self.assertEqual(
-            Query().extend(AssigmentBase.assign(col.v1 + col.v2, col.sum), foo=col.bar * 4).take(5).render(),
+            Query().extend(AssignmentBase.assign(col.v1 + col.v2, col.sum), foo=col.bar * 4).take(5).render(),
             " | extend sum = (v1 + v2), foo = (bar * 4) | take 5",
+        )
+
+    def test_summarize(self):
+        self.assertEqual(
+            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
+            " | summarize count(foo), my_count = (count(bar))",
+        )
+
+    def test_summarize_by(self):
+        self.assertEqual(
+            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
+                                                                              time_range=f.bin(col.time, 10)).render(),
+            " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
+        )
+
+    def test_limit(self):
+        self.assertEqual(
+            Query().limit(3).render(),
+            " | limit 3"
+        )
+
+    def test_sample(self):
+        self.assertEqual(
+            Query().sample(3).render(),
+            " | sample 3"
+        )
+
+    def test_count(self):
+        self.assertEqual(
+            Query().count().render(),
+            " | count"
         )

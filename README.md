@@ -3,7 +3,9 @@ _pykusto_ is an advanced Python SDK for Azure Data Explorer (a.k.a. Kusto).
 
 # Getting Started
 ### Installation
+```bash
 pip install git+https://yomost@dev.azure.com/yomost/pykusto/_git/pykusto
+```
 
 ### Usage
 ```python

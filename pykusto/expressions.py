@@ -137,6 +137,9 @@ class NumberExpression(BaseExpression):
     def floor(self, round_to: NumberType) -> 'NumberExpression':
         return NumberExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
+    def bin(self, round_to: NumberType) -> 'NumberExpression':
+        return NumberExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+
 
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
@@ -228,6 +231,9 @@ class DatetimeExpression(BaseExpression):
     def floor(self, round_to: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
+    def bin(self, round_to: TimespanType) -> 'DatetimeExpression':
+        return DatetimeExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+
 
 class TimespanExpression(BaseExpression):
     @staticmethod
@@ -242,6 +248,9 @@ class TimespanExpression(BaseExpression):
 
     def ago(self) -> DatetimeExpression:
         return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(self))))
+
+    def bin(self, round_to: TimespanType) -> 'TimespanExpression':
+        return TimespanExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
 
 class ArrayExpression(BaseExpression):

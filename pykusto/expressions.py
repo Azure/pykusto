@@ -454,7 +454,11 @@ class AssignmentFromGroupExpressionToColumn(AssignmentBase):
         super().__init__(column.kql, group_expression)
 
 
-class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpression, MappingExpression):
+class Column(
+    NumberExpression, BooleanExpression, StringExpression,
+    ArrayExpression, MappingExpression, DatetimeExpression,
+    TimespanExpression
+):
     name: str
 
     def __init__(self, name: str) -> None:

@@ -2,7 +2,7 @@ import datetime
 
 from pykusto import functions as f
 from pykusto.column import column_generator as col
-from pykusto.query import Query
+from pykusto.queries import Query
 from test.test_base import TestBase
 
 

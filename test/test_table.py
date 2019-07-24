@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
 
-from pykusto.query import Query
+from pykusto.queries import Query
 from pykusto.tables import PyKustoClient
 from test.test_base import TestBase
 

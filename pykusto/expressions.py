@@ -402,6 +402,9 @@ class TimespanExpression(BaseExpression):
     def format_timespan(self, format_string: StringType) -> StringExpression:
         return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
 
+    def between(self, lower: TimespanType, upper: TimespanType) -> BooleanExpression:
+        return BooleanExpression(KQL('{} between ({} .. {})'.format(self.kql, lower, upper)))
+
 
 class ArrayExpression(BaseExpression):
     def __len__(self) -> NumberExpression:

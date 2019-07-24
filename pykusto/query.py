@@ -138,7 +138,7 @@ class Query:
         else:
             return KQL("{} | {}".format(self._head._compile_all(), self._compile()))
 
-    def get_table(self):
+    def get_table(self) -> Table:
         if self._head is None:
             return self._table
         else:

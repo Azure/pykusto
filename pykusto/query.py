@@ -146,7 +146,7 @@ class Query:
         logger.debug("Running query: " + rendered_query)
         return table.execute(rendered_query)
 
-    def execute_to_dataframe(self, table: Table = None):
+    def to_dataframe(self, table: Table = None):
         res = self.execute(table)
         return dataframe_from_result_table(res.primary_results[0])
 

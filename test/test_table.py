@@ -78,7 +78,7 @@ class TestTable(TestBase):
             table = PyKustoClient('https://kustolab.kusto.windows.net/')['test_db']['test_table']
             Query().take(5).execute(table)
         self.assertIs(
-            table.database.client,
+            table.database.client._client,
             mock_kusto_client
         )
         self.assertEqual(

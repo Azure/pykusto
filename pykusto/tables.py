@@ -11,7 +11,7 @@ class PyKustoClient:
     """
     Handle to a Kusto cluster
     """
-    client: KustoClient
+    _client: KustoClient
 
     def __init__(self, client_or_cluster: Union[str, KustoClient]) -> None:
         """
@@ -21,12 +21,12 @@ class PyKustoClient:
             a KustoClient is generated with AAD device authentication
         """
         if isinstance(client_or_cluster, KustoClient):
-            self.client = client_or_cluster
+            self._client = client_or_cluster
         else:
-            self.client = self._get_client_for_cluster(client_or_cluster)
+            self._client = self._get_client_for_cluster(client_or_cluster)
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
-        return self.client.execute(database, query, properties)
+        return self._client.execute(database, query, properties)
 
     def show_databases(self) -> Tuple[str, ...]:
         res: KustoResponseDataSet = self.execute('', KQL('.show databases'))

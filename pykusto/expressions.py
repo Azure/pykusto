@@ -198,19 +198,19 @@ class StringExpression(BaseExpression):
         return BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)
 
     def not_equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, ' !=' if case_sensitive else ' !~ ', other)
+        return BooleanExpression.binary_op(self, ' != ' if case_sensitive else ' !~ ', other)
 
     def matches(self, regex: StringType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
     def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, 'contains_cs' if case_sensitive else 'contains', other)
+        return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
 
     def startswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, 'startswith_cs' if case_sensitive else 'startswith', other)
+        return BooleanExpression.binary_op(self, ' startswith_cs ' if case_sensitive else ' startswith ', other)
 
     def endswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, 'endswith_cs' if case_sensitive else 'endswith', other)
+        return BooleanExpression.binary_op(self, ' endswith_cs ' if case_sensitive else ' endswith ', other)
 
     def to_int(self) -> NumberExpression:
         return NumberExpression(KQL('toint({})'.format(self.kql)))
@@ -357,6 +357,9 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
+    def __getitem__(self, index: NumberType) -> BaseExpression:
+        return BaseExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
 
 class MappingExpression(BaseExpression):
     def keys(self) -> ArrayExpression:
@@ -367,6 +370,9 @@ class MappingExpression(BaseExpression):
         return MappingExpression(KQL('pack({})'.format(
             ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
         )))
+
+    def __getitem__(self, index: StringType) -> BaseExpression:
+        return BaseExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
 
 
 class AggregationExpression(BaseExpression):

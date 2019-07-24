@@ -1,20 +1,42 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+_pykusto_ is an advanced Python SDK for Azure Data Explorer (a.k.a. Kusto).
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+### Installation
+```bash
+pip install git+https://yomost@dev.azure.com/yomost/pykusto/_git/pykusto
+```
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+### Usage
+```python
+from datetime import timedelta
+from pykusto.client import PyKustoClient
+from pykusto.query import Query
+from pykusto.column import column_generator as col
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+# Connect to cluster with AAD device authentication
+client = PyKustoClient('https://help.kusto.windows.net')
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+# Show databases
+print(client.show_databases())
+
+# Show tables in 'Samples' database
+print(client['Samples'].show_tables())
+
+# Connect to 'StormEvents' table
+table = client['Samples']['StormEvents']
+
+# Build query
+(
+    Query(table)        
+        # Access columns using 'col' global variable 
+        .project(col.StartTime, col.EndTime, col.EventType, col.Source)
+        # Determine new column name using Python keyword argument   
+        .extend(Duration=col.EndTime - col.StartTime)
+        # Python types are implicitly converted to Kusto types behind the scenes
+        .where(col.Duration > timedelta(hours=1))
+        .take(5)
+        # Output to pandas dataframe
+        .to_dataframe()
+) 
+```

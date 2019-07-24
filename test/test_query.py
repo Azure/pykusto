@@ -114,21 +114,27 @@ class TestQuery(TestBase):
 
     def test_extend_generate_column_name(self):
         self.assertEqual(
-            " | extend v1 + v2, foo = (bar * 4)",
+            " | extend (v1 + v2), foo = (bar * 4)",
             Query().extend(col.v1 + col.v2, foo=col.bar * 4).render(),
         )
 
     def test_summarize(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = (count(bar))",
+            " | summarize count(foo), my_count = count(bar)",
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
         )
 
     def test_summarize_by(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
+            " | summarize count(foo), my_count = count(bar) by bla, bin(date, 1), time_range = (bin(time, 10))",
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
                                                                               time_range=f.bin(col.time, 10)).render(),
+        )
+
+    def test_summarize_by_expression(self):
+        self.assertEqual(
+            " | summarize count(foo) by tostring(asd)",
+            Query().summarize(f.count(col.foo)).by(f.tostring(col.asd)).render(),
         )
 
     def test_mv_expand(self):
@@ -184,4 +190,10 @@ class TestQuery(TestBase):
         self.assertEqual(
             " | project-rename a = b, c = d",
             Query().project_rename(a=col.b, c=col.d).render(),
+        )
+
+    def test_custom(self):
+        self.assertEqual(
+            " | some custom query",
+            Query().custom("some custom query").render(),
         )

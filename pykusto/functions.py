@@ -61,7 +61,7 @@ def bag_keys(expr: DynamicType):
 
 
 def bin(expr: Union[NumberType, DatetimeType, TimespanType],
-        round_to: Union[NumberType, TimespanType]) -> GroupExpression:
+        round_to: Union[NumberType, TimespanType]) -> BaseExpression:
     """
     Refers only to bin() as part of summarize by bin(...),
      if you wish to use it as a scalar function, use 'floor()' instead
@@ -74,11 +74,11 @@ def bin(expr: Union[NumberType, DatetimeType, TimespanType],
 
 def bin_at(expr: Union[NumberType, DatetimeType, TimespanType],
            bin_size: Union[NumberType, TimespanType],
-           fixed_point: Union[NumberType, DatetimeType, TimespanType]) -> GroupExpression:
+           fixed_point: Union[NumberType, DatetimeType, TimespanType]) -> BaseExpression:
     return expr.bin_at(bin_size, fixed_point)
 
 
-def bin_auto(expr: Union[NumberType, DatetimeType, TimespanType]) -> GroupExpression:
+def bin_auto(expr: Union[NumberType, DatetimeType, TimespanType]) -> BaseExpression:
     return expr.bin_auto()
 
 
@@ -645,7 +645,8 @@ def tolower(self): return  # TODO
 def toreal(self): return  # TODO
 
 
-def tostring(self): return  # TODO
+def tostring(expr: ExpressionType):
+    return expr.to_string()
 
 
 def totimespan(self): return  # TODO

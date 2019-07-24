@@ -92,3 +92,7 @@ class Table:
 
     def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
         return self.database.execute(rendered_query)
+
+    def show_columns(self) -> Tuple[str, ...]:
+        res: KustoResponseDataSet = self.execute(KQL('.show table {}'.format(self.table)))
+        return tuple(r[0] for r in res.primary_results[0].rows)

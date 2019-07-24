@@ -106,6 +106,12 @@ class Query:
     def project_away(self, *columns: StringType):
         return ProjectAwayQuery(self, columns)
 
+    def distinct(self, *columns: BaseExpression):
+        return DistinctQuery(self, columns)
+
+    def distinct_all(self):
+        return DistinctQuery(self, (BaseExpression(KQL("*")),))
+
     def extend(self, *args: Union[BaseExpression, AssignmentBase], **kwargs: ExpressionType) -> 'ExtendQuery':
         assignments: List[AssignmentBase] = []
         for arg in args:
@@ -221,6 +227,17 @@ class ProjectAwayQuery(Query):
         def col_or_wildcard_to_string(col_or_wildcard):
             return col_or_wildcard.kql if isinstance(col_or_wildcard, Column) else col_or_wildcard
         return KQL('project-away {}'.format(', '.join((col_or_wildcard_to_string(c) for c in self._columns))))
+
+
+class DistinctQuery(Query):
+    _columns: Tuple[BaseExpression, ...]
+
+    def __init__(self, head: 'Query', columns: Tuple[BaseExpression]) -> None:
+        super().__init__(head)
+        self._columns = columns
+
+    def _compile(self) -> KQL:
+        return KQL('distinct {}'.format(', '.join((c.kql for c in self._columns))))
 
 
 class ExtendQuery(Query):

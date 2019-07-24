@@ -221,3 +221,15 @@ class TestQuery(TestBase):
             " | some custom query",
             Query().custom("some custom query").render(),
         )
+
+    def test_distinct(self):
+        self.assertEqual(
+            " | distinct a, b * 2",
+            Query().distinct(col.a, col.b * 2).render(),
+        )
+
+    def test_distinct_all(self):
+        self.assertEqual(
+            " | distinct *",
+            Query().distinct_all().render(),
+        )

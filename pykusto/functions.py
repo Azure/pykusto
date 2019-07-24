@@ -70,7 +70,7 @@ def bin(expr: Union[NumberType, DatetimeType, TimespanType],
     :param round_to: The "bin size". A number, date or timespan that divides value.
     :return:
     """
-    return GroupExpression(KQL('bin({}, {})'.format(expr, _subexpr_to_kql(round_to))))
+    return expr.bin(round_to)
 
 
 def bin_at(expr: ExpressionType, bin_size: NumberType, fixed_point: NumberType) -> GroupExpression:

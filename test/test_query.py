@@ -15,6 +15,13 @@ class TestQuery(TestBase):
             " | where foo > 4 | take 5 | sort by bar asc nulls last"
         )
 
+    def test_add_queries(self):
+        query = Query().where(col.foo > 4) + Query().take(5) + Query().sort_by(col.bar, Order.ASC, Nulls.LAST)
+        self.assertEqual(
+            query.render(),
+            " | where foo > 4 | take 5 | sort by bar asc nulls last"
+        )
+
     def test_where(self):
         self.assertEqual(
             Query().where(col.foo > 4).render(),

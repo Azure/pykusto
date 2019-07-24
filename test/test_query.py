@@ -2,7 +2,7 @@ from pykusto import functions as f
 from pykusto.assignments import AssignmentBase
 from pykusto.column import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion
-from pykusto.tables import Table
+from pykusto.tables import PyKustoClient
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
 
@@ -16,7 +16,7 @@ class TestQuery(TestBase):
 
     def test_join_with_table(self):
         mock_kusto_client = MockKustoClient()
-        table = Table(mock_kusto_client, 'test_db', 'test_table')
+        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertEqual(
             Query().where(col.foo > 4).take(5).join(
@@ -26,7 +26,7 @@ class TestQuery(TestBase):
 
     def test_join_with_table_and_query(self):
         mock_kusto_client = MockKustoClient()
-        table = Table(mock_kusto_client, 'test_db', 'test_table')
+        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertEqual(
             Query().where(col.foo > 4).take(5).join(

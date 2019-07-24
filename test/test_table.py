@@ -25,8 +25,8 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
         Query(table).take(5).execute()
         self.assertEqual(
-            mock_kusto_client.executions,
-            [('test_db', 'test_table | take 5', None)]
+            [('test_db', 'test_table | take 5', None)],
+            mock_kusto_client.executions
         )
 
     def test_execute_no_table(self):
@@ -50,8 +50,8 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
         Query().take(5).execute(table)
         self.assertEqual(
+            [('test_db', 'test_table | take 5', None)],
             mock_kusto_client.executions,
-            [('test_db', 'test_table | take 5', None)]
         )
 
     def test_union_table(self):
@@ -59,8 +59,8 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db'].get_tables('test_table1', 'test_table2')
         Query(table).take(5).execute()
         self.assertEqual(
+            [('test_db', 'union test_table1, test_table2 | take 5', None)],
             mock_kusto_client.executions,
-            [('test_db', 'union test_table1, test_table2 | take 5', None)]
         )
 
     def test_union_table_with_wildcard(self):
@@ -68,8 +68,8 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table_*']
         Query(table).take(5).execute()
         self.assertEqual(
+            [('test_db', 'union test_table_* | take 5', None)],
             mock_kusto_client.executions,
-            [('test_db', 'union test_table_* | take 5', None)]
         )
 
     def test_default_authentication(self):
@@ -78,10 +78,10 @@ class TestTable(TestBase):
             table = PyKustoClient('https://help.kusto.windows.net/')['test_db']['test_table']
             Query().take(5).execute(table)
         self.assertIs(
+            mock_kusto_client,
             table.database.client._client,
-            mock_kusto_client
         )
         self.assertEqual(
+            [('test_db', 'test_table | take 5', None)],
             mock_kusto_client.executions,
-            [('test_db', 'test_table | take 5', None)]
         )

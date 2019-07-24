@@ -52,6 +52,10 @@ class Query:
         self._head = head if isinstance(head, Query) else None
         self._table = head if isinstance(head, Table) else None
 
+    def __add__(self, other: 'Query'):
+        other._head = self
+        return other
+
     def where(self, predicate: BooleanType) -> 'WhereQuery':
         return WhereQuery(self, predicate)
 

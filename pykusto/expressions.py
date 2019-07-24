@@ -39,6 +39,15 @@ class BaseExpression:
     def as_subexpression(self) -> KQL:
         return KQL('({})'.format(self.kql))
 
+    def gettype(self) -> 'StringExpression':
+        return StringExpression(KQL('gettype({})'.format(self)))
+
+    def __hash__(self) -> 'StringExpression':
+        return StringExpression(KQL('hash({})'.format(self)))
+
+    def hash_sha256(self) -> 'StringExpression':
+        return StringExpression(KQL('hash_sha256({})'.format(self)))
+
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> KQL:
         return KQL('{}{}{}'.format(
@@ -140,6 +149,26 @@ class NumberExpression(BaseExpression):
     def bin(self, round_to: NumberType) -> 'GroupExpression':
         return GroupExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
+    def bin_at(self, round_to: NumberType, fixed_point: NumberType) -> 'GroupExpression':
+        return GroupExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                               _subexpr_to_kql(round_to),
+                                                               _subexpr_to_kql(fixed_point))))
+
+    def bin_auto(self) -> 'GroupExpression':
+        return GroupExpression(KQL('bin_auto({})'.format(self.kql)))
+
+    def ceiling(self) -> 'NumberExpression':
+        return NumberExpression(KQL('ceiling({})'.format(self.kql)))
+
+    def exp(self) -> 'NumberExpression':
+        return NumberExpression(KQL('exp({})'.format(self.kql)))
+
+    def exp10(self) -> 'NumberExpression':
+        return NumberExpression(KQL('exp10({})'.format(self.kql)))
+
+    def exp2(self) -> 'NumberExpression':
+        return NumberExpression(KQL('exp2({})'.format(self.kql)))
+
 
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
@@ -234,6 +263,54 @@ class DatetimeExpression(BaseExpression):
     def bin(self, round_to: TimespanType) -> 'GroupExpression':
         return GroupExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
+    def bin_at(self, round_to: TimespanType, fixed_point: DatetimeType) -> 'GroupExpression':
+        return GroupExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                               _subexpr_to_kql(round_to),
+                                                               _subexpr_to_kql(fixed_point))))
+
+    def bin_auto(self) -> 'GroupExpression':
+        return GroupExpression(KQL('bin_auto({})'.format(self.kql)))
+
+    def endofday(self, offset: NumberType = None) -> 'DatetimeExpression':
+        if offset is None:
+            res = 'endofday({})'.format(self.kql)
+        else:
+            res = 'endofday({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+        return DatetimeExpression(KQL(res))
+
+    def endofmonth(self, offset: NumberType = None) -> 'DatetimeExpression':
+        if offset is None:
+            res = 'endofmonth({})'.format(self.kql)
+        else:
+            res = 'endofmonth({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+        return DatetimeExpression(KQL(res))
+
+    def endofweek(self, offset: NumberType = None) -> 'DatetimeExpression':
+        if offset is None:
+            res = 'endofweek({})'.format(self.kql)
+        else:
+            res = 'endofweek({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+        return DatetimeExpression(KQL(res))
+
+    def endofyear(self, offset: NumberType = None) -> 'DatetimeExpression':
+        if offset is None:
+            res = 'endofyear({})'.format(self.kql)
+        else:
+            res = 'endofyear({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+        return DatetimeExpression(KQL(res))
+
+    def format_datetime(self, format_string: StringType) -> StringExpression:
+        return StringExpression(KQL('format_datetime({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
+
+    def getmonth(self) -> NumberExpression:
+        return NumberExpression(KQL('getmonth({})'.format(self.kql)))
+
+    def getyear(self) -> NumberExpression:
+        return NumberExpression(KQL('getyear({})'.format(self.kql)))
+
+    def hourofday(self) -> NumberExpression:
+        return NumberExpression(KQL('hourofday({})'.format(self)))
+
 
 class TimespanExpression(BaseExpression):
     @staticmethod
@@ -251,6 +328,17 @@ class TimespanExpression(BaseExpression):
 
     def bin(self, round_to: TimespanType) -> 'GroupExpression':
         return GroupExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+
+    def bin_at(self, round_to: TimespanType, fixed_point: TimespanType) -> 'GroupExpression':
+        return GroupExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                               _subexpr_to_kql(round_to),
+                                                               _subexpr_to_kql(fixed_point))))
+
+    def bin_auto(self) -> 'GroupExpression':
+        return GroupExpression(KQL('bin_auto({})'.format(self.kql)))
+
+    def format_timespan(self, format_string: StringType) -> StringExpression:
+        return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
 
 
 class ArrayExpression(BaseExpression):

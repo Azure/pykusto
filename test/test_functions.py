@@ -117,6 +117,16 @@ class TestFunction(TestBase):
             Query().where(f.hourofday(col.foo) == 3).render(),
             " | where (hourofday(foo)) == 3")
 
+    def test_hash(self):
+        self.assertEqual(
+            Query().where(f.hash(col.foo) == 3).render(),
+            " | where (hash(foo)) == 3")
+
+    def test_hash_sha256(self):
+        self.assertEqual(
+            Query().where(f.hash_sha256(col.foo) == 3).render(),
+            " | where (hash_sha256(foo)) == 3")
+
     def test_isempty(self):
         self.assertEqual(
             Query().where(f.isempty(col.foo)).render(),
@@ -345,6 +355,26 @@ class TestFunction(TestBase):
             Query().summarize(f.avg(col.foo)).by(f.bin(col.bar, datetime.timedelta(0.5))).render(),
             " | summarize avg(foo) by bin(bar, time(0.12:0:0.0))")
 
+    def test_bin_at(self):
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).by(f.bin_at(col.bar, 0.1, 1)).render(),
+            " | summarize avg(foo) by bin_at(bar, 0.1, 1)")
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).by(f.bin_at(col.bar,
+                                                          datetime.timedelta(0.5),
+                                                          datetime.timedelta(0.1))).render(),
+            " | summarize avg(foo) by bin_at(bar, time(0.12:0:0.0), time(0.2:24:0.0))")
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).by(f.bin_at(col.bar,
+                                                          datetime.timedelta(0.5),
+                                                          datetime.datetime(2019, 7, 8))).render(),
+            " | summarize avg(foo) by bin_at(bar, time(0.12:0:0.0), datetime(2019-07-08 00:00:00.000000))")
+
+    def test_bin_auto(self):
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).by(f.bin_auto(col.bar)).render(),
+            " | summarize avg(foo) by bin_auto(bar)")
+
     def test_count(self):
         self.assertEqual(
             Query().summarize(f.count()).render(),
@@ -367,19 +397,19 @@ class TestFunction(TestBase):
             Query().summarize(f.dcount(col.foo, acc)).render(),
             " | summarize dcount(foo, 0.1)")
 
-    def test_hll(self):
-        self.assertEqual(
-            Query().summarize(f.hll(col.foo)).render(),
-            " | summarize hll(foo)")
-        acc = 0.1
-        self.assertEqual(
-            Query().summarize(f.hll(col.foo, acc)).render(),
-            " | summarize hll(foo, 0.1)")
-
-    def test_hll_merge(self):
-        self.assertEqual(
-            Query().summarize(f.hll_merge(col.foo)).render(),
-            " | summarize hll_merge(foo)")
+    # def test_hll(self):
+    #     self.assertEqual(
+    #         Query().summarize(f.hll(col.foo)).render(),
+    #         " | summarize hll(foo)")
+    #     acc = 0.1
+    #     self.assertEqual(
+    #         Query().summarize(f.hll(col.foo, acc)).render(),
+    #         " | summarize hll(foo, 0.1)")
+    #
+    # def test_hll_merge(self):
+    #     self.assertEqual(
+    #         Query().summarize(f.hll_merge(col.foo)).render(),
+    #         " | summarize hll_merge(foo)")
 
     def test_make_bag(self):
         self.assertEqual(

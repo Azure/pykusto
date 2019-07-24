@@ -1,9 +1,15 @@
 from pykusto.expressions import NumberExpression, BooleanExpression, StringExpression, MappingExpression, \
-    ArrayExpression
+    ArrayExpression, DatetimeExpression, TimespanExpression
 from pykusto.utils import KQL
 
 
-class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpression, MappingExpression):
+class Column(NumberExpression,
+             BooleanExpression,
+             StringExpression,
+             ArrayExpression,
+             MappingExpression,
+             DatetimeExpression,
+             TimespanExpression):
     name: str
 
     def __init__(self, name: str) -> None:

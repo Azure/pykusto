@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query
 from test.test_base import TestBase
@@ -38,4 +40,10 @@ class TestExpressions(TestBase):
         self.assertEqual(
             " | extend ['foo.bar'] = (shoo * 2)",
             Query().extend((col.shoo * 2).assign_to(col.foo.bar)).render(),
+        )
+
+    def test_between_timespan(self):
+        self.assertEqual(
+            " | where foo between (time(0.0:0:0.0) .. time(0.3:0:0.0))",
+            Query().where(col.foo.between(timedelta(0), timedelta(hours=3))).render(),
         )

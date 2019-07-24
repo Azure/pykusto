@@ -131,6 +131,12 @@ class NumberExpression(BaseExpression):
     def between(self, lower: NumberType, upper: NumberType) -> BooleanExpression:
         return BooleanExpression(KQL('{} between ({} .. {})'.format(self.kql, lower, upper)))
 
+    def acos(self) -> 'NumberExpression':
+        return NumberExpression(KQL('acos({})'.format(self.kql)))
+
+    def floor(self, round_to: NumberType) -> 'NumberExpression':
+        return NumberExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+
 
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
@@ -219,6 +225,9 @@ class DatetimeExpression(BaseExpression):
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
         return BooleanExpression(KQL('{} between ({} .. {})'.format(self.kql, lower, upper)))
 
+    def floor(self, round_to: TimespanType) -> 'DatetimeExpression':
+        return DatetimeExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+
 
 class TimespanExpression(BaseExpression):
     @staticmethod
@@ -230,6 +239,9 @@ class TimespanExpression(BaseExpression):
 
     def __sub__(self, other: TimespanType) -> 'TimespanExpression':
         return TimespanExpression.binary_op(self, ' - ', other)
+
+    def ago(self) -> DatetimeExpression:
+        return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(self))))
 
 
 class ArrayExpression(BaseExpression):

@@ -149,3 +149,21 @@ class TestQuery(TestBase):
             Query().count().render(),
             " | count"
         )
+
+    def test_project_away(self):
+        self.assertEqual(
+            Query().project_away(col.a, col.bc).render(),
+            " | project-away a, bc"
+        )
+
+    def test_project_away_wildcard(self):
+        self.assertEqual(
+            Query().project_away(col.a, "b*").render(),
+            " | project-away a, b*"
+        )
+
+    def test_project_rename(self):
+        self.assertEqual(
+            Query().project_rename(a=col.b, c=col.d).render(),
+            " | project-rename a = b, c = d"
+        )

@@ -6,7 +6,7 @@ from pykusto.query import Query
 from test.test_base import TestBase
 
 
-# TODO bin, bin_at, bin_auto, dcount_hll, floor, iif
+# TODO bin, bin_at, bin_auto, dcount_hll, floor, iif, make_bag, make_set, make_list
 
 class TestFunction(TestBase):
     def test_acos(self):
@@ -74,12 +74,12 @@ class TestFunction(TestBase):
     def test_format_datetime(self):
         self.assertEqual(
             Query().where(f.format_datetime(col.foo, 'yy-MM-dd [HH:mm:ss]') == '2019-07-23 00:00:00').render(),
-            " | where (format_datetime(foo, 'yy-MM-dd [HH:mm:ss]')) == \"2019-07-23 00:00:00\"")
+            " | where (format_datetime(foo, \"yy-MM-dd [HH:mm:ss]\")) == \"2019-07-23 00:00:00\"")
 
     def test_format_timespan(self):
         self.assertEqual(
             Query().where(f.format_timespan(col.foo, 'h:m:s.fffffff') == "2:3:4.1234500").render(),
-            " | where (format_timespan(foo, 'h:m:s.fffffff')) == \"2:3:4.1234500\"")
+            " | where (format_timespan(foo, \"h:m:s.fffffff\")) == \"2:3:4.1234500\"")
 
     def test_getmonth(self):
         self.assertEqual(
@@ -164,14 +164,14 @@ class TestFunction(TestBase):
     def test_make_datetime(self):
         self.assertEqual(
             Query().where(f.make_datetime(col.y, col.m, col.d) > datetime.datetime(2019, 7, 23)).render(),
-            " | where (make_datetime(y, m, d)) > datetime(2019-07-23 00:00:00.000000)")
+            " | where (make_datetime(y, m, d, 0, 0, 0)) > datetime(2019-07-23 00:00:00.000000)")
         self.assertEqual(
             Query().where(f.make_datetime(col.y, col.m, col.d, col.h) > datetime.datetime(2019, 7, 23, 5)).render(),
-            " | where (make_datetime(y, m, d, h, 0)) > datetime(2019-07-23 05:00:00.000000)")
+            " | where (make_datetime(y, m, d, h, 0, 0)) > datetime(2019-07-23 05:00:00.000000)")
         self.assertEqual(
             Query().where(
                 f.make_datetime(col.y, col.m, col.d, col.h, col.min) > datetime.datetime(2019, 7, 23, 5, 29)).render(),
-            " | where (make_datetime(y, m, d, h, min)) > datetime(2019-07-23 05:29:00.000000)")
+            " | where (make_datetime(y, m, d, h, min, 0)) > datetime(2019-07-23 05:29:00.000000)")
         self.assertEqual(
             Query().where(
                 f.make_datetime(col.y, col.m, col.d, col.h, col.min, col.sec) > datetime.datetime(2019, 7, 23, 5, 29,
@@ -229,10 +229,10 @@ class TestFunction(TestBase):
     def test_strcat_array(self):
         self.assertEqual(
             Query().where(f.strcat_array(col.foo, ',') == 'A,B,C').render(),
-            " | where (strcat_array(foo, ',')) == \"A,B,C\"")
+            " | where (strcat_array(foo, \",\")) == \"A,B,C\"")
         self.assertEqual(
             Query().where(f.strcat_array(['A', 'B', 'C'], ',') == 'A,B,C').render(),
-            " | where (strcat_array(['A', 'B', 'C'], ',')) == \"A,B,C\"")
+            " | where (strcat_array(['A', 'B', 'C'], \",\")) == \"A,B,C\"")
 
     def test_strcmp(self):
         self.assertEqual(
@@ -255,7 +255,7 @@ class TestFunction(TestBase):
             " | where (strrep(foo, bar)) == \"ABCABC\"")
         self.assertEqual(
             Query().where(f.strrep(col.foo, col.bar, ',') == 'ABC,ABC').render(),
-            " | where (strrep(foo, bar, ',')) == \"ABC,ABC\"")
+            " | where (strrep(foo, bar, \",\")) == \"ABC,ABC\"")
         self.assertEqual(
             Query().where(f.strrep(col.foo, col.bar, col.fam) == 'ABC,ABC').render(),
             " | where (strrep(foo, bar, fam)) == \"ABC,ABC\"")
@@ -352,3 +352,40 @@ class TestFunction(TestBase):
         self.assertEqual(
             Query().summarize(f.hll_merge(col.foo)).render(),
             " | summarize hll_merge(foo)")
+
+    def test_max(self):
+        self.assertEqual(
+            Query().summarize(f.max(col.foo)).render(),
+            " | summarize max(foo)")
+
+    def test_min(self):
+        self.assertEqual(
+            Query().summarize(f.min(col.foo)).render(),
+            " | summarize min(foo)")
+
+    def test_stdev(self):
+        self.assertEqual(
+            Query().summarize(f.stdev(col.foo)).render(),
+            " | summarize stdev(foo)")
+
+    def test_stdevif(self):
+        self.assertEqual(
+            Query().summarize(f.stdevif(col.foo, col.bar)).render(),
+            " | summarize stdevif(foo, bar)")
+
+    def test_stdevp(self):
+        self.assertEqual(
+            Query().summarize(f.stdevp(col.foo)).render(),
+            " | summarize stdevp(foo)")
+
+#
+# def stdevp(expr: ExpressionType) -> BaseExpression:
+#     return BaseExpression(KQL('stdevp({})'.format(expr)))
+#
+#
+# def sum(expr: ExpressionType) -> BaseExpression:
+#     return BaseExpression(KQL('sum({})'.format(expr)))
+#
+#
+# def sumif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
+#     return NumberExpression(KQL('sumif({}, {})'.format(expr, predicate)))

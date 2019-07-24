@@ -20,6 +20,10 @@ DynamicType = Union[ArrayType, MappingType]
 
 # All classes in the same file to prevent circular dependencies
 
+def _subexpr_to_kql(obj: ExpressionType) -> KQL:
+    if isinstance(obj, BaseExpression):
+        return obj.as_subexpression()
+    return to_kql(obj)
 
 class BaseExpression:
     kql: KQL
@@ -34,15 +38,9 @@ class BaseExpression:
         return KQL('({})'.format(self.kql))
 
     @staticmethod
-    def _subexpression_to_kql(obj: ExpressionType) -> KQL:
-        if isinstance(obj, BaseExpression):
-            return obj.as_subexpression()
-        return to_kql(obj)
-
-    @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> KQL:
         return KQL('{}{}{}'.format(
-            BaseExpression._subexpression_to_kql(left), operator, BaseExpression._subexpression_to_kql(right))
+            _subexpr_to_kql(left), operator, _subexpr_to_kql(right))
         )
 
     def __eq__(self, other: ExpressionType) -> 'BooleanExpression':
@@ -148,7 +146,7 @@ class StringExpression(BaseExpression):
     @staticmethod
     def concat(*strings: StringType) -> 'StringExpression':
         return StringExpression(KQL('strcat({})'.format(', '.join('{}'.format(
-            BaseExpression._subexpression_to_kql(s)
+            _subexpr_to_kql(s)
         ) for s in strings))))
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
@@ -245,7 +243,7 @@ class ArrayExpression(BaseExpression):
     @staticmethod
     def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
         return ArrayExpression(KQL('pack_array({})'.format(
-            ', '.join('{}'.format(BaseExpression._subexpression_to_kql(e) for e in elements))
+            ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
 
@@ -256,7 +254,7 @@ class MappingExpression(BaseExpression):
     @staticmethod
     def pack(**kwargs: ExpressionType) -> 'MappingExpression':
         return MappingExpression(KQL('pack({})'.format(
-            ', '.join('"{}", {}'.format(k, BaseExpression._subexpression_to_kql(v)) for k, v in kwargs)
+            ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
         )))
 
 

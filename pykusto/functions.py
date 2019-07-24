@@ -1,6 +1,7 @@
 from pykusto import utils
 from pykusto.column import Column
 from pykusto.expressions import *
+from pykusto.expressions import _subexpr_to_kql
 from pykusto.utils import KQL
 
 
@@ -10,7 +11,7 @@ def acos(expr: NumberType) -> NumberExpression:
 
 
 def ago(expr: TimespanType) -> DatetimeExpression:
-    return DatetimeExpression(KQL('ago({})'.format(BaseExpression._subexpression_to_kql(expr))))
+    return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(expr))))
 
 
 # def array_concat(): return
@@ -60,11 +61,13 @@ def array_length(expr: ArrayType) -> NumberExpression:
 
 
 def bin(expr: ExpressionType, round_to: NumberType) -> GroupExpression:
-    return GroupExpression(KQL('bin({}, {})'.format(expr, round_to)))
+    return GroupExpression(KQL('bin({}, {})'.format(expr, _subexpr_to_kql(round_to))))
 
 
 def bin_at(expr: ExpressionType, bin_size: NumberType, fixed_point: NumberType) -> GroupExpression:
-    return GroupExpression(KQL('bin_at({}, {}, {})'.format(expr, bin_size, fixed_point)))
+    return GroupExpression(KQL('bin_at({}, {}, {})'.format(expr,
+                                                           _subexpr_to_kql(bin_size),
+                                                           _subexpr_to_kql(fixed_point))))
 
 
 def bin_auto(expr: ExpressionType) -> GroupExpression:
@@ -210,11 +213,11 @@ def floor(expr: ExpressionType, round_to: NumberType) -> BaseExpression:
 
 
 def format_datetime(expr: DatetimeType, format_string: StringType) -> StringExpression:
-    return StringExpression(KQL('format_datetime({}, {})'.format(expr, format_string)))
+    return StringExpression(KQL('format_datetime({}, {})'.format(expr, _subexpr_to_kql(format_string))))
 
 
 def format_timespan(expr: TimespanType, format_string: StringType) -> StringExpression:
-    return StringExpression(KQL('format_timespan({}, {})'.format(expr, format_string)))
+    return StringExpression(KQL('format_timespan({}, {})'.format(expr, _subexpr_to_kql(format_string))))
 
 
 # def gamma(self): return
@@ -314,15 +317,14 @@ def make_datetime(year: NumberType,
                   minute: NumberType = None,
                   second: NumberType = None) -> DatetimeExpression:
     res = 'make_datetime({year}, {month}, {day}, {hour}, {minute}, {second})'.format(
-        year=year,
-        month=month,
-        day=day,
-        hour=0 if hour is None else hour,
-        minute=0 if minute is None else minute,
-        second=0 if second is None else second
+        year=_subexpr_to_kql(year),
+        month=_subexpr_to_kql(month),
+        day=_subexpr_to_kql(day),
+        hour=_subexpr_to_kql(0 if hour is None else hour),
+        minute=_subexpr_to_kql(0 if minute is None else minute),
+        second=_subexpr_to_kql(0 if second is None else second)
     )
-    return DatetimeExpression(
-        KQL(res.format(year, month, day, hour, minute, second)))
+    return DatetimeExpression(KQL(res))
 
 
 def make_string(self): return  # TODO
@@ -558,7 +560,7 @@ def strcat(self): return  # TODO
 
 
 def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
-    return StringExpression(KQL('strcat_array({}, {})'.format(expr, delimiter)))
+    return StringExpression(KQL('strcat_array({}, {})'.format(expr, _subexpr_to_kql(delimiter))))
 
 
 def strcat_delim(): raise NotImplemented  # TODO
@@ -577,8 +579,11 @@ def strlen(expr: StringType) -> NumberExpression:
 
 
 def strrep(expr: StringType, multiplier: NumberType, delimiter: StringType = None) -> StringExpression:
-    return StringExpression(KQL(
-        ('strrep({}, {})' if delimiter is None else 'strrep({}, {}, {})').format(expr, multiplier, delimiter)))
+    if delimiter is None:
+        res = 'strrep({}, {})'.format(expr, multiplier)
+    else:
+        res = 'strrep({}, {}, {})'.format(expr, multiplier, _subexpr_to_kql(delimiter))
+    return StringExpression(KQL((res)))
 
 
 def substring(expr: StringType, start_index: NumberType, length: NumberType = None) -> StringExpression:
@@ -597,7 +602,7 @@ def tobool(expr: ExpressionType) -> BooleanExpression:
 
 
 def toboolean(expr: ExpressionType) -> BooleanExpression:
-    return tobool(expr)
+    return BooleanExpression(KQL('toboolean({})'.format(expr)))
 
 
 def todatetime(expr: StringType) -> DatetimeExpression:
@@ -725,7 +730,7 @@ def hll(expr: ExpressionType, accuracy: NumberType = None) -> AggregationExpress
 
 
 def hll_merge(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('hll_megre({})'.format(expr)))
+    return AggregationExpression(KQL('hll_merge({})'.format(expr)))
 
 
 def make_bag(expr: ExpressionType, max_size: NumberType = None) -> ArrayExpression:
@@ -746,36 +751,36 @@ def make_set(expr: ExpressionType, max_size: NumberType = None) -> ArrayExpressi
     return ArrayExpression(KQL('make_set({})'.format(expr)))
 
 
-def max(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('max({})'.format(expr)))
+def max(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('max({})'.format(expr)))
 
 
-def min(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('min({})'.format(expr)))
+def min(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('min({})'.format(expr)))
 
 
 def percentiles(self):  # TODO
     return
 
 
-def stdev(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('stdev({})'.format(expr)))
+def stdev(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('stdev({})'.format(expr)))
 
 
-def stdevif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
-    return NumberExpression(KQL('stdevif({}, {})'.format(expr, predicate)))
+def stdevif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
+    return AggregationExpression(KQL('stdevif({}, {})'.format(expr, predicate)))
 
 
-def stdevp(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('stdevp({})'.format(expr)))
+def stdevp(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('stdevp({})'.format(expr)))
 
 
-def sum(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('sum({})'.format(expr)))
+def sum(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('sum({})'.format(expr)))
 
 
-def sumif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
-    return NumberExpression(KQL('sumif({}, {})'.format(expr, predicate)))
+def sumif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
+    return AggregationExpression(KQL('sumif({}, {})'.format(expr, predicate)))
 
 
 # def tdigest(self):

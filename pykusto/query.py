@@ -7,10 +7,10 @@ from azure.kusto.data.helpers import dataframe_from_result_table
 
 from pykusto.assignments import AssignmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn, \
     AssignmentFromGroupExpressionToColumn
+from pykusto.client import Table
 from pykusto.column import Column
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression, OrderType, \
     StringType
-from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
 

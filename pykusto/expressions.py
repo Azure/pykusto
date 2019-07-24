@@ -16,6 +16,7 @@ TimespanType = Union[timedelta, 'TimespanExpression']
 AggregationType = Union['AggregationExpression']
 GroupExpressionType = Union['GroupExpression']
 DynamicType = Union[ArrayType, MappingType]
+OrderType = Union[DatetimeType, TimespanType, NumberType, StringType]
 
 
 # All classes in the same file to prevent circular dependencies
@@ -24,6 +25,7 @@ def _subexpr_to_kql(obj: ExpressionType) -> KQL:
     if isinstance(obj, BaseExpression):
         return obj.as_subexpression()
     return to_kql(obj)
+
 
 class BaseExpression:
     kql: KQL

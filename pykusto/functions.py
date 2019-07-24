@@ -7,11 +7,11 @@ from pykusto.utils import KQL
 
 # Scalar functions
 def acos(expr: NumberType) -> NumberExpression:
-    return NumberExpression(KQL('acos({})'.format(expr)))
+    return expr.acos()
 
 
 def ago(expr: TimespanType) -> DatetimeExpression:
-    return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(expr))))
+    return TimespanExpression.ago(expr)
 
 
 # def array_concat(): return
@@ -21,7 +21,7 @@ def ago(expr: TimespanType) -> DatetimeExpression:
 
 
 def array_length(expr: ArrayType) -> NumberExpression:
-    return NumberExpression(KQL('array_length({})'.format(expr)))
+    return expr.array_length()
 
 
 # def array_slice(): return
@@ -48,7 +48,8 @@ def array_length(expr: ArrayType) -> NumberExpression:
 # def base64_encode_tostring(self): return
 #
 #
-def bag_keys(self): return  # TODO
+def bag_keys(expr: DynamicType):
+    return expr.keys()
 
 
 # def beta_cdf(self): return
@@ -60,7 +61,14 @@ def bag_keys(self): return  # TODO
 # def beta_pdf(self): return
 
 
-def bin(expr: ExpressionType, round_to: NumberType) -> GroupExpression:
+def bin(expr: [NumberType, DatetimeType, ], round_to: NumberType) -> GroupExpression:
+    """
+    Refers only to bin() as part of summarize by bin(...),
+     if you wish to use it as a scalar function, use 'floor()' instead
+    :param expr: A number, date, or timespan.
+    :param round_to: The "bin size". A number, date or timespan that divides value.
+    :return:
+    """
     return GroupExpression(KQL('bin({}, {})'.format(expr, _subexpr_to_kql(round_to))))
 
 
@@ -208,8 +216,9 @@ def exp2(expr: NumberType) -> NumberExpression:
 # def extractjson(self): return
 
 
-def floor(expr: ExpressionType, round_to: NumberType) -> BaseExpression:
-    return bin(expr, round_to)
+def floor(expr: Union[NumberType, DatetimeType], round_to: Union[NumberType, TimespanType]) -> Union[
+    NumberExpression, DatetimeExpression]:
+    return expr.floor(round_to)
 
 
 def format_datetime(expr: DatetimeType, format_string: StringType) -> StringExpression:
@@ -247,6 +256,10 @@ def hourofday(expr: DatetimeType) -> DatetimeExpression:
 
 def iif(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
     return BaseExpression(KQL('iif({}, {}, {})'.format(predicate, if_true, if_false)))
+
+
+def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
+    return BaseExpression(KQL('iff({}, {}, {})'.format(predicate, if_true, if_false)))
 
 
 #

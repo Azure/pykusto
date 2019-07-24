@@ -74,7 +74,7 @@ class TestTable(TestBase):
 
     def test_default_authentication(self):
         mock_kusto_client = MockKustoClient()
-        with patch('pykusto.tables.Table.get_client_for_cluster', lambda s, cluster: mock_kusto_client):
+        with patch('pykusto.tables.Table._get_client_for_cluster', lambda s, cluster: mock_kusto_client):
             table = Table('https://kustolab.kusto.windows.net/', 'test_db', 'test_table')
             Query().take(5).execute(table)
         self.assertIs(

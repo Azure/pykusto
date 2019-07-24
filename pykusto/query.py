@@ -8,7 +8,8 @@ from azure.kusto.data.helpers import dataframe_from_result_table
 from pykusto.assignments import AssignmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn, \
     AssignmentFromGroupExpressionToColumn
 from pykusto.column import Column
-from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression, OrderType
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression, OrderType, \
+    StringType
 from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
@@ -94,6 +95,9 @@ class Query:
         for column_name, expression in kwargs.items():
             assignments.append(AssignmentToSingleColumn(Column(column_name), expression))
         return ProjectQuery(self, columns, assignments)
+
+    def project_away(self, *columns: StringType):
+        return ProjectAwayQuery(self, columns)
 
     def extend(self, *args: AssignmentBase, **kwargs: ExpressionType) -> 'ExtendQuery':
         """
@@ -182,6 +186,19 @@ class ProjectQuery(Query):
             (c.kql for c in self._columns),
             (a.to_kql() for a in self._assignments)
         ))))
+
+
+class ProjectAwayQuery(Query):
+    _columns: Tuple[StringType]
+
+    def __init__(self, head: 'Query', columns: Tuple[StringType]) -> None:
+        super().__init__(head)
+        self._columns = columns
+
+    def _compile(self) -> KQL:
+        def col_or_wildcard_to_string(col_or_wildcard):
+            return col_or_wildcard.kql if isinstance(col_or_wildcard, Column) else col_or_wildcard
+        return KQL('project-away {}'.format(', '.join((col_or_wildcard_to_string(c) for c in self._columns))))
 
 
 class ExtendQuery(Query):

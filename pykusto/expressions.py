@@ -39,13 +39,19 @@ class BaseExpression:
         return KQL('({})'.format(self.kql))
 
     def gettype(self) -> 'StringExpression':
-        return StringExpression(KQL('gettype({})'.format(self)))
+        return StringExpression(KQL('gettype({})'.format(self.kql)))
 
     def __hash__(self) -> 'StringExpression':
-        return StringExpression(KQL('hash({})'.format(self)))
+        return StringExpression(KQL('hash({})'.format(self.kql)))
 
     def hash_sha256(self) -> 'StringExpression':
-        return StringExpression(KQL('hash_sha256({})'.format(self)))
+        return StringExpression(KQL('hash_sha256({})'.format(self.kql)))
+
+    def is_empty(self) -> 'BooleanExpression':
+        return BooleanExpression(KQL('isempty({})'.format(self.kql)))
+
+    def is_not_empty(self) -> 'BooleanExpression':
+        return BooleanExpression(KQL('isnotempty({})'.format(self.kql)))
 
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> KQL:
@@ -59,7 +65,6 @@ class BaseExpression:
     def __ne__(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' != ', other)
 
-    # TODO move these three methods to functions module
     def is_in(self, other: ArrayType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' in ', other)
 
@@ -89,6 +94,7 @@ class BaseExpression:
         if len(columns) == 1:
             return AssignmentToSingleColumn(columns[0], self)
         raise ValueError("Only arrays can be assigned to multiple columns")
+
 
 
 class BooleanExpression(BaseExpression):
@@ -176,6 +182,32 @@ class NumberExpression(BaseExpression):
     def exp2(self) -> 'NumberExpression':
         return NumberExpression(KQL('exp2({})'.format(self.kql)))
 
+    def isfinite(self) -> BooleanExpression:
+        return BooleanExpression(KQL('isfinite({})'.format(self.kql)))
+
+    def isinf(self) -> BooleanExpression:
+        return BooleanExpression(KQL('isinf({})'.format(self.kql)))
+
+    def isnan(self) -> BooleanExpression:
+        return BooleanExpression(KQL('isnan({})'.format(self.kql)))
+
+    def log(self) -> 'NumberExpression':
+        return NumberExpression(KQL('log({})'.format(self)))
+
+    def log10(self) -> 'NumberExpression':
+        return NumberExpression(KQL('log10({})'.format(self)))
+
+    def log2(self) -> 'NumberExpression':
+        return NumberExpression(KQL('log2({})'.format(self)))
+
+    def loggamma(self) -> 'NumberExpression':
+        return NumberExpression(KQL('loggamma({})'.format(self)))
+
+    def round(self, precision: NumberType = None) -> 'NumberExpression':
+        return NumberExpression(KQL(
+            ('round({}, {})' if precision is None else 'round({}, {})').format(self, precision)
+        ))
+
 
 class StringExpression(BaseExpression):
     def __len__(self) -> NumberExpression:
@@ -230,6 +262,9 @@ class StringExpression(BaseExpression):
 
     def upper(self) -> 'StringExpression':
         return StringExpression(KQL('toupper({})'.format(self.kql)))
+
+    def is_utf8(self) -> BooleanExpression:
+        return BooleanExpression(KQL('isutf8({})'.format(self.kql)))
 
 
 class DatetimeExpression(BaseExpression):
@@ -317,6 +352,26 @@ class DatetimeExpression(BaseExpression):
 
     def hourofday(self) -> NumberExpression:
         return NumberExpression(KQL('hourofday({})'.format(self)))
+
+    def startofday(self, offset: NumberType = None) -> 'DatetimeExpression':
+        return DatetimeExpression(KQL(
+            ('startofday({})' if offset is None else 'startofday({}, {})').format(self.kql, offset)
+        ))
+
+    def startofmonth(self, offset: NumberType = None) -> 'DatetimeExpression':
+        return DatetimeExpression(KQL(
+            ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(self.kql, offset)
+        ))
+
+    def startofweek(self, offset: NumberType = None) -> 'DatetimeExpression':
+        return DatetimeExpression(KQL(
+            ('startofweek({})' if offset is None else 'startofweek({}, {})').format(self.kql, offset)
+        ))
+
+    def startofyear(self, offset: NumberType = None) -> 'DatetimeExpression':
+        return DatetimeExpression(KQL(
+            ('startofyear({})' if offset is None else 'startofyear({}, {})').format(self.kql, offset)
+        ))
 
 
 class TimespanExpression(BaseExpression):

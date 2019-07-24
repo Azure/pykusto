@@ -74,6 +74,9 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
+    def assign_to(self, column: 'Column') -> 'AssignmentToSingleColumn':
+        return AssignmentToSingleColumn(column, self)
+
 
 class BooleanExpression(BaseExpression):
     @staticmethod
@@ -321,3 +324,73 @@ class MappingAggregationExpression(AggregationExpression, MappingExpression):
 
 class GroupExpression(BaseExpression):
     pass
+
+
+class AssignmentBase:
+    _lvalue: KQL
+    _rvalue: KQL
+
+    def __init__(self, lvalue: KQL, rvalue: ExpressionType) -> None:
+        self._lvalue = lvalue
+        self._rvalue = rvalue.as_subexpression()
+
+    def to_kql(self) -> KQL:
+        return KQL('{} = {}'.format(self._lvalue, self._rvalue))
+
+    @staticmethod
+    def assign(expression: ExpressionType, *columns: 'Column') -> 'AssignmentBase':
+        if len(columns) == 0:
+            raise ValueError("Provide at least one column")
+        if len(columns) == 1:
+            return AssignmentToSingleColumn(columns[0], expression)
+        return AssignmentToMultipleColumns(columns, expression)
+
+
+class AssignmentToSingleColumn(AssignmentBase):
+    def __init__(self, column: 'Column', expression: ExpressionType) -> None:
+        super().__init__(column.kql, expression)
+
+
+class AssignmentToMultipleColumns(AssignmentBase):
+    def __init__(self, columns: Union[List['Column'], Tuple['Column']], expression: ArrayType) -> None:
+        super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
+
+
+class AssignmentFromAggregationToColumn(AssignmentBase):
+    def __init__(self, column: 'Column', aggregation: AggregationType) -> None:
+        super().__init__(column.kql, aggregation)
+
+
+class AssignmentFromGroupExpressionToColumn(AssignmentBase):
+    def __init__(self, column: 'Column', group_expression: GroupExpressionType) -> None:
+        super().__init__(column.kql, group_expression)
+
+
+class Column(NumberExpression, BooleanExpression, StringExpression, ArrayExpression, MappingExpression):
+    name: str
+
+    def __init__(self, name: str) -> None:
+        super().__init__(KQL("['{}']".format(name) if '.' in name else name))
+        self.name = name
+
+    def __getattr__(self, name: str) -> 'Column':
+        return Column(self.name + '.' + name)
+
+    def as_subexpression(self) -> KQL:
+        return self.kql
+
+    def __len__(self) -> NumberExpression:
+        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
+
+
+class ColumnGenerator:
+    def __getattr__(self, name: str) -> Column:
+        return Column(name)
+
+    def __getitem__(self, name: str) -> Column:
+        return Column[name]
+
+
+# Recommended usage: from pykusto.expressions import column_generator as col
+# TODO: Is there a way to enforce this to be a singleton?
+column_generator = ColumnGenerator()

@@ -12,7 +12,7 @@ pip install git+https://yomost@dev.azure.com/yomost/pykusto/_git/pykusto
 from datetime import timedelta
 from pykusto.client import PyKustoClient
 from pykusto.query import Query
-from pykusto.column import column_generator as col
+from pykusto.expressions import column_generator as col
 
 # Connect to cluster with AAD device authentication
 client = PyKustoClient('https://help.kusto.windows.net')

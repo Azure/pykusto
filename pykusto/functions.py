@@ -1,7 +1,6 @@
 from pykusto import utils
-from pykusto.column import Column
 from pykusto.expressions import *
-from pykusto.expressions import _subexpr_to_kql
+from pykusto.expressions import _subexpr_to_kql, Column
 from pykusto.utils import KQL
 
 

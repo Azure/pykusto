@@ -2,34 +2,84 @@ from typing import Union, List, Tuple
 
 # noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
-from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder
+from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 
 from pykusto.utils import KQL
+
+
+class PyKustoClient:
+    """
+    Handle to a Kusto cluster
+    """
+    client: KustoClient
+
+    def __init__(self, client_or_cluster: Union[str, KustoClient]) -> None:
+        """
+        Create a new handle to Kusto cluster
+
+        :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given,
+            a KustoClient is generated with AAD device authentication
+        """
+        if isinstance(client_or_cluster, KustoClient):
+            self.client = client_or_cluster
+        else:
+            self.client = self._get_client_for_cluster(client_or_cluster)
+
+    def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
+        return self.client.execute(database, query, properties)
+
+    def show_databases(self) -> Tuple[str, ...]:
+        res: KustoResponseDataSet = self.execute('', KQL('.show databases'))
+        return tuple(r[0] for r in res.primary_results[0].rows)
+
+    def __getitem__(self, database_name: str) -> 'Database':
+        return Database(self, database_name)
+
+    @staticmethod
+    def _get_client_for_cluster(cluster: str) -> KustoClient:
+        return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+
+
+class Database:
+    """
+    Handle to a Kusto database
+    """
+    client: PyKustoClient
+    name: str
+
+    def __init__(self, client: PyKustoClient, name: str) -> None:
+        self.client = client
+        self.name = name
+
+    def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
+        return self.client.execute(self.name, query, properties)
+
+    def show_tables(self) -> Tuple[str, ...]:
+        res: KustoResponseDataSet = self.execute(KQL('.show databases'))
+        return tuple(r[0] for r in res.primary_results[0].rows)
+
+    def get_tables(self, *tables: str):
+        return Table(self, tables)
+
+    def __getitem__(self, table_name: str) -> 'Table':
+        return self.get_tables(table_name)
 
 
 class Table:
     """
     Handle to a Kusto table
     """
-    client: KustoClient
-    database: str
+    database: Database
     table: KQL
 
-    def __init__(self, client_or_cluster: Union[str, KustoClient], database: str,
-                 tables: Union[str, List[str], Tuple[str, ...]]) -> None:
+    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]]) -> None:
         """
         Create a new handle to a Kusto table
 
-        :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given,
-            a KustoClient is generated with aad device authentication
-        :param database: Database name
+        :param database: Database object
         :param tables: Either a single table name, or a list of tables. If more than one table is given OR the table
             name contains a wildcard, the Kusto 'union' statement will be used.
         """
-        if isinstance(client_or_cluster, KustoClient):
-            self.client = client_or_cluster
-        else:
-            self.client = self._get_client_for_cluster(client_or_cluster)
 
         self.database = database
 
@@ -40,9 +90,5 @@ class Table:
         if '*' in self.table or ',' in self.table:
             self.table = KQL('union ' + self.table)
 
-    def execute(self, rendered_query: str) -> KustoResponseDataSet:
-        return self.client.execute(self.database, rendered_query)
-
-    @staticmethod
-    def _get_client_for_cluster(cluster: str) -> KustoClient:
-        return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+    def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
+        return self.database.execute(rendered_query)

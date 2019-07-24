@@ -55,7 +55,7 @@ class Database:
         return self.client.execute(self.name, query, properties)
 
     def show_tables(self) -> Tuple[str, ...]:
-        res: KustoResponseDataSet = self.execute(KQL('.show databases'))
+        res: KustoResponseDataSet = self.execute(KQL('.show tables'))
         return tuple(r[0] for r in res.primary_results[0].rows)
 
     def get_tables(self, *tables: str):

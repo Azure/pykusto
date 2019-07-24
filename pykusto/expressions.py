@@ -96,7 +96,6 @@ class BaseExpression:
         raise ValueError("Only arrays can be assigned to multiple columns")
 
 
-
 class BooleanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':

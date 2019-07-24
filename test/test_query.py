@@ -174,6 +174,30 @@ class TestQuery(TestBase):
             Query().count().render(),
         )
 
+    def test_project(self):
+        self.assertEqual(
+            " | project a, bc",
+            Query().project(col.a, col.bc).render(),
+        )
+
+    def test_project_with_expression(self):
+        self.assertEqual(
+            " | project foo = (bar * 4)",
+            Query().project(foo=col.bar * 4).render(),
+        )
+
+    def test_project_assign_to_multiple_columns(self):
+        self.assertEqual(
+            " | project (foo, bar) = arr",
+            Query().project(col.arr.assign_to(col.foo, col.bar)).render(),
+        )
+
+    def test_project_unspecified_column(self):
+        self.assertEqual(
+            " | project (foo + bar)",
+            Query().project(col.foo + col.bar).render(),
+        )
+
     def test_project_away(self):
         self.assertEqual(
             " | project-away a, bc",

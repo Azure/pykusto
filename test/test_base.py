@@ -11,7 +11,7 @@ class TestBase(TestCase):
         logging.basicConfig(
             stream=sys.stdout,
             level=logging.DEBUG,
-            format='%(asctime)s %(levelname)s - %(message)s'
+            format='%(asctime)s %(levelname)5s %(message)s'
         )
 
     def setUp(self):

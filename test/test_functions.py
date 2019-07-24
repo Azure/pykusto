@@ -18,6 +18,9 @@ class TestFunction(TestBase):
         self.assertEqual(
             Query().where(col.foo > f.ago(datetime.timedelta(4))).render(),
             " | where foo > (ago(time(4.0:0:0.0)))")
+        self.assertEqual(
+            Query().where(col.foo > f.ago(col.timespan)).render(),
+            " | where foo > (ago(timespan))")
 
     def test_array_length(self):
         self.assertEqual(
@@ -231,11 +234,121 @@ class TestFunction(TestBase):
             Query().where(f.strcat_array(['A', 'B', 'C'], ',') == 'A,B,C').render(),
             " | where (strcat_array(['A', 'B', 'C'], ',')) == \"A,B,C\"")
 
+    def test_strcmp(self):
+        self.assertEqual(
+            Query().where(f.strcmp(col.foo, col.bar) == 1).render(),
+            " | where (strcmp(foo, bar)) == 1")
+
+    def test_string_size(self):
+        self.assertEqual(
+            Query().where(f.string_size(col.foo) == 1).render(),
+            " | where (string_size(foo)) == 1")
+
+    def test_strlen(self):
+        self.assertEqual(
+            Query().where(f.strlen(col.foo) == 1).render(),
+            " | where (strlen(foo)) == 1")
+
+    def test_strrep(self):
+        self.assertEqual(
+            Query().where(f.strrep(col.foo, col.bar) == 'ABCABC').render(),
+            " | where (strrep(foo, bar)) == \"ABCABC\"")
+        self.assertEqual(
+            Query().where(f.strrep(col.foo, col.bar, ',') == 'ABC,ABC').render(),
+            " | where (strrep(foo, bar, ',')) == \"ABC,ABC\"")
+        self.assertEqual(
+            Query().where(f.strrep(col.foo, col.bar, col.fam) == 'ABC,ABC').render(),
+            " | where (strrep(foo, bar, fam)) == \"ABC,ABC\"")
+
+    def test_substring(self):
+        self.assertEqual(
+            Query().where(f.substring(col.foo, col.bar) == 'ABCABC').render(),
+            " | where (substring(foo, bar)) == \"ABCABC\"")
+        self.assertEqual(
+            Query().where(f.substring(col.foo, col.bar, 4) == 'ABC,ABC').render(),
+            " | where (substring(foo, bar, 4)) == \"ABC,ABC\"")
+
+    def test_tobool(self):
+        self.assertEqual(
+            Query().where(f.tobool(col.foo)).render(),
+            " | where tobool(foo)")
+
+    def test_toboolean(self):
+        self.assertEqual(
+            Query().where(f.toboolean(col.foo)).render(),
+            " | where toboolean(foo)")
+
+    # def test_todatetime(self):
+    #     self.assertEqual(
+    #         Query().where(f.todatetime(col.foo) > datetime.datetime(2019, 7, 23)).render(),
+    #         " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)")
+    #     self.assertEqual(
+    #         Query().where(f.todatetime('') > datetime.datetime(2019, 7, 23)).render(),
+    #         " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)")
+    # def todatetime(expr: StringType) -> DatetimeExpression:
+    #     return DatetimeExpression(KQL('todatetime({})'.format(expr)))
+
     # ------------------------------------------------------
     # Aggregative Functions
     # ------------------------------------------------------
 
     def test_any(self):
         self.assertEqual(
-            Query().summarize(f.any).render(),
-            " | where (strcat_array(foo, ',')) == \"A,B,C\"")
+            Query().summarize(f.any(col.foo, col.bar, col.fam)).render(),
+            " | summarize any(foo, bar, fam)")
+
+    def test_arg_max(self):
+        self.assertEqual(
+            Query().summarize(f.arg_max(col.foo, col.bar, col.fam)).render(),
+            " | summarize arg_max(foo, bar, fam)")
+
+    def test_arg_min(self):
+        self.assertEqual(
+            Query().summarize(f.arg_min(col.foo, col.bar, col.fam)).render(),
+            " | summarize arg_min(foo, bar, fam)")
+
+    def test_avg(self):
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).render(),
+            " | summarize avg(foo)")
+
+    def test_avgif(self):
+        self.assertEqual(
+            Query().summarize(f.avgif(col.foo, col.bar)).render(),
+            " | summarize avgif(foo, bar)")
+
+    def test_count(self):
+        self.assertEqual(
+            Query().summarize(f.count()).render(),
+            " | summarize count()")
+        self.assertEqual(
+            Query().summarize(f.count(col.foo)).render(),
+            " | summarize count(foo)")
+
+    def test_countif(self):
+        self.assertEqual(
+            Query().summarize(f.countif(col.foo == 1)).render(),
+            " | summarize countif(foo == 1)")
+
+    def test_dcount(self):
+        self.assertEqual(
+            Query().summarize(f.dcount(col.foo)).render(),
+            " | summarize dcount(foo)")
+        acc = 0.1
+        self.assertEqual(
+            Query().summarize(f.dcount(col.foo, acc)).render(),
+            " | summarize dcount(foo, 0.1)")
+
+    def test_hll(self):
+        self.assertEqual(
+            Query().summarize(f.hll(col.foo)).render(),
+            " | summarize hll(foo)")
+        acc = 0.1
+        self.assertEqual(
+            Query().summarize(f.hll(col.foo, acc)).render(),
+            " | summarize hll(foo, 0.1)")
+
+    def test_hll_merge(self):
+        self.assertEqual(
+            Query().summarize(f.hll_merge(col.foo)).render(),
+            " | summarize hll_merge(foo)")

@@ -262,5 +262,33 @@ class AggregationExpression(BaseExpression):
     pass
 
 
+class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
+    pass
+
+
+class NumberAggregationExpression(AggregationExpression, NumberExpression):
+    pass
+
+
+class StringAggregationExpression(AggregationExpression, StringExpression):
+    pass
+
+
+class DatetimeAggregationExpression(AggregationExpression, DatetimeExpression):
+    pass
+
+
+class TimespanAggregationExpression(AggregationExpression, TimespanExpression):
+    pass
+
+
+class ArrayAggregationExpression(AggregationExpression, ArrayExpression):
+    pass
+
+
+class MappingAggregationExpression(AggregationExpression, MappingExpression):
+    pass
+
+
 class GroupExpression(BaseExpression):
     pass

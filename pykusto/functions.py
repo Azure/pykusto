@@ -48,9 +48,9 @@ def array_length(expr: ArrayType) -> NumberExpression:
 # def base64_encode_tostring(self): return
 #
 #
-# def bag_keys(self): return
-#
-#
+def bag_keys(self): return  # TODO
+
+
 # def beta_cdf(self): return
 #
 #
@@ -246,7 +246,7 @@ def hourofday(expr: DatetimeType) -> DatetimeExpression:
 
 
 def iif(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('iff({}, {}, {})'.format(predicate, if_true, if_false)))
+    return BaseExpression(KQL('iif({}, {}, {})'.format(predicate, if_true, if_false)))
 
 
 #
@@ -351,16 +351,16 @@ def now(offset: TimespanType = None) -> StringExpression:
     return StringExpression(KQL('now()'))
 
 
-# def pack(self): return
-#
-#
-# def pack_all(self): return
-#
-#
-# def pack_array(self): return
-#
-#
-# def pack_dictionary(self): return
+def pack(self): return  # TODO
+
+
+def pack_all(self): return  # TODO
+
+
+def pack_array(self): return  # TODO
+
+
+def pack_dictionary(self): return  # TODO
 #
 #
 # def parse_csv(self): return
@@ -694,34 +694,34 @@ def arg_min(*args: ExpressionType) -> AggregationExpression:
     return AggregationExpression(KQL(res))
 
 
-def avg(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('avg({})'.format(expr)))
+def avg(expr: ExpressionType) -> NumberAggregationExpression:
+    return NumberAggregationExpression(KQL('avg({})'.format(expr)))
 
 
-def avgif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
-    return AggregationExpression(KQL('avgif({}, {})'.format(expr, predicate)))
+def avgif(expr: ExpressionType, predicate: BooleanType) -> NumberAggregationExpression:
+    return NumberAggregationExpression(KQL('avgif({}, {})'.format(expr, predicate)))
 
 
 # def buildschema(self):
 #     return
 
 
-def count(col: Column = None):
+def count(col: Column = None) -> NumberAggregationExpression:
     res = "count()" if col is None else "count({})".format(col.kql)
-    return AggregationExpression(KQL(res))
+    return NumberAggregationExpression(KQL(res))
 
 
-def countif(predicate: BooleanType) -> AggregationExpression:
-    return AggregationExpression(KQL('countif({})'.format(predicate)))
+def countif(predicate: BooleanType) -> NumberAggregationExpression:
+    return NumberAggregationExpression(KQL('countif({})'.format(predicate)))
 
 
-def dcount(expr: ExpressionType, accuracy: NumberType = None) -> AggregationExpression:
-    return AggregationExpression(KQL(
+def dcount(expr: ExpressionType, accuracy: NumberType = None) -> NumberAggregationExpression:
+    return NumberAggregationExpression(KQL(
         ('dcount({})' if accuracy is None else 'dcount({}, {})').format(expr, accuracy)))
 
 
-def dcountif(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> AggregationExpression:
-    return AggregationExpression(KQL('dcountif({}, {}, {})'.format(expr, predicate, accuracy)))
+def dcountif(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberAggregationExpression:
+    return NumberAggregationExpression(KQL('dcountif({}, {}, {})'.format(expr, predicate, accuracy)))
 
 
 def hll(expr: ExpressionType, accuracy: NumberType = None) -> AggregationExpression:
@@ -733,22 +733,22 @@ def hll_merge(expr: ExpressionType) -> AggregationExpression:
     return AggregationExpression(KQL('hll_merge({})'.format(expr)))
 
 
-def make_bag(expr: ExpressionType, max_size: NumberType = None) -> ArrayExpression:
+def make_bag(expr: ExpressionType, max_size: NumberType = None) -> MappingAggregationExpression:
     if max_size:
-        return ArrayExpression(KQL('make_bag({}, {})'.format(expr, max_size)))
-    return ArrayExpression(KQL('make_bag({})'.format(expr)))
+        return MappingAggregationExpression(KQL('make_bag({}, {})'.format(expr, max_size)))
+    return MappingAggregationExpression(KQL('make_bag({})'.format(expr)))
 
 
-def make_list(expr: ExpressionType, max_size: NumberType = None) -> ArrayExpression:
+def make_list(expr: ExpressionType, max_size: NumberType = None) -> ArrayAggregationExpression:
     if max_size:
-        return ArrayExpression(KQL('make_list({}, {})'.format(expr, max_size)))
-    return ArrayExpression(KQL('make_list({})'.format(expr)))
+        return ArrayAggregationExpression(KQL('make_list({}, {})'.format(expr, max_size)))
+    return ArrayAggregationExpression(KQL('make_list({})'.format(expr)))
 
 
-def make_set(expr: ExpressionType, max_size: NumberType = None) -> ArrayExpression:
+def make_set(expr: ExpressionType, max_size: NumberType = None) -> ArrayAggregationExpression:
     if max_size:
-        return ArrayExpression(KQL('make_set({}, {})'.format(expr, max_size)))
-    return ArrayExpression(KQL('make_set({})'.format(expr)))
+        return ArrayAggregationExpression(KQL('make_set({}, {})'.format(expr, max_size)))
+    return ArrayAggregationExpression(KQL('make_set({})'.format(expr)))
 
 
 def max(expr: ExpressionType) -> AggregationExpression:
@@ -791,13 +791,13 @@ def sumif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression
 #     return
 
 
-def variance(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('variance({})'.format(expr)))
+def variance(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('variance({})'.format(expr)))
 
 
-def varianceif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
-    return NumberExpression(KQL('varianceif({}, {})'.format(expr, predicate)))
+def varianceif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
+    return AggregationExpression(KQL('varianceif({}, {})'.format(expr, predicate)))
 
 
-def variancep(expr: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('variancep({})'.format(expr)))
+def variancep(expr: ExpressionType) -> AggregationExpression:
+    return AggregationExpression(KQL('variancep({})'.format(expr)))

@@ -1,4 +1,4 @@
-from pykusto.column import column_generator as col
+from pykusto.expressions import column_generator as col
 from pykusto.query import Query
 from test.test_base import TestBase
 
@@ -32,4 +32,10 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | where (dict[foo]) == "bar"',
             Query().where(col.dict[col.foo] == 'bar').render(),
+        )
+
+    def test_assign_to(self):
+        self.assertEqual(
+            " | extend ['foo.bar'] = (shoo * 2)",
+            Query().extend((col.shoo * 2).assign_to(col.foo.bar)).render(),
         )

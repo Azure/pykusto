@@ -1,7 +1,6 @@
 from pykusto import functions as f
-from pykusto.assignments import AssignmentBase
 from pykusto.client import PyKustoClient
-from pykusto.column import column_generator as col
+from pykusto.expressions import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
@@ -104,7 +103,19 @@ class TestQuery(TestBase):
     def test_extend(self):
         self.assertEqual(
             " | extend sum = (v1 + v2), foo = (bar * 4) | take 5",
-            Query().extend(AssignmentBase.assign(col.v1 + col.v2, col.sum), foo=col.bar * 4).take(5).render(),
+            Query().extend((col.v1 + col.v2).assign_to(col.sum), foo=col.bar * 4).take(5).render(),
+        )
+
+    def test_extend_assign_to_multiple_columns(self):
+        self.assertEqual(
+            " | extend (foo1, foo2) = foo, shoo = (bar * 4)",
+            Query().extend(col.foo.assign_to(col.foo1, col.foo2), shoo=col.bar * 4).render(),
+        )
+
+    def test_extend_generate_column_name(self):
+        self.assertEqual(
+            " | extend v1 + v2, foo = (bar * 4)",
+            Query().extend(col.v1 + col.v2, foo=col.bar * 4).render(),
         )
 
     def test_summarize(self):

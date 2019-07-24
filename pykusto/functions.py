@@ -274,51 +274,51 @@ def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionTyp
 
 
 def isempty(expr: ExpressionType) -> BooleanExpression:
-    return BooleanExpression(KQL('isempty({})'.format(expr)))
+    return expr.is_empty()
 
 
 def isfinite(expr: NumberType) -> BooleanExpression:
-    return BooleanExpression(KQL('isfinite({})'.format(expr)))
+    return expr.isfinite()
 
 
 def isinf(expr: NumberType) -> BooleanExpression:
-    return BooleanExpression(KQL('isinf({})'.format(expr)))
+    return expr.isinf()
 
 
-def isnan(expr: ExpressionType) -> BooleanExpression:
-    return BooleanExpression(KQL('isnan({})'.format(expr)))
+def isnan(expr: NumberExpression) -> BooleanExpression:
+    return expr.isnan()
 
 
 def isnotempty(expr: ExpressionType) -> BooleanExpression:
-    return BooleanExpression(KQL('isnotempty({})'.format(expr)))
+    return expr.is_not_empty()
 
 
 def isnotnull(expr: ExpressionType) -> BooleanExpression:
-    return BooleanExpression(KQL('isnotnull({})'.format(expr)))
+    return expr.is_not_null()
 
 
 def isnull(expr: ExpressionType) -> BooleanExpression:
-    return BooleanExpression(KQL('isnull({})'.format(expr)))
+    return expr.is_null()
 
 
 def isutf8(expr: StringType) -> BooleanExpression:
-    return BooleanExpression(KQL('isutf8({})'.format(expr)))
+    return expr.is_utf8()
 
 
 def log(expr: NumberType) -> NumberExpression:
-    return NumberExpression(KQL('log({})'.format(expr)))
+    return expr.log()
 
 
 def log10(expr: NumberType) -> NumberExpression:
-    return NumberExpression(KQL('log10({})'.format(expr)))
+    return expr.log10()
 
 
 def log2(expr: NumberType) -> NumberExpression:
-    return NumberExpression(KQL('log2({})'.format(expr)))
+    return expr.log2()
 
 
 def loggamma(expr: NumberType) -> NumberExpression:
-    return NumberExpression(KQL('loggamma({})'.format(expr)))
+    return expr.loggamma()
 
 
 def make_datetime(year: NumberType,
@@ -433,9 +433,7 @@ def pow(expr1: NumberType, expr2: NumberType) -> NumberExpression:
 
 
 def round(expr: NumberType, precision: NumberType = None) -> NumberExpression:
-    return NumberExpression(KQL(
-        ('round({}, {})' if precision is None else 'round({}, {})').format(expr, precision)
-    ))
+    return expr.round(precision)
 
 
 # def series_add(self): return
@@ -549,27 +547,19 @@ def sqrt(expr: NumberType) -> NumberExpression:
 
 
 def startofday(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    return DatetimeExpression(KQL(
-        ('startofday({})' if offset is None else 'startofday({}, {})').format(expr, offset)
-    ))
+    return expr.startofday(offset)
 
 
 def startofmonth(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    return DatetimeExpression(KQL(
-        ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(expr, offset)
-    ))
+    return expr.startofmonth(offset)
 
 
 def startofweek(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    return DatetimeExpression(KQL(
-        ('startofweek({})' if offset is None else 'startofweek({}, {})').format(expr, offset)
-    ))
+    return expr.startofweek(offset)
 
 
 def startofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-    return DatetimeExpression(KQL(
-        ('startofyear({})' if offset is None else 'startofyear({}, {})').format(expr, offset)
-    ))
+    return expr.startofyear(offset)
 
 
 def strcat(self): return  # TODO
@@ -697,7 +687,10 @@ def weekofyear(self): return  # TODO
 def zip(self): return  # TODO
 
 
+# ----------------------------------------------------
 # aggregative functions
+# -----------------------------------------------------
+
 def any(*args: ExpressionType) -> AggregationExpression:
     res = 'any({})'.format(', '.join([arg.kql for arg in args]))
     return AggregationExpression(KQL(res))

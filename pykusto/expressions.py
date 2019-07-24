@@ -14,7 +14,6 @@ MappingType = Union[Mapping, 'MappingExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
 AggregationType = Union['AggregationExpression']
-GroupExpressionType = Union['GroupExpression']
 DynamicType = Union[ArrayType, MappingType]
 OrderType = Union[DatetimeType, TimespanType, NumberType, StringType]
 
@@ -154,16 +153,16 @@ class NumberExpression(BaseExpression):
     def floor(self, round_to: NumberType) -> 'NumberExpression':
         return NumberExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
-    def bin(self, round_to: NumberType) -> 'GroupExpression':
-        return GroupExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+    def bin(self, round_to: NumberType) -> 'BaseExpression':
+        return BaseExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
-    def bin_at(self, round_to: NumberType, fixed_point: NumberType) -> 'GroupExpression':
-        return GroupExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
-                                                               _subexpr_to_kql(round_to),
-                                                               _subexpr_to_kql(fixed_point))))
+    def bin_at(self, round_to: NumberType, fixed_point: NumberType) -> 'BaseExpression':
+        return BaseExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                              _subexpr_to_kql(round_to),
+                                                              _subexpr_to_kql(fixed_point))))
 
-    def bin_auto(self) -> 'GroupExpression':
-        return GroupExpression(KQL('bin_auto({})'.format(self.kql)))
+    def bin_auto(self) -> 'BaseExpression':
+        return BaseExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def ceiling(self) -> 'NumberExpression':
         return NumberExpression(KQL('ceiling({})'.format(self.kql)))
@@ -268,16 +267,16 @@ class DatetimeExpression(BaseExpression):
     def floor(self, round_to: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
-    def bin(self, round_to: TimespanType) -> 'GroupExpression':
-        return GroupExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+    def bin(self, round_to: TimespanType) -> 'BaseExpression':
+        return BaseExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
-    def bin_at(self, round_to: TimespanType, fixed_point: DatetimeType) -> 'GroupExpression':
-        return GroupExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
-                                                               _subexpr_to_kql(round_to),
-                                                               _subexpr_to_kql(fixed_point))))
+    def bin_at(self, round_to: TimespanType, fixed_point: DatetimeType) -> 'BaseExpression':
+        return BaseExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                              _subexpr_to_kql(round_to),
+                                                              _subexpr_to_kql(fixed_point))))
 
-    def bin_auto(self) -> 'GroupExpression':
-        return GroupExpression(KQL('bin_auto({})'.format(self.kql)))
+    def bin_auto(self) -> 'BaseExpression':
+        return BaseExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def endofday(self, offset: NumberType = None) -> 'DatetimeExpression':
         if offset is None:
@@ -334,16 +333,16 @@ class TimespanExpression(BaseExpression):
     def ago(self) -> DatetimeExpression:
         return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(self))))
 
-    def bin(self, round_to: TimespanType) -> 'GroupExpression':
-        return GroupExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+    def bin(self, round_to: TimespanType) -> 'BaseExpression':
+        return BaseExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
-    def bin_at(self, round_to: TimespanType, fixed_point: TimespanType) -> 'GroupExpression':
-        return GroupExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
-                                                               _subexpr_to_kql(round_to),
-                                                               _subexpr_to_kql(fixed_point))))
+    def bin_at(self, round_to: TimespanType, fixed_point: TimespanType) -> 'BaseExpression':
+        return BaseExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                              _subexpr_to_kql(round_to),
+                                                              _subexpr_to_kql(fixed_point))))
 
-    def bin_auto(self) -> 'GroupExpression':
-        return GroupExpression(KQL('bin_auto({})'.format(self.kql)))
+    def bin_auto(self) -> 'BaseExpression':
+        return BaseExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def format_timespan(self, format_string: StringType) -> StringExpression:
         return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
@@ -430,10 +429,6 @@ class MappingAggregationExpression(AggregationExpression, MappingExpression):
     pass
 
 
-class GroupExpression(BaseExpression):
-    pass
-
-
 class AssignmentBase:
     _lvalue: Optional[KQL]
     _rvalue: KQL
@@ -470,11 +465,6 @@ class AssignmentToMultipleColumns(AssignmentBase):
 class AssignmentFromAggregationToColumn(AssignmentBase):
     def __init__(self, column: Optional['Column'], aggregation: AggregationType) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
-
-
-class AssignmentFromGroupExpressionToColumn(AssignmentBase):
-    def __init__(self, column: 'Column', group_expression: GroupExpressionType) -> None:
-        super().__init__(column.kql, group_expression)
 
 
 class Column(

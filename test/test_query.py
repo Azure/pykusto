@@ -131,6 +131,12 @@ class TestQuery(TestBase):
                                                                               time_range=f.bin(col.time, 10)).render(),
         )
 
+    def test_summarize_by_expression(self):
+        self.assertEqual(
+            " | summarize count(foo) by tostring(asd)",
+            Query().summarize(f.count(col.foo)).by(f.tostring(col.asd)).render(),
+        )
+
     def test_mv_expand(self):
         self.assertEqual(
             " | mv-expand a, b, c",
@@ -184,4 +190,10 @@ class TestQuery(TestBase):
         self.assertEqual(
             " | project-rename a = b, c = d",
             Query().project_rename(a=col.b, c=col.d).render(),
+        )
+
+    def test_custom(self):
+        self.assertEqual(
+            " | some custom query",
+            Query().custom("some custom query").render(),
         )

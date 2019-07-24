@@ -6,9 +6,8 @@ from typing import Tuple, List, Union, Optional
 from azure.kusto.data.helpers import dataframe_from_result_table
 
 from pykusto.client import Table
-from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression, OrderType, \
-    StringType, AssignmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn, \
-    AssignmentFromGroupExpressionToColumn, Column, BaseExpression
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, BaseExpression, OrderType, \
+    StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression
 from pykusto.utils import KQL, logger
 
 
@@ -140,6 +139,9 @@ class Query:
         if len(columns) == 0:
             raise ValueError("Please specify one or more columns for mv-expand")
         return MvExpandQuery(self, columns, bag_expansion, with_item_index, limit)
+
+    def custom(self, custom_query: str):
+        return CustomQuery(self, custom_query)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -397,8 +399,8 @@ class JoinQuery(Query):
 
 class SummarizeQuery(Query):
     _assignments: List[AssignmentFromAggregationToColumn]
-    _by_columns: List[Union[Column, GroupExpression]]
-    _by_assignments: List[AssignmentFromGroupExpressionToColumn]
+    _by_columns: List[Union[Column, BaseExpression]]
+    _by_assignments: List[AssignmentToSingleColumn]
 
     def __init__(self, head: Query,
                  assignments: List[AssignmentFromAggregationToColumn]):
@@ -407,17 +409,17 @@ class SummarizeQuery(Query):
         self._by_columns = []
         self._by_assignments = []
 
-    def by(self, *args: Union[AssignmentFromGroupExpressionToColumn, Column, GroupExpression],
-           **kwargs: GroupExpression):
+    def by(self, *args: Union[AssignmentToSingleColumn, Column, BaseExpression],
+           **kwargs: BaseExpression):
         for arg in args:
-            if isinstance(arg, Column) or isinstance(arg, GroupExpression):
+            if isinstance(arg, Column) or isinstance(arg, BaseExpression):
                 self._by_columns.append(arg)
-            elif isinstance(arg, AssignmentFromGroupExpressionToColumn):
+            elif isinstance(arg, AssignmentToSingleColumn):
                 self._by_assignments.append(arg)
             else:
                 raise ValueError("Invalid assignment: " + arg.to_kql())
         for column_name, group_exp in kwargs.items():
-            self._by_assignments.append(AssignmentFromGroupExpressionToColumn(Column(column_name), group_exp))
+            self._by_assignments.append(AssignmentToSingleColumn(Column(column_name), group_exp))
         return self
 
     def _compile(self) -> KQL:
@@ -454,3 +456,14 @@ class MvExpandQuery(Query):
         if self._limit:
             res += " limit {}".format(self._limit)
         return KQL(res)
+
+
+class CustomQuery(Query):
+    _custom_query: str
+
+    def __init__(self, head: Query, custom_query: str):
+        super(CustomQuery, self).__init__(head)
+        self._custom_query = custom_query
+
+    def _compile(self) -> KQL:
+        return KQL(self._custom_query)

@@ -9,9 +9,53 @@ from test.test_table import MockKustoClient
 
 class TestQuery(TestBase):
     def test_sanity(self):
+        # test concatenation #
         self.assertEqual(
             Query().where(col.foo > 4).take(5).sort_by(col.bar, Order.ASC, Nulls.LAST).render(),
             " | where foo > 4 | take 5 | sort by bar asc nulls last"
+        )
+
+    def test_where(self):
+        self.assertEqual(
+            Query().where(col.foo > 4).render(),
+            " | where foo > 4"
+        )
+
+    def test_take(self):
+        self.assertEqual(
+            Query().take(3).render(),
+            " | take 3"
+        )
+
+    def test_sort(self):
+        self.assertEqual(
+            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).render(),
+            " | sort by foo desc nulls first"
+        )
+
+    def test_order(self):
+        self.assertEqual(
+            Query().order_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).render(),
+            " | order by foo desc nulls first"
+        )
+
+    def test_order_expression_in_arg(self):
+        self.assertEqual(
+            Query().order_by(f.strlen(col.foo), order=Order.DESC, nulls=Nulls.FIRST).render(),
+            " | order by strlen(foo) desc nulls first"
+        )
+
+    def test_sort_multiple_cols(self):
+        self.assertEqual(
+            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).then_by(col.bar, Order.ASC,
+                                                                                  Nulls.LAST).render(),
+            " | sort by foo desc nulls first, bar asc nulls last"
+        )
+
+    def test_top(self):
+        self.assertEqual(
+            Query().top(3, col.foo, order=Order.DESC, nulls=Nulls.FIRST).render(),
+            " | top 3 by foo desc nulls first"
         )
 
     def test_join_with_table(self):

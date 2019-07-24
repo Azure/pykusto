@@ -8,7 +8,7 @@ from azure.kusto.data.helpers import dataframe_from_result_table
 from pykusto.assignments import AssignmentBase, AssignmentToSingleColumn, AssignmentFromAggregationToColumn, \
     AssignmentFromGroupExpressionToColumn
 from pykusto.column import Column
-from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, GroupExpression, OrderType
 from pykusto.tables import Table
 from pykusto.utils import KQL, logger
 
@@ -66,8 +66,14 @@ class Query:
     def count(self) -> 'CountQuery':
         return CountQuery(self)
 
-    def sort_by(self, col: Column, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
+    def sort_by(self, col: OrderType, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
         return SortQuery(self, col, order, nulls)
+
+    def order_by(self, col: OrderType, order: Order = None, nulls: Nulls = None) -> 'OrderQuery':
+        return OrderQuery(self, col, order, nulls)
+
+    def top(self, num_rows: int, col: Column, order: Order = None, nulls: Nulls = None) -> 'TopQuery':
+        return TopQuery(self, num_rows, col, order, nulls)
 
     def join(self, query: 'Query', kind: JoinKind = None):
         return JoinQuery(self, query, kind)
@@ -200,12 +206,12 @@ class WhereQuery(Query):
         return KQL('where {}'.format(self._predicate.kql))
 
 
-class SingleNumberQuery(Query):
+class _SingleNumberQuery(Query):
     _num_rows: int
     _query_name: str
 
     def __init__(self, head: Query, query_name: str, num_rows: int):
-        super(SingleNumberQuery, self).__init__(head)
+        super(_SingleNumberQuery, self).__init__(head)
         self._query_name = query_name
         self._num_rows = num_rows
 
@@ -213,21 +219,21 @@ class SingleNumberQuery(Query):
         return KQL('{} {}'.format(self._query_name, self._num_rows))
 
 
-class TakeQuery(SingleNumberQuery):
+class TakeQuery(_SingleNumberQuery):
     _num_rows: int
 
     def __init__(self, head: Query, num_rows: int):
         super(TakeQuery, self).__init__(head, 'take', num_rows)
 
 
-class LimitQuery(SingleNumberQuery):
+class LimitQuery(_SingleNumberQuery):
     _num_rows: int
 
     def __init__(self, head: Query, num_rows: int):
         super(LimitQuery, self).__init__(head, 'limit', num_rows)
 
 
-class SampleQuery(SingleNumberQuery):
+class SampleQuery(_SingleNumberQuery):
     _num_rows: int
 
     def __init__(self, head: Query, num_rows: int):
@@ -244,24 +250,67 @@ class CountQuery(Query):
         return KQL('count')
 
 
-class SortQuery(Query):
-    _col: Column
-    _order: Order
-    _nulls: Nulls
+class _OrderQueryBase(Query):
+    class OrderSpec:
+        col: OrderType
+        order: Order
+        nulls: Nulls
 
-    def __init__(self, head: Query, col: Column, order: Order, nulls: Nulls):
-        super(SortQuery, self).__init__(head)
-        self._col = col
-        self._order = order
-        self._nulls = nulls
+        def __init__(self, col: OrderType, order: Order, nulls: Nulls):
+            self.col = col
+            self.order = order
+            self.nulls = nulls
+
+    _query_name: str
+    _order_specs: List[OrderSpec]
+
+    def __init__(self, head: Query, query_name: str, col: OrderType, order: Order, nulls: Nulls):
+        super(_OrderQueryBase, self).__init__(head)
+        self._query_name = query_name
+        self._order_specs = []
+        self.then_by(col, order, nulls)
+
+    def then_by(self, col: OrderType, order: Order, nulls: Nulls):
+        self._order_specs.append(_OrderQueryBase.OrderSpec(col, order, nulls))
+        return self
+
+    @staticmethod
+    def _compile_order_spec(order_spec):
+        res = str(order_spec.col.kql)
+        if order_spec.order is not None:
+            res += " " + str(order_spec.order.value)
+        if order_spec.nulls is not None:
+            res += " nulls " + str(order_spec.nulls.value)
+        return res
 
     def _compile(self) -> KQL:
-        result = 'sort by {}'.format(self._col.kql, self._order.value)
-        if self._order is not None:
-            result += " " + str(self._order.value)
-        if self._nulls is not None:
-            result += " nulls " + str(self._nulls.value)
-        return KQL(result)
+        return KQL(
+            '{} by {}'.format(self._query_name,
+                              ", ".join([self._compile_order_spec(order_spec) for order_spec in self._order_specs])))
+
+
+class SortQuery(_OrderQueryBase):
+    def __init__(self, head: Query, col: OrderType, order: Order, nulls: Nulls):
+        super(SortQuery, self).__init__(head, "sort", col, order, nulls)
+
+
+class OrderQuery(_OrderQueryBase):
+    def __init__(self, head: Query, col: OrderType, order: Order, nulls: Nulls):
+        super(OrderQuery, self).__init__(head, "order", col, order, nulls)
+
+
+class TopQuery(Query):
+    _num_rows: int
+    _order_spec: OrderQuery.OrderSpec
+
+    def __init__(self, head: Query, num_rows: int, col: Column, order: Order, nulls: Nulls):
+        super(TopQuery, self).__init__(head)
+        self._num_rows = num_rows
+        self._order_spec = OrderQuery.OrderSpec(col, order, nulls)
+
+    def _compile(self) -> KQL:
+        # noinspection PyProtectedMember
+        return KQL('top {} by {}'.format(self._num_rows, SortQuery._compile_order_spec(self._order_spec)))
 
 
 class JoinException(Exception):
@@ -305,16 +354,18 @@ class JoinQuery(Query):
 
 
 class SummarizeQuery(Query):
-    _aggs: List[AggregationExpression] = []
-    _assignments: List[AssignmentFromAggregationToColumn] = []
-    _by_columns: List[Union[Column, GroupExpression]] = []
-    _by_assignments: List[AssignmentFromGroupExpressionToColumn] = []
+    _aggs: List[AggregationExpression]
+    _assignments: List[AssignmentFromAggregationToColumn]
+    _by_columns: List[Union[Column, GroupExpression]]
+    _by_assignments: List[AssignmentFromGroupExpressionToColumn]
 
     def __init__(self, head: Query, aggs: List[AggregationExpression],
                  assignments: List[AssignmentFromAggregationToColumn]):
         super(SummarizeQuery, self).__init__(head)
         self._aggs = aggs
         self._assignments = assignments
+        self._by_columns = []
+        self._by_assignments = []
 
     def by(self, *args: Union[AssignmentFromGroupExpressionToColumn, Column, GroupExpression],
            **kwargs: GroupExpression):

@@ -191,3 +191,9 @@ class TestQuery(TestBase):
             " | project-rename a = b, c = d",
             Query().project_rename(a=col.b, c=col.d).render(),
         )
+
+    def test_custom(self):
+        self.assertEqual(
+            " | some custom query",
+            Query().custom("some custom query").render(),
+        )

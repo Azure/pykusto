@@ -139,6 +139,9 @@ class Query:
             raise ValueError("Please specify one or more columns for mv-expand")
         return MvExpandQuery(self, columns, bag_expansion, with_item_index, limit)
 
+    def custom(self, custom_query: str):
+        return CustomQuery(self, custom_query)
+
     @abstractmethod
     def _compile(self) -> KQL:
         pass
@@ -457,3 +460,14 @@ class MvExpandQuery(Query):
         if self._limit:
             res += " limit {}".format(self._limit)
         return KQL(res)
+
+
+class CustomQuery(Query):
+    _custom_query: str
+
+    def __init__(self, head: Query, custom_query: str):
+        super(CustomQuery, self).__init__(head)
+        self._custom_query = custom_query
+
+    def _compile(self) -> KQL:
+        return KQL(self._custom_query)

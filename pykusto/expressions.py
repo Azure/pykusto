@@ -512,6 +512,11 @@ class AssignmentToSingleColumn(AssignmentBase):
         super().__init__(column.kql, expression)
 
 
+class AssignmentFromColumnToColumn(AssignmentToSingleColumn):
+    def __init__(self, target: 'Column', source: 'Column') -> None:
+        super().__init__(target, source)
+
+
 class AssignmentToMultipleColumns(AssignmentBase):
     def __init__(self, columns: Union[List['Column'], Tuple['Column']], expression: ArrayType) -> None:
         super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
@@ -541,6 +546,13 @@ class Column(
 
     def __len__(self) -> NumberExpression:
         raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
+
+    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
+        if len(columns) == 0:
+            return super().assign_to()
+        if len(columns) == 1:
+            return AssignmentFromColumnToColumn(columns[0], self)
+        return ArrayExpression.assign_to(self, *columns)
 
 
 class ColumnGenerator:

@@ -1,20 +1,26 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+_pykusto_ is an advanced Python SDK for Azure Data Explorer (a.k.a. Kusto).
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+### Installation
+pip install git+https://yomost@dev.azure.com/yomost/pykusto/_git/pykusto
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+### Usage
+```
+from pykusto.tables import PyKustoClient
+from pykusto.query import Query
+from pykusto.column import column_generator as col
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+client = PyKustoClient('https://help.kusto.windows.net')
+print(client.show_databases())
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+print(client['Samples'].show_tables())
+
+table = client['Samples']['StormEvents']
+Query(table)\
+    .project(col.StartTime, col.EndTime, col.EventType, col.Source)\
+    .extend(Duration=col.EndTime - col.StartTime)\
+    .where(col.Duration > timedelta(hours=1))\
+    .take(5)\
+    .to_dataframe()
+```

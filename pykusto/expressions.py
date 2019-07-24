@@ -83,8 +83,12 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
-    def assign_to(self, column: 'Column') -> 'AssignmentToSingleColumn':
-        return AssignmentToSingleColumn(column, self)
+    def assign_to(self, *columns: 'Column') -> 'AssignmentToSingleColumn':
+        if len(columns) == 0:
+            raise ValueError("Provide at least one column")
+        if len(columns) == 1:
+            return AssignmentToSingleColumn(columns[0], self)
+        raise ValueError("Only arrays can be assigned to multiple columns")
 
 
 class BooleanExpression(BaseExpression):
@@ -362,6 +366,11 @@ class ArrayExpression(BaseExpression):
 
     def __getitem__(self, index: NumberType) -> BaseExpression:
         return BaseExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
+        if len(columns) <= 1:
+            return super().assign_to(*columns)
+        return AssignmentToMultipleColumns(columns, self)
 
 
 class MappingExpression(BaseExpression):

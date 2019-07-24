@@ -269,6 +269,9 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
+    def __getitem__(self, index: NumberType) -> BaseExpression:
+        return BaseExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
 
 class MappingExpression(BaseExpression):
     def keys(self) -> ArrayExpression:
@@ -279,6 +282,9 @@ class MappingExpression(BaseExpression):
         return MappingExpression(KQL('pack({})'.format(
             ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
         )))
+
+    def __getitem__(self, index: StringType) -> BaseExpression:
+        return BaseExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
 
 
 class AggregationExpression(BaseExpression):

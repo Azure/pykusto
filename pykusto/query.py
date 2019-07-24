@@ -38,6 +38,11 @@ class JoinKind(Enum):
     RIGHTSEMI = "rightsemi"
 
 
+class BagExpansion(Enum):
+    BAG = "bag"
+    ARRAY = "array"
+
+
 class Query:
     _head: Optional['Query']
     _table: Optional[Table]
@@ -107,6 +112,12 @@ class Query:
         for column_name, agg in kwargs.items():
             assignments.append(AssignmentFromAggregationToColumn(Column(column_name), agg))
         return SummarizeQuery(self, aggs, assignments)
+
+    def mv_expand(self, *columns: Column, bag_expansion: BagExpansion = None, with_item_index: Column = None,
+                  limit: int = None):
+        if len(columns) == 0:
+            raise ValueError("Please specify one or more columns for mv-expand")
+        return MvExpandQuery(self, columns, bag_expansion, with_item_index, limit)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -329,3 +340,29 @@ class SummarizeQuery(Query):
                 (a.to_kql() for a in self._by_assignments)
             )))
         return KQL(result)
+
+
+class MvExpandQuery(Query):
+    _columns: Tuple[Column]
+    _bag_expansion: BagExpansion
+    _with_item_index: Column
+    _limit: int
+
+    def __init__(self, head: Query, columns: Tuple[Column], bag_expansion: BagExpansion, with_item_index: Column,
+                 limit: int):
+        super(MvExpandQuery, self).__init__(head)
+        self._columns = columns
+        self._bag_expansion = bag_expansion
+        self._with_item_index = with_item_index
+        self._limit = limit
+
+    def _compile(self) -> KQL:
+        res = "mv-expand "
+        if self._bag_expansion is not None:
+            res += "bagexpansion={} ".format(self._bag_expansion.value)
+        if self._with_item_index is not None:
+            res += "with_itemindex={} ".format(self._with_item_index.kql)
+        res += ", ".join([c.kql for c in self._columns])
+        if self._limit:
+            res += " limit {}".format(self._limit)
+        return KQL(res)

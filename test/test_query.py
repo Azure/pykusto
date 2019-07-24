@@ -1,7 +1,7 @@
 from pykusto import functions as f
 from pykusto.assignments import AssignmentBase
 from pykusto.column import column_generator as col
-from pykusto.query import Query, Order, Nulls, JoinKind, JoinException
+from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion
 from pykusto.tables import Table
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
@@ -67,6 +67,25 @@ class TestQuery(TestBase):
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
                                                                               time_range=f.bin(col.time, 10)).render(),
             " | summarize count(foo), my_count = (count(bar)) by bla, bin(date, 1), time_range = (bin(time, 10))",
+        )
+
+    def test_mv_expand(self):
+        self.assertEqual(
+            Query().mv_expand(col.a, col.b, col.c).render(),
+            " | mv-expand a, b, c",
+        )
+
+    def test_mv_expand_args(self):
+        self.assertEqual(
+            Query().mv_expand(col.a, col.b, col.c, bag_expansion=BagExpansion.BAG, with_item_index=col.foo,
+                              limit=4).render(),
+            " | mv-expand bagexpansion=bag with_itemindex=foo a, b, c limit 4",
+        )
+
+    def test_mv_expand_no_args(self):
+        self.assertRaises(
+            ValueError,
+            Query().mv_expand
         )
 
     def test_limit(self):

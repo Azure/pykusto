@@ -85,7 +85,7 @@ class BaseExpression:
     def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
         if len(columns) == 0:
             # Unspecified column name
-            AssignmentBase(None, self)
+            return AssignmentBase(None, self)
         if len(columns) == 1:
             return AssignmentToSingleColumn(columns[0], self)
         raise ValueError("Only arrays can be assigned to multiple columns")

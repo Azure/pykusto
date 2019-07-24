@@ -114,7 +114,7 @@ class TestQuery(TestBase):
 
     def test_extend_generate_column_name(self):
         self.assertEqual(
-            " | extend v1 + v2, foo = (bar * 4)",
+            " | extend (v1 + v2), foo = (bar * 4)",
             Query().extend(col.v1 + col.v2, foo=col.bar * 4).render(),
         )
 

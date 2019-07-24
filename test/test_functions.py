@@ -337,6 +337,14 @@ class TestFunction(TestBase):
             Query().summarize(f.avgif(col.foo, col.bar)).render(),
             " | summarize avgif(foo, bar)")
 
+    def test_bin(self):
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).by(f.bin(col.bar, 0.1)).render(),
+            " | summarize avg(foo) by bin(bar, 0.1)")
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo)).by(f.bin(col.bar, datetime.timedelta(0.5))).render(),
+            " | summarize avg(foo) by bin(bar, time(0.12:0:0.0))")
+
     def test_count(self):
         self.assertEqual(
             Query().summarize(f.count()).render(),

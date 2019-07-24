@@ -61,7 +61,8 @@ def bag_keys(expr: DynamicType):
 # def beta_pdf(self): return
 
 
-def bin(expr: [NumberType, DatetimeType, ], round_to: NumberType) -> GroupExpression:
+def bin(expr: Union[NumberType, DatetimeType, TimespanType],
+        round_to: Union[NumberType, TimespanType]) -> GroupExpression:
     """
     Refers only to bin() as part of summarize by bin(...),
      if you wish to use it as a scalar function, use 'floor()' instead

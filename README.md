@@ -34,7 +34,7 @@ table = client['Samples']['StormEvents']
         # Python types are implicitly converted to Kusto types behind the scenes
         .where(col.Duration > timedelta(hours=1))
         .take(5)
-          # Output to pandas dataframe
+        # Output to pandas dataframe
         .to_dataframe()
 ) 
 ```

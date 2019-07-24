@@ -169,19 +169,19 @@ class StringExpression(BaseExpression):
         return BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)
 
     def not_equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, ' !=' if case_sensitive else ' !~ ', other)
+        return BooleanExpression.binary_op(self, ' != ' if case_sensitive else ' !~ ', other)
 
     def matches(self, regex: StringType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
     def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, 'contains_cs' if case_sensitive else 'contains', other)
+        return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
 
     def startswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, 'startswith_cs' if case_sensitive else 'startswith', other)
+        return BooleanExpression.binary_op(self, ' startswith_cs ' if case_sensitive else ' startswith ', other)
 
     def endswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, 'endswith_cs' if case_sensitive else 'endswith', other)
+        return BooleanExpression.binary_op(self, ' endswith_cs ' if case_sensitive else ' endswith ', other)
 
     def to_int(self) -> NumberExpression:
         return NumberExpression(KQL('toint({})'.format(self.kql)))

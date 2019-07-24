@@ -161,6 +161,7 @@ class TestFunction(TestBase):
             Query().where(f.loggamma(col.foo) < 3).render(),
             " | where (loggamma(foo)) < 3")
 
+
     def test_make_datetime(self):
         self.assertEqual(
             Query().where(f.make_datetime(col.y, col.m, col.d) > datetime.datetime(2019, 7, 23)).render(),
@@ -311,6 +312,9 @@ class TestFunction(TestBase):
         self.assertEqual(
             Query().summarize(f.avg(col.foo)).render(),
             " | summarize avg(foo)")
+        self.assertEqual(
+            Query().summarize(f.avg(col.foo) - 5).render(),
+            " | summarize avg(foo)-5")
 
     def test_avgif(self):
         self.assertEqual(
@@ -353,6 +357,21 @@ class TestFunction(TestBase):
             Query().summarize(f.hll_merge(col.foo)).render(),
             " | summarize hll_merge(foo)")
 
+    def test_make_bag(self):
+        self.assertEqual(
+            Query().summarize(f.make_bag(col.foo)).render(),
+            " | summarize make_bag(foo)")
+
+    def test_make_list(self):
+        self.assertEqual(
+            Query().summarize(f.make_list(col.foo)).render(),
+            " | summarize make_list(foo)")
+
+    def test_make_set(self):
+        self.assertEqual(
+            Query().summarize(f.make_set(col.foo)).render(),
+            " | summarize make_set(foo)")
+
     def test_max(self):
         self.assertEqual(
             Query().summarize(f.max(col.foo)).render(),
@@ -378,14 +397,27 @@ class TestFunction(TestBase):
             Query().summarize(f.stdevp(col.foo)).render(),
             " | summarize stdevp(foo)")
 
-#
-# def stdevp(expr: ExpressionType) -> BaseExpression:
-#     return BaseExpression(KQL('stdevp({})'.format(expr)))
-#
-#
-# def sum(expr: ExpressionType) -> BaseExpression:
-#     return BaseExpression(KQL('sum({})'.format(expr)))
-#
-#
-# def sumif(expr: ExpressionType, predicate: BooleanType) -> BaseExpression:
-#     return NumberExpression(KQL('sumif({}, {})'.format(expr, predicate)))
+    def test_sum(self):
+        self.assertEqual(
+            Query().summarize(f.sum(col.foo)).render(),
+            " | summarize sum(foo)")
+
+    def test_sumif(self):
+        self.assertEqual(
+            Query().summarize(f.sumif(col.foo, col.bar)).render(),
+            " | summarize sumif(foo, bar)")
+
+    def test_variance(self):
+        self.assertEqual(
+            Query().summarize(f.variance(col.foo)).render(),
+            " | summarize variance(foo)")
+
+    def test_varianceif(self):
+        self.assertEqual(
+            Query().summarize(f.varianceif(col.foo, col.bar)).render(),
+            " | summarize varianceif(foo, bar)")
+
+    def test_variancep(self):
+        self.assertEqual(
+            Query().summarize(f.variancep(col.foo)).render(),
+            " | summarize variancep(foo)")

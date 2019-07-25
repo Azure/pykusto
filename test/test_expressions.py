@@ -47,3 +47,9 @@ class TestExpressions(TestBase):
             " | where foo between (time(0.0:0:0.0) .. time(0.3:0:0.0))",
             Query().where(col.foo.between(timedelta(0), timedelta(hours=3))).render(),
         )
+
+    def test_is_empty(self):
+        self.assertEqual(
+            'isempty(foo)',
+            col.foo.is_empty().kql,
+        )

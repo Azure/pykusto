@@ -100,7 +100,7 @@ def bin_auto(expr: Union[NumberType, DatetimeType, TimespanType]) -> BaseExpress
 # def binary_xor(self): return
 
 
-def case(): return  # TODO
+def case(): raise NotImplemented  # TODO
 
 
 def ceiling(expr: NumberType) -> NumberExpression:
@@ -338,10 +338,10 @@ def make_datetime(year: NumberType,
     return DatetimeExpression(KQL(res))
 
 
-def make_string(self): return  # TODO
+def make_string(): raise NotImplemented  # TODO
 
 
-def make_timespan(self): return  # TODO
+def make_timespan(): raise NotImplemented  # TODO
 
 
 # def max_of(self): return
@@ -350,10 +350,10 @@ def make_timespan(self): return  # TODO
 # def min_of(self): return
 
 
-def monthofyear(self): return  # TODO
+def monthofyear(): raise NotImplemented  # TODO
 
 
-def new_guid(self): return  # TODO
+def new_guid(): raise NotImplemented  # TODO
 
 
 def now(offset: TimespanType = None) -> StringExpression:
@@ -362,16 +362,18 @@ def now(offset: TimespanType = None) -> StringExpression:
     return StringExpression(KQL('now()'))
 
 
-def pack(self): return  # TODO
+def pack(): raise NotImplemented  # TODO
 
 
-def pack_all(self): return  # TODO
+def pack_all(): raise NotImplemented  # TODO
 
 
-def pack_array(self): return  # TODO
+def pack_array(): raise NotImplemented  # TODO
 
 
-def pack_dictionary(self): return  # TODO
+def pack_dictionary(): raise NotImplemented  # TODO
+
+
 #
 #
 # def parse_csv(self): return
@@ -380,7 +382,7 @@ def pack_dictionary(self): return  # TODO
 # def parse_ipv4(self): return
 
 
-def parse_json(expr: ExpressionType): return  # TODO
+def parse_json(): raise NotImplemented  # TODO
 
 
 # def parse_path(self): return
@@ -401,10 +403,10 @@ def parse_json(expr: ExpressionType): return  # TODO
 # def parse_xml(self): return
 
 
-def percentile_tdigest(self): return  # TODO
+def percentile_tdigest(): raise NotImplemented  # TODO
 
 
-def percentrank_tdigest(self): return  # TODO
+def percentrank_tdigest(): raise NotImplemented  # TODO
 
 
 def pow(expr1: NumberType, expr2: NumberType) -> NumberExpression:
@@ -562,14 +564,25 @@ def startofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpres
     return expr.startofyear(offset)
 
 
-def strcat(self): return  # TODO
+def strcat(expr1: StringType, expr2: StringType, *exprs: StringType) -> StringExpression:
+    res = 'strcat({}, {}, {})'.format(_subexpr_to_kql(expr1),
+                                      _subexpr_to_kql(expr2),
+                                      ', '.join([_subexpr_to_kql(expr) for expr in exprs]))
+    return StringExpression(KQL(res))
 
 
 def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
     return StringExpression(KQL('strcat_array({}, {})'.format(expr, _subexpr_to_kql(delimiter))))
 
 
-def strcat_delim(): raise NotImplemented  # TODO
+def strcat_delim(delimiter: StringType, expr1: StringType, expr2: StringType, *exprs: StringType) -> StringExpression:
+    res = 'strcat_delim({}, {}, {}, {})'.format(
+        _subexpr_to_kql(delimiter),
+        _subexpr_to_kql(expr1),
+        _subexpr_to_kql(expr2),
+        ', '.join([_subexpr_to_kql(expr) for expr in exprs])
+    )
+    return StringExpression(KQL(res))
 
 
 def strcmp(expr1: StringType, expr2: StringType) -> NumberExpression:
@@ -618,41 +631,41 @@ def todatetime(expr: StringType) -> DatetimeExpression:
     return DatetimeExpression(KQL('todatetime({})'.format(expr)))
 
 
-def todecimal(self): return  # TODO
+def todecimal(): raise NotImplemented  # TODO
 
 
-def todouble(self): return  # TODO
+def todouble(): raise NotImplemented  # TODO
 
 
-def todynamic(self): return  # TODO
+def todynamic(): raise NotImplemented  # TODO
 
 
-def toguid(self): return  # TODO
+def toguid(): raise NotImplemented  # TODO
 
 
-def tohex(self): return  # TODO
+def tohex(): raise NotImplemented  # TODO
 
 
-def toint(self): return  # TODO
+def toint(): raise NotImplemented  # TODO
 
 
-def tolong(self): return  # TODO
+def tolong(): raise NotImplemented  # TODO
 
 
-def tolower(self): return  # TODO
+def tolower(): raise NotImplemented  # TODO
 
 
-def toreal(self): return  # TODO
+def toreal(): raise NotImplemented  # TODO
 
 
 def tostring(expr: ExpressionType):
     return expr.to_string()
 
 
-def totimespan(self): return  # TODO
+def totimespan(): raise NotImplemented  # TODO
 
 
-def toupper(self): return  # TODO
+def toupper(): raise NotImplemented  # TODO
 
 
 # def to_utf8(self): return
@@ -664,7 +677,7 @@ def toupper(self): return  # TODO
 # def treepath(self): return
 
 
-def trim(self): return  # TODO
+def trim(): raise NotImplemented  # TODO
 
 
 # def trim_end(self): return
@@ -673,19 +686,19 @@ def trim(self): return  # TODO
 # def trim_start(self): return
 
 
-def url_decode(self): return  # TODO
+def url_decode(): raise NotImplemented  # TODO
 
 
-def url_encode(self): return  # TODO
+def url_encode(): raise NotImplemented  # TODO
 
 
-def weekofyear(self): return  # TODO
+def weekofyear(): raise NotImplemented  # TODO
 
 
 # def welch_test(self): return
 
 
-def zip(self): return  # TODO
+def zip(): raise NotImplemented  # TODO
 
 
 # ----------------------------------------------------
@@ -774,12 +787,12 @@ def min(expr: ExpressionType) -> AggregationExpression:
     return AggregationExpression(KQL('min({})'.format(expr)))
 
 
-def percentile(expr: ExpressionType, per: NumberType):
+def percentile(expr: ExpressionType, per: NumberType) -> AggregationExpression:
     res = 'percentiles({}, {})'.format(expr, _subexpr_to_kql(per))
     return AggregationExpression(KQL(res))
 
 
-def percentiles(expr: ExpressionType, *pers: NumberType):
+def percentiles(expr: ExpressionType, *pers: NumberType) -> AggregationExpression:
     res = 'percentiles({}, {})'.format(expr,
                                        ', '.join([str(_subexpr_to_kql(per)) for per in pers]))
     return AggregationExpression(KQL(res))

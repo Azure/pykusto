@@ -305,6 +305,18 @@ class TestFunction(TestBase):
             Query().where(f.startofyear(col.foo) > datetime.datetime(2019, 1, 1)).render()
         )
 
+    def test_strcat(self):
+        self.assertEqual(
+            " | extend (strcat(\"hello\", \",\", foo, \"!\"))",
+            Query().extend(f.strcat("hello", ',', col.foo, '!')).render()
+        )
+
+    def test_strcat_delim(self):
+        self.assertEqual(
+            " | extend (strcat_delim(\"-\", \"hello\", \",\", foo, \"!\"))",
+            Query().extend(f.strcat_delim('-', "hello", ',', col.foo, '!')).render()
+        )
+
     def test_strcat_array(self):
         self.assertEqual(
             " | where (strcat_array(foo, \",\")) == \"A,B,C\"",

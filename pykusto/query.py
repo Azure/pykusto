@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from enum import Enum
 from itertools import chain
+from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
 from azure.kusto.data.helpers import dataframe_from_result_table
@@ -9,6 +10,7 @@ from pykusto.client import Table
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression, \
     AssignmentFromColumnToColumn
+from pykusto.udf import stringify_python_func
 from pykusto.utils import KQL, logger
 
 
@@ -145,6 +147,10 @@ class Query:
 
     def custom(self, custom_query: str):
         return CustomQuery(self, custom_query)
+
+    # TODO convert python types to kusto types
+    def evaluate(self, udf: FunctionType, type_spec_str: str):
+        return EvaluatePythonQuery(self, udf, type_spec_str)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -479,3 +485,19 @@ class CustomQuery(Query):
 
     def _compile(self) -> KQL:
         return KQL(self._custom_query)
+
+
+class EvaluatePythonQuery(Query):
+    _udf: FunctionType
+    _type_specs: str
+
+    def __init__(self, head: Query, udf: FunctionType, type_specs: str):
+        super(EvaluatePythonQuery, self).__init__(head)
+        self._udf = udf
+        self._type_specs = type_specs
+
+    def _compile(self) -> KQL:
+        return KQL('evaluate python({},"{}")'.format(
+            self._type_specs,
+            stringify_python_func(self._udf)
+        ))

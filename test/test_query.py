@@ -233,3 +233,15 @@ class TestQuery(TestBase):
             " | distinct *",
             Query().distinct_all().render(),
         )
+
+    def test_udf(self):
+        # noinspection PyGlobalUndefined
+        def func():
+            global result
+            global df
+
+            result = df
+            result['LenZone'] = result["State"] + result["Zone"]
+
+        # TODO assert
+        Query().evaluate(func, "typeof(*, LenZone: string)").render()

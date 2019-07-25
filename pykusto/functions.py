@@ -401,10 +401,10 @@ def parse_json(expr: ExpressionType): return  # TODO
 # def parse_xml(self): return
 
 
-# def percentile_tdigest(self): return
-#
-#
-# def percentrank_tdigest(self): return
+def percentile_tdigest(self): return  # TODO
+
+
+def percentrank_tdigest(self): return  # TODO
 
 
 def pow(expr1: NumberType, expr2: NumberType) -> NumberExpression:
@@ -774,8 +774,15 @@ def min(expr: ExpressionType) -> AggregationExpression:
     return AggregationExpression(KQL('min({})'.format(expr)))
 
 
-def percentiles(self):  # TODO
-    return
+def percentile(expr: ExpressionType, per: NumberType):
+    res = 'percentiles({}, {})'.format(expr, _subexpr_to_kql(per))
+    return AggregationExpression(KQL(res))
+
+
+def percentiles(expr: ExpressionType, *pers: NumberType):
+    res = 'percentiles({}, {})'.format(expr,
+                                       ', '.join([str(_subexpr_to_kql(per)) for per in pers]))
+    return AggregationExpression(KQL(res))
 
 
 def stdev(expr: ExpressionType) -> AggregationExpression:

@@ -525,6 +525,18 @@ class TestFunction(TestBase):
             Query().summarize(f.min(col.foo)).render()
         )
 
+    def test_percentile(self):
+        self.assertEqual(
+            " | summarize percentiles(foo, 5)",
+            Query().summarize(f.percentiles(col.foo, 5)).render()
+        )
+
+    def test_percentiles(self):
+        self.assertEqual(
+            " | summarize percentiles(foo, 5, 50, 95)",
+            Query().summarize(f.percentiles(col.foo, 5, 50, 95)).render()
+        )
+
     def test_stdev(self):
         self.assertEqual(
             " | summarize stdev(foo)",

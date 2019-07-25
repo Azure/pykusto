@@ -305,6 +305,18 @@ class TestFunction(TestBase):
             Query().where(f.startofyear(col.foo) > datetime.datetime(2019, 1, 1)).render()
         )
 
+    def test_strcat(self):
+        self.assertEqual(
+            " | extend (strcat(\"hello\", \",\", foo, \"!\"))",
+            Query().extend(f.strcat("hello", ',', col.foo, '!')).render()
+        )
+
+    def test_strcat_delim(self):
+        self.assertEqual(
+            " | extend (strcat_delim(\"-\", \"hello\", \",\", foo, \"!\"))",
+            Query().extend(f.strcat_delim('-', "hello", ',', col.foo, '!')).render()
+        )
+
     def test_strcat_array(self):
         self.assertEqual(
             " | where (strcat_array(foo, \",\")) == \"A,B,C\"",
@@ -523,6 +535,18 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize min(foo)",
             Query().summarize(f.min(col.foo)).render()
+        )
+
+    def test_percentile(self):
+        self.assertEqual(
+            " | summarize percentiles(foo, 5)",
+            Query().summarize(f.percentiles(col.foo, 5)).render()
+        )
+
+    def test_percentiles(self):
+        self.assertEqual(
+            " | summarize percentiles(foo, 5, 50, 95)",
+            Query().summarize(f.percentiles(col.foo, 5, 50, 95)).render()
         )
 
     def test_stdev(self):

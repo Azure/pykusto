@@ -241,7 +241,7 @@ class TestQuery(TestBase):
             global df
 
             result = df
-            result['LenZone'] = result["State"] + result["Zone"]
+            result['StateZone'] = result["State"] + result["Zone"]
 
         # TODO assert
-        Query().evaluate(func, "typeof(*, LenZone: string)").render()
+        Query().evaluate(func, "typeof(*, StateZone: string)").render()

@@ -53,3 +53,9 @@ class TestExpressions(TestBase):
             'isempty(foo)',
             col.foo.is_empty().kql,
         )
+
+    def test_method_does_not_exist(self):
+        self.assertRaises(
+            AttributeError,
+            col.foo.non_existant_method,
+        )

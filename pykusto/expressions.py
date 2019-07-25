@@ -562,6 +562,10 @@ class Column(
             return AssignmentFromColumnToColumn(columns[0], self)
         return ArrayExpression.assign_to(self, *columns)
 
+    def __call__(self, *args, **kwargs):
+        # Someone tried to call a non-existent method, and a column object was generated
+        raise AttributeError("No such method: " + self.name.split('.')[-1])
+
 
 class ColumnGenerator:
     def __getattr__(self, name: str) -> Column:

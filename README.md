@@ -31,9 +31,9 @@ table = client['Samples']['StormEvents']
     Query(table)        
         # Access columns using 'col' global variable 
         .project(col.StartTime, col.EndTime, col.EventType, col.Source)
-        # Determine new column name using Python keyword argument   
+        # Specify new column name using Python keyword argument   
         .extend(Duration=col.EndTime - col.StartTime)
-        # Python types are implicitly converted to Kusto types behind the scenes
+        # Python types are implicitly converted to Kusto types
         .where(col.Duration > timedelta(hours=1))
         .take(5)
         # Output to pandas dataframe

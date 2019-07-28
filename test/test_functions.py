@@ -6,7 +6,7 @@ from pykusto.query import Query
 from test.test_base import TestBase
 
 
-# TODO bin, bin_at, bin_auto, dcount_hll, floor, iif
+# TODO dcount_hll, iif
 
 class TestFunction(TestBase):
     def test_acos(self):
@@ -37,10 +37,22 @@ class TestFunction(TestBase):
             Query().where(f.bag_keys(col.foo).array_length() > 4).render()
         )
 
+    def test_case(self):
+        self.assertEqual(
+            " | extend bucket = case((foo <= 3), \"Small\", (foo <= 10), \"Medium\", \"Large\")",
+            Query().extend(bucket=f.case(col.foo <= 3, "Small", col.foo <= 10, 'Medium', 'Large')).render()
+        )
+
     def test_ceiling(self):
         self.assertEqual(
             " | where (ceiling(foo)) > 4",
             Query().where(f.ceiling(col.foo) > 4).render()
+        )
+
+    def test_cos(self):
+        self.assertEqual(
+            " | where (cos(foo)) > 4",
+            Query().where(f.cos(col.foo) > 4).render()
         )
 
     def test_endofday(self):
@@ -224,7 +236,6 @@ class TestFunction(TestBase):
             " | where (loggamma(foo)) < 3",
             Query().where(f.loggamma(col.foo) < 3).render()
         )
-
 
     def test_make_datetime(self):
         self.assertEqual(
@@ -418,10 +429,10 @@ class TestFunction(TestBase):
             " | summarize avg(foo)",
             Query().summarize(f.avg(col.foo)).render()
         )
-        # self.assertEqual(
-        #     " | summarize avg(foo)-5",
-        #     Query().summarize(f.avg(col.foo) - 5).render()
-        #     )
+        self.assertEqual(
+            " | summarize avg(foo)-5",
+            Query().summarize(f.avg(col.foo) - 5).render()
+        )
 
     def test_avgif(self):
         self.assertEqual(
@@ -595,4 +606,10 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize variancep(foo)",
             Query().summarize(f.variancep(col.foo)).render()
+        )
+
+    def test_nesting(self):
+        self.assertEqual(
+            " | summarize active_days = dcount(bin(timestamp, time(1.0:0:0.0)))",
+            Query().summarize(active_days=f.dcount(f.bin(col.timestamp, datetime.timedelta(1)))).render()
         )

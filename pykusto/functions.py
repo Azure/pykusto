@@ -100,7 +100,11 @@ def bin_auto(expr: Union[NumberType, DatetimeType, TimespanType]) -> BaseExpress
 # def binary_xor(self): return
 
 
-def case(): raise NotImplemented  # TODO
+def case(predicate: BooleanType, val: ExpressionType, *args: Union[BooleanType, ExpressionType]) -> BaseExpression:
+    res = 'case({}, {}, {})'.format(_subexpr_to_kql(predicate),
+                                    _subexpr_to_kql(val),
+                                    ', '.join([_subexpr_to_kql(arg) for arg in args]))
+    return AggregationExpression(KQL(res))
 
 
 def ceiling(expr: NumberType) -> NumberExpression:
@@ -113,8 +117,9 @@ def ceiling(expr: NumberType) -> NumberExpression:
 # def column_ifexists(self): return
 #
 #
-# def cos(self): return
-#
+
+def cos(expr: NumberType) -> NumberExpression:
+    return expr.cos()
 #
 # def cot(self): return
 

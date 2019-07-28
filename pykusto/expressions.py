@@ -157,6 +157,9 @@ class NumberExpression(BaseExpression):
     def acos(self) -> 'NumberExpression':
         return NumberExpression(KQL('acos({})'.format(self.kql)))
 
+    def cos(self) -> 'NumberExpression':
+        return NumberExpression(KQL('cos({})'.format(self.kql)))
+
     def floor(self, round_to: NumberType) -> 'NumberExpression':
         return NumberExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 

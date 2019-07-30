@@ -59,3 +59,15 @@ class TestExpressions(TestBase):
             AttributeError,
             col.foo.non_existant_method,
         )
+
+    def test_column_generator(self):
+        self.assertEqual(
+            " | project ['foo.bar']",
+            Query().project(col.foo.bar).render(),
+        )
+
+    def test_column_generator_2(self):
+        self.assertEqual(
+            " | project ['foo.bar']",
+            Query().project(col['foo.bar']).render(),
+        )

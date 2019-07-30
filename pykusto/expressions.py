@@ -575,7 +575,7 @@ class ColumnGenerator:
         return Column(name)
 
     def __getitem__(self, name: str) -> Column:
-        return Column[name]
+        return Column(name)
 
 
 # Recommended usage: from pykusto.expressions import column_generator as col

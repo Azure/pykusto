@@ -134,7 +134,7 @@ class Query:
             elif isinstance(arg, AssignmentFromAggregationToColumn):
                 assignments.append(arg)
             else:
-                raise ValueError("Invalid assignment: " + arg.to_kql())
+                raise ValueError("Invalid assignment: " + str(arg))
         for column_name, agg in kwargs.items():
             assignments.append(AssignmentFromAggregationToColumn(Column(column_name), agg))
         return SummarizeQuery(self, assignments)
@@ -232,6 +232,7 @@ class ProjectAwayQuery(Query):
     def _compile(self) -> KQL:
         def col_or_wildcard_to_string(col_or_wildcard):
             return col_or_wildcard.kql if isinstance(col_or_wildcard, Column) else col_or_wildcard
+
         return KQL('project-away {}'.format(', '.join((col_or_wildcard_to_string(c) for c in self._columns))))
 
 

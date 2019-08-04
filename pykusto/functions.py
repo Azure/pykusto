@@ -639,7 +639,8 @@ def todatetime(expr: StringType) -> DatetimeExpression:
 def todecimal(): raise NotImplemented  # TODO
 
 
-def todouble(): raise NotImplemented  # TODO
+def todouble(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("todouble({})".format(expr)))
 
 
 def todynamic(): raise NotImplemented  # TODO

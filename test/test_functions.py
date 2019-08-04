@@ -402,6 +402,12 @@ class TestFunction(TestBase):
     # def todatetime(expr: StringType) -> DatetimeExpression:
     #     return DatetimeExpression(KQL('todatetime({})'.format(expr)))
 
+    def test_todouble(self):
+        self.assertEqual(
+            " | where (todouble(foo)) > 0.2",
+            Query().where(f.todouble(col.foo) > 0.2).render()
+        )
+
     # ------------------------------------------------------
     # Aggregative Functions
     # ------------------------------------------------------

@@ -10,6 +10,7 @@ setup(
     author_email='yomost@microsoft.com',
     description='Advanced python SDK for Azure Data Explorer',
     long_description=open("README.md", "r").read(),
+    long_description_content_type="text/markdown",
     keywords="kusto client library query",
     install_requires=['azure-kusto-data==0.0.31'],
     classifiers=[

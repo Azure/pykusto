@@ -387,7 +387,8 @@ def pack_dictionary(): raise NotImplemented  # TODO
 # def parse_ipv4(self): return
 
 
-def parse_json(): raise NotImplemented  # TODO
+def parse_json(expr: Union[StringType, DynamicType]) -> MappingExpression:
+    return MappingExpression(KQL('parse_json({})'.format(expr)))
 
 
 # def parse_path(self): return

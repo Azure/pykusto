@@ -449,8 +449,11 @@ class MappingExpression(BaseExpression):
             ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
         )))
 
-    def __getitem__(self, index: StringType) -> BaseExpression:
-        return BaseExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+    def __getitem__(self, index: StringType) -> 'AnyTypeExpression':
+        return AnyTypeExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+    def __getattr__(self, name: str) -> 'AnyTypeExpression':
+        return AnyTypeExpression(KQL(self.kql + '.' + name))
 
 
 class AggregationExpression(BaseExpression):
@@ -538,11 +541,15 @@ class AssignmentFromAggregationToColumn(AssignmentBase):
         super().__init__(None if column is None else column.kql, aggregation)
 
 
-class Column(
+class AnyTypeExpression(
     NumberExpression, BooleanExpression, StringExpression,
     ArrayExpression, MappingExpression, DatetimeExpression,
     TimespanExpression
 ):
+    pass
+
+
+class Column(AnyTypeExpression):
     name: str
 
     def __init__(self, name: str) -> None:

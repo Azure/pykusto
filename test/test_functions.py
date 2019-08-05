@@ -268,6 +268,26 @@ class TestFunction(TestBase):
             Query().where(col.foo < f.now(datetime.timedelta(-3))).render()
         )
 
+    def test_parse_json(self):
+        self.assertEqual(
+            " | where (tostring(parse_json(foo))) contains \"ABC\"",
+            Query().where(f.parse_json(col.foo).to_string().contains('ABC')).render()
+        )
+
+    def test_parse_json_elements(self):
+        self.assertEqual(
+            " | where (tostring(parse_json(foo)[\"bar\"])) contains \"ABC\"",
+            Query().where(f.parse_json(col.foo)['bar'].to_string().contains('ABC')).render()
+        )
+        self.assertEqual(
+            " | where (tostring(parse_json(foo).bar)) contains \"ABC\"",
+            Query().where(f.parse_json(col.foo).bar.to_string().contains('ABC')).render()
+        )
+        self.assertEqual(
+            " | where (todouble(parse_json(foo).bar)) > 4",
+            Query().where(f.todouble(f.parse_json(col.foo).bar) > 4).render()
+        )
+
     def test_pow(self):
         self.assertEqual(
             " | where (pow(foo, bar)) > 3",

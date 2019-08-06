@@ -341,11 +341,19 @@ class TestFunction(TestBase):
             " | extend (strcat(\"hello\", \",\", foo, \"!\"))",
             Query().extend(f.strcat("hello", ',', col.foo, '!')).render()
         )
+        self.assertEqual(
+            " | extend (strcat(foo, \"!\"))",
+            Query().extend(f.strcat(col.foo, '!')).render()
+        )
 
     def test_strcat_delim(self):
         self.assertEqual(
             " | extend (strcat_delim(\"-\", \"hello\", \",\", foo, \"!\"))",
             Query().extend(f.strcat_delim('-', "hello", ',', col.foo, '!')).render()
+        )
+        self.assertEqual(
+            " | extend (strcat_delim(\"-\", \",\", foo))",
+            Query().extend(f.strcat_delim('-', ',', col.foo)).render()
         )
 
     def test_strcat_array(self):

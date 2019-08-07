@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pykusto',
-    version='0.0.2',
+    version='0.0.3',
     packages=find_packages(exclude=['test']),
     url='https://github.com/Azure/pykusto',
     license='MIT License',

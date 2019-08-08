@@ -5,7 +5,7 @@ Started as a project in the 2019 Microsoft Hackathon.
 # Getting Started
 ### Installation
 ```bash
-pip install git+https://github.com/Azure/pykusto.git
+pip install pykusto
 ```
 
 ### Usage

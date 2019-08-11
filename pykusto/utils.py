@@ -32,21 +32,20 @@ def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     # Issue #11
     counter = 0
     prev = ""
-    for i in range(len(query)):
+    for i, c in enumerate(query):
         if counter == 0:
-            if query[i] == "[":
+            if c == "[":
                 query[i] = "("
-            elif query[i] == "]":
+            elif c == "]":
                 query[i] = ")"
-            elif query[i] == '"' and prev != "\\":
+            elif c in ['"', '\''] and prev != "\\":
                 counter += 1
         elif counter > 0:
-            if query[i] == '"' and prev != "\\":
+            if c in ['"', '\''] and prev != "\\":
                 counter -= 1
         prev = query[i]
-        i += 1
     assert counter == 0
-    return KQL("".join([c for c in query]))
+    return KQL("".join(query))
 
 
 def bool_to_kql(b: bool) -> KQL:

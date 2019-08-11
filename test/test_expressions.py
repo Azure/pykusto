@@ -79,5 +79,5 @@ class TestExpressions(TestBase):
         )
         self.assertEqual(
             " | where foo in (\"[\", \"[[\", \"]\")",
-            Query().where(col.foo.is_in(["[", "[[", "]"])).render()
+            Query().where(col.foo.is_in(['[', "[[", "]"])).render()
         )

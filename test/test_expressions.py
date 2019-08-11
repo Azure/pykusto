@@ -71,3 +71,13 @@ class TestExpressions(TestBase):
             " | project ['foo.bar']",
             Query().project(col['foo.bar']).render(),
         )
+
+    def test_is_in(self):
+        self.assertEqual(
+            " | where foo in (\"A\", \"B\", \"C\")",
+            Query().where(col.foo.is_in(["A", "B", "C"])).render()
+        )
+        self.assertEqual(
+            " | where foo in (\"[\", \"[[\", \"]\")",
+            Query().where(col.foo.is_in(["[", "[[", "]"])).render()
+        )

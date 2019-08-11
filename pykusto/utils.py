@@ -28,7 +28,25 @@ def timedelta_to_kql(td: timedelta) -> KQL:
 
 
 def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
-    return KQL(json.dumps(d))
+    query = list(json.dumps(d))
+    # Issue #11
+    counter = 0
+    prev = ""
+    for i in range(len(query)):
+        if counter == 0:
+            if query[i] == "[":
+                query[i] = "("
+            elif query[i] == "]":
+                query[i] = ")"
+            elif query[i] == '"' and prev != "\\":
+                counter += 1
+        elif counter > 0:
+            if query[i] == '"' and prev != "\\":
+                counter -= 1
+        prev = query[i]
+        i += 1
+    assert counter == 0
+    return KQL("".join([c for c in query]))
 
 
 def bool_to_kql(b: bool) -> KQL:

@@ -15,9 +15,21 @@ class TestQuery(TestBase):
         )
 
     def test_add_queries(self):
-        query = Query().where(col.foo > 4) + Query().take(5) + Query().sort_by(col.bar, Order.ASC, Nulls.LAST)
+        query = (Query().where(col.foo > 4) +
+                 Query().take(5) +
+                 Query().where(col.foo > 1).sort_by(col.bar, Order.ASC, Nulls.LAST))
         self.assertEqual(
-            " | where foo > 4 | take 5 | sort by bar asc nulls last",
+            " | where foo > 4 | take 5 | where foo > 1 | sort by bar asc nulls last",
+            query.render(),
+        )
+
+    def test_add_queries_with_table(self):
+        mock_kusto_client = MockKustoClient()
+        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        b = Query().take(5).take(2).sort_by(col.bar, Order.ASC, Nulls.LAST)
+        query = Query(table).where(col.foo > 4) + b
+        self.assertEqual(
+            "test_table | where foo > 4 | take 5 | take 2 | sort by bar asc nulls last",
             query.render(),
         )
 

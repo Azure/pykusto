@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from copy import copy
 from enum import Enum
 from itertools import chain
 from types import FunctionType
@@ -53,13 +54,22 @@ class Query:
         self._table = head if isinstance(head, Table) else None
 
     def __add__(self, other: 'Query'):
-        other_base = other
+        self_copy = self.deepcopy()
+        other_copy = other.deepcopy()
+
+        other_base = other_copy
         while other_base._head is not None:
             if other_base._head._head is None:
                 break
             other_base = other_base._head
-        other_base._head = self
-        return other
+        other_base._head = self_copy
+        return other_copy
+
+    def deepcopy(self):
+        new_object = copy(self)
+        if self._head is not None:
+            new_object._head = self._head.deepcopy()
+        return new_object
 
     def where(self, predicate: BooleanType) -> 'WhereQuery':
         return WhereQuery(self, predicate)

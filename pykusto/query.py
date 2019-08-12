@@ -156,14 +156,18 @@ class Query:
     def _compile(self) -> KQL:
         pass
 
-    def _compile_all(self) -> KQL:
+    def _compile_all(self, use_full_table_name) -> KQL:
         if self._head is None:
             if self._table is None:
                 return KQL("")
             else:
-                return self._table.table
+                table = self._table
+                if use_full_table_name:
+                    return table.get_full_table()
+                else:
+                    return table.get_table()
         else:
-            return KQL("{} | {}".format(self._head._compile_all(), self._compile()))
+            return KQL("{} | {}".format(self._head._compile_all(use_full_table_name), self._compile()))
 
     def get_table(self) -> Table:
         if self._head is None:
@@ -171,8 +175,8 @@ class Query:
         else:
             return self._head.get_table()
 
-    def render(self) -> KQL:
-        result = self._compile_all()
+    def render(self, use_full_table_name: bool = False) -> KQL:
+        result = self._compile_all(use_full_table_name)
         logger.debug("Complied query: " + result)
         return result
 
@@ -180,7 +184,7 @@ class Query:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
-            rendered_query = table.table + self.render()
+            rendered_query = table.get_table() + self.render()
         else:
             if table is not None:
                 raise RuntimeError("This table is already bound to a query")
@@ -412,7 +416,7 @@ class JoinQuery(Query):
 
         return KQL("join {} ({}) on {}".format(
             "" if self._kind is None else "kind={}".format(self._kind.value),
-            self._joined_query.render(),
+            self._joined_query.render(use_full_table_name=True),
             ", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])))
 
 

@@ -69,7 +69,7 @@ class TestQuery(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertEqual(
-            " | where foo > 4 | take 5 | join kind=inner (test_table) on col0, $left.col1==$right.col2",
+            ' | where foo > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table")) on col0, $left.col1==$right.col2',
             Query().where(col.foo > 4).take(5).join(
                 Query(table), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render(),
         )
@@ -79,7 +79,7 @@ class TestQuery(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertEqual(
-            " | where foo > 4 | take 5 | join kind=inner (test_table | where bla == 2 | take 6) on col0, "
+            ' | where foo > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table") | where bla == 2 | take 6) on col0, '
             "$left.col1==$right.col2",
             Query().where(col.foo > 4).take(5).join(
                 Query(table).where(col.bla == 2).take(6), kind=JoinKind.INNER).on(col.col0).on(col.col1,

@@ -570,10 +570,11 @@ def startofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpres
 
 
 def strcat(expr1: StringType, expr2: StringType, *exprs: StringType) -> StringExpression:
-    res = 'strcat({}, {}, {})'.format(_subexpr_to_kql(expr1),
-                                      _subexpr_to_kql(expr2),
-                                      ', '.join([_subexpr_to_kql(expr) for expr in exprs]))
-    return StringExpression(KQL(res))
+    res = 'strcat({}, {}'.format(_subexpr_to_kql(expr1),
+                                 _subexpr_to_kql(expr2))
+    if len(exprs) > 0:
+        res = res + ', ' + ', '.join([_subexpr_to_kql(expr) for expr in exprs])
+    return StringExpression(KQL(res + ')'))
 
 
 def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
@@ -581,13 +582,13 @@ def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
 
 
 def strcat_delim(delimiter: StringType, expr1: StringType, expr2: StringType, *exprs: StringType) -> StringExpression:
-    res = 'strcat_delim({}, {}, {}, {})'.format(
+    res = 'strcat_delim({}, {}, {}'.format(
         _subexpr_to_kql(delimiter),
         _subexpr_to_kql(expr1),
-        _subexpr_to_kql(expr2),
-        ', '.join([_subexpr_to_kql(expr) for expr in exprs])
-    )
-    return StringExpression(KQL(res))
+        _subexpr_to_kql(expr2))
+    if len(exprs) > 0:
+        res = res + ', ' + ', '.join([_subexpr_to_kql(expr) for expr in exprs])
+    return StringExpression(KQL(res + ')'))
 
 
 def strcmp(expr1: StringType, expr2: StringType) -> NumberExpression:

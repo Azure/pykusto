@@ -97,6 +97,16 @@ class TestQuery(TestBase):
                                                                                   Nulls.LAST).render(),
         )
 
+    def test_no_params_for_sort(self):
+        self.assertEqual(
+            " | sort by foo, bar",
+            Query().sort_by(col.foo).then_by(col.bar).render(),
+        )
+        self.assertEqual(
+            " | sort by foo desc nulls first, bar",
+            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).then_by(col.bar).render(),
+        )
+
     def test_top(self):
         self.assertEqual(
             " | top 3 by foo desc nulls first",

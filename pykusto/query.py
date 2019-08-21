@@ -352,7 +352,7 @@ class _OrderQueryBase(Query):
         self._order_specs = []
         self.then_by(col, order, nulls)
 
-    def then_by(self, col: OrderType, order: Order, nulls: Nulls):
+    def then_by(self, col: OrderType, order: Order = None, nulls: Nulls = None):
         self._order_specs.append(_OrderQueryBase.OrderSpec(col, order, nulls))
         return self
 

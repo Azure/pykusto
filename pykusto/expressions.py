@@ -543,14 +543,14 @@ class Column(
     ArrayExpression, MappingExpression, DatetimeExpression,
     TimespanExpression
 ):
-    name: str
+    _name: str
 
     def __init__(self, name: str) -> None:
         super().__init__(KQL("['{}']".format(name) if '.' in name else name))
-        self.name = name
+        self._name = name
 
     def __getattr__(self, name: str) -> 'Column':
-        return Column(self.name + '.' + name)
+        return Column(self._name + '.' + name)
 
     def as_subexpression(self) -> KQL:
         return self.kql
@@ -567,7 +567,7 @@ class Column(
 
     def __call__(self, *args, **kwargs):
         # Someone tried to call a non-existent method, and a column object was generated
-        raise AttributeError("No such method: " + self.name.split('.')[-1])
+        raise AttributeError("No such method: " + self._name.split('.')[-1])
 
 
 class ColumnGenerator:

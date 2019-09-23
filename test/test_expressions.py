@@ -81,3 +81,9 @@ class TestExpressions(TestBase):
             " | where foo in (\"[\", \"[[\", \"]\")",
             Query().where(col.foo.is_in(['[', "[[", "]"])).render()
         )
+
+    def test_has(self):
+        self.assertEqual(
+            " | where foo has \"test\"",
+            Query().where(col.foo.has("test")).render()
+        )

@@ -53,6 +53,10 @@ class BaseExpression:
     def is_not_empty(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('isnotempty({})'.format(self.kql)))
 
+    def has(self, exp: str) -> 'BooleanExpression':
+        # The pattern for the search expression must be a constant string.
+        return BooleanExpression(KQL('{} has \"{}\"'.format(self.kql, exp)))
+
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> KQL:
         return KQL('{}{}{}'.format(

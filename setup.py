@@ -12,7 +12,7 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="kusto client library query",
-    install_requires=['azure-kusto-data==0.0.33'],
+    install_requires=['azure-kusto-data==0.0.36'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

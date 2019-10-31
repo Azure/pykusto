@@ -11,6 +11,20 @@ class TestExpressions(TestBase):
             ' | where foo contains "bar"',
             Query().where(col.foo.contains('bar')).render(),
         )
+        self.assertEqual(
+            ' | where foo contains_cs "bar"',
+            Query().where(col.foo.contains('bar', True)).render(),
+        )
+
+    def test_not_contains(self):
+        self.assertEqual(
+            ' | where foo !contains "bar"',
+            Query().where(col.foo.not_contains('bar')).render(),
+        )
+        self.assertEqual(
+            ' | where foo !contains_cs "bar"',
+            Query().where(col.foo.not_contains('bar', True)).render(),
+        )
 
     def test_array_access(self):
         self.assertEqual(

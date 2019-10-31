@@ -70,7 +70,7 @@ class TestExpressions(TestBase):
 
     def test_method_does_not_exist(self):
         self.assertRaises(
-            AttributeError,
+            AttributeError("No such method: non_existant_method"),
             col.foo.non_existant_method,
         )
 

@@ -11,6 +11,20 @@ class TestExpressions(TestBase):
             ' | where foo contains "bar"',
             Query().where(col.foo.contains('bar')).render(),
         )
+        self.assertEqual(
+            ' | where foo contains_cs "bar"',
+            Query().where(col.foo.contains('bar', True)).render(),
+        )
+
+    def test_not_contains(self):
+        self.assertEqual(
+            ' | where foo !contains "bar"',
+            Query().where(col.foo.not_contains('bar')).render(),
+        )
+        self.assertEqual(
+            ' | where foo !contains_cs "bar"',
+            Query().where(col.foo.not_contains('bar', True)).render(),
+        )
 
     def test_array_access(self):
         self.assertEqual(
@@ -70,4 +84,20 @@ class TestExpressions(TestBase):
         self.assertEqual(
             " | project ['foo.bar']",
             Query().project(col['foo.bar']).render(),
+        )
+
+    def test_is_in(self):
+        self.assertEqual(
+            " | where foo in (\"A\", \"B\", \"C\")",
+            Query().where(col.foo.is_in(["A", "B", "C"])).render()
+        )
+        self.assertEqual(
+            " | where foo in (\"[\", \"[[\", \"]\")",
+            Query().where(col.foo.is_in(['[', "[[", "]"])).render()
+        )
+
+    def test_has(self):
+        self.assertEqual(
+            " | where foo has \"test\"",
+            Query().where(col.foo.has("test")).render()
         )

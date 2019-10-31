@@ -15,10 +15,49 @@ class TestQuery(TestBase):
         )
 
     def test_add_queries(self):
-        query = Query().where(col.foo > 4) + Query().take(5) + Query().sort_by(col.bar, Order.ASC, Nulls.LAST)
+        query_a = Query().where(col.foo > 4)
+        query_b = Query().take(5)
+        query_c = Query().where(col.foo > 1).sort_by(col.bar, Order.ASC, Nulls.LAST)
+        query = query_a + query_b + query_c
+
         self.assertEqual(
-            " | where foo > 4 | take 5 | sort by bar asc nulls last",
+            " | where foo > 4 | take 5 | where foo > 1 | sort by bar asc nulls last",
             query.render(),
+        )
+
+        # make sure the originals didn't change
+        self.assertEqual(
+            " | where foo > 4",
+            query_a.render(),
+        )
+        self.assertEqual(
+            " | take 5",
+            query_b.render(),
+        )
+        self.assertEqual(
+            " | where foo > 1 | sort by bar asc nulls last",
+            query_c.render(),
+        )
+
+    def test_add_queries_with_table(self):
+        mock_kusto_client = MockKustoClient()
+        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        query_a = Query(table).where(col.foo > 4)
+        query_b = Query().take(5).take(2).sort_by(col.bar, Order.ASC, Nulls.LAST)
+        query = query_a + query_b
+        self.assertEqual(
+            "test_table | where foo > 4 | take 5 | take 2 | sort by bar asc nulls last",
+            query.render(),
+        )
+
+        # make sure the originals didn't change
+        self.assertEqual(
+            "test_table | where foo > 4",
+            query_a.render(),
+        )
+        self.assertEqual(
+            " | take 5 | take 2 | sort by bar asc nulls last",
+            query_b.render(),
         )
 
     def test_where(self):
@@ -58,6 +97,16 @@ class TestQuery(TestBase):
                                                                                   Nulls.LAST).render(),
         )
 
+    def test_no_params_for_sort(self):
+        self.assertEqual(
+            " | sort by foo, bar",
+            Query().sort_by(col.foo).then_by(col.bar).render(),
+        )
+        self.assertEqual(
+            " | sort by foo desc nulls first, bar",
+            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).then_by(col.bar).render(),
+        )
+
     def test_top(self):
         self.assertEqual(
             " | top 3 by foo desc nulls first",
@@ -69,7 +118,7 @@ class TestQuery(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertEqual(
-            " | where foo > 4 | take 5 | join kind=inner (test_table) on col0, $left.col1==$right.col2",
+            ' | where foo > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table")) on col0, $left.col1==$right.col2',
             Query().where(col.foo > 4).take(5).join(
                 Query(table), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render(),
         )
@@ -79,7 +128,7 @@ class TestQuery(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertEqual(
-            " | where foo > 4 | take 5 | join kind=inner (test_table | where bla == 2 | take 6) on col0, "
+            ' | where foo > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table") | where bla == 2 | take 6) on col0, '
             "$left.col1==$right.col2",
             Query().where(col.foo > 4).take(5).join(
                 Query(table).where(col.bla == 2).take(6), kind=JoinKind.INNER).on(col.col0).on(col.col1,

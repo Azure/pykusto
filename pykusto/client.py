@@ -1,6 +1,9 @@
 from typing import Union, List, Tuple
 
 # noinspection PyProtectedMember
+from urllib.parse import urlparse
+
+# noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 
@@ -12,6 +15,7 @@ class PyKustoClient:
     Handle to a Kusto cluster
     """
     _client: KustoClient
+    _cluster_name: str
 
     def __init__(self, client_or_cluster: Union[str, KustoClient]) -> None:
         """
@@ -22,8 +26,11 @@ class PyKustoClient:
         """
         if isinstance(client_or_cluster, KustoClient):
             self._client = client_or_cluster
+            # noinspection PyProtectedMember
+            self._cluster_name = urlparse(client_or_cluster._query_endpoint).netloc  # TODO neater way
         else:
             self._client = self._get_client_for_cluster(client_or_cluster)
+            self._cluster_name = client_or_cluster
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self._client.execute(database, query, properties)
@@ -34,6 +41,9 @@ class PyKustoClient:
 
     def __getitem__(self, database_name: str) -> 'Database':
         return Database(self, database_name)
+
+    def get_cluster_name(self) -> str:
+        return self._cluster_name
 
     @staticmethod
     def _get_client_for_cluster(cluster: str) -> KustoClient:
@@ -70,7 +80,7 @@ class Table:
     Handle to a Kusto table
     """
     database: Database
-    table: KQL
+    tables: Union[str, List[str], Tuple[str, ...]]
 
     def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]]) -> None:
         """
@@ -82,19 +92,31 @@ class Table:
         """
 
         self.database = database
+        self.tables = [tables] if isinstance(tables, str) else tables
 
-        if isinstance(tables, (List, Tuple)):
-            self.table = KQL(', '.join(tables))
+    def get_table(self) -> KQL:
+        result = KQL(', '.join(self.tables))
+        if '*' in result or ',' in result:
+            result = KQL('union ' + result)
+        return result
+
+    def get_full_table(self) -> KQL:
+        assert len(self.tables) > 0
+        if len(self.tables) == 1 and not any('*' in t for t in self.tables):
+            return self._format_full_table_name(self.tables[0])
         else:
-            self.table = KQL(tables)
-        if '*' in self.table or ',' in self.table:
-            self.table = KQL('union ' + self.table)
+            return KQL("union " + ", ".join(self._format_full_table_name(t) for t in self.tables))
+
+    def _format_full_table_name(self, table):
+        table_format_str = 'cluster("{}").database("{}").table("{}")'
+        return KQL(
+            table_format_str.format(self.database.client.get_cluster_name(), self.database.name, table))
 
     def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
         return self.database.execute(rendered_query)
 
     def show_columns(self) -> Tuple[Tuple[str, str], ...]:
-        res: KustoResponseDataSet = self.execute(KQL('.show table {}'.format(self.table)))
+        res: KustoResponseDataSet = self.execute(KQL('.show table {}'.format(self.get_table())))
         return tuple(
             (
                 r[0],  # Column name

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from copy import copy, deepcopy
 from enum import Enum
 from itertools import chain
 from types import FunctionType
@@ -53,8 +54,22 @@ class Query:
         self._table = head if isinstance(head, Table) else None
 
     def __add__(self, other: 'Query'):
-        other._head = self
-        return other
+        self_copy = deepcopy(self)
+        other_copy = deepcopy(other)
+
+        other_base = other_copy
+        while other_base._head is not None:
+            if other_base._head._head is None:
+                break
+            other_base = other_base._head
+        other_base._head = self_copy
+        return other_copy
+
+    def __deepcopy__(self, memo):
+        new_object = copy(self)
+        if self._head is not None:
+            new_object._head = self._head.__deepcopy__(memo)
+        return new_object
 
     def where(self, predicate: BooleanType) -> 'WhereQuery':
         return WhereQuery(self, predicate)
@@ -156,14 +171,18 @@ class Query:
     def _compile(self) -> KQL:
         pass
 
-    def _compile_all(self) -> KQL:
+    def _compile_all(self, use_full_table_name) -> KQL:
         if self._head is None:
             if self._table is None:
                 return KQL("")
             else:
-                return self._table.table
+                table = self._table
+                if use_full_table_name:
+                    return table.get_full_table()
+                else:
+                    return table.get_table()
         else:
-            return KQL("{} | {}".format(self._head._compile_all(), self._compile()))
+            return KQL("{} | {}".format(self._head._compile_all(use_full_table_name), self._compile()))
 
     def get_table(self) -> Table:
         if self._head is None:
@@ -171,8 +190,8 @@ class Query:
         else:
             return self._head.get_table()
 
-    def render(self) -> KQL:
-        result = self._compile_all()
+    def render(self, use_full_table_name: bool = False) -> KQL:
+        result = self._compile_all(use_full_table_name)
         logger.debug("Complied query: " + result)
         return result
 
@@ -180,7 +199,7 @@ class Query:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
-            rendered_query = table.table + self.render()
+            rendered_query = table.get_table() + self.render()
         else:
             if table is not None:
                 raise RuntimeError("This table is already bound to a query")
@@ -333,7 +352,7 @@ class _OrderQueryBase(Query):
         self._order_specs = []
         self.then_by(col, order, nulls)
 
-    def then_by(self, col: OrderType, order: Order, nulls: Nulls):
+    def then_by(self, col: OrderType, order: Order = None, nulls: Nulls = None):
         self._order_specs.append(_OrderQueryBase.OrderSpec(col, order, nulls))
         return self
 
@@ -412,7 +431,7 @@ class JoinQuery(Query):
 
         return KQL("join {} ({}) on {}".format(
             "" if self._kind is None else "kind={}".format(self._kind.value),
-            self._joined_query.render(),
+            self._joined_query.render(use_full_table_name=True),
             ", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])))
 
 

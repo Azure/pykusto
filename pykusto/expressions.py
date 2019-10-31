@@ -253,6 +253,9 @@ class StringExpression(BaseExpression):
     def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
 
+    def not_contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+        return BooleanExpression.binary_op(self, ' !contains_cs ' if case_sensitive else ' !contains ', other)
+
     def startswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' startswith_cs ' if case_sensitive else ' startswith ', other)
 

@@ -137,14 +137,14 @@ class TestQuery(TestBase):
 
     def test_join_no_joined_table(self):
         self.assertRaises(
-            JoinException,
+            JoinException("The joined query must have a table"),
             Query().where(col.foo > 4).take(5).join(
                 Query().take(2), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render
         )
 
     def test_join_no_on(self):
         self.assertRaises(
-            JoinException,
+            JoinException("A call to join() must be followed by a call to on()"),
             Query().where(col.foo > 4).take(5).join(
                 Query().take(2), kind=JoinKind.INNER).render
         )
@@ -201,7 +201,7 @@ class TestQuery(TestBase):
 
     def test_mv_expand_no_args(self):
         self.assertRaises(
-            ValueError,
+            ValueError("Please specify one or more columns for mv-expand"),
             Query().mv_expand
         )
 

@@ -34,7 +34,7 @@ class TestTable(TestBase):
 
     def test_execute_no_table(self):
         self.assertRaises(
-            RuntimeError,
+            RuntimeError("No table supplied"),
             Query().take(5).execute
         )
 
@@ -43,7 +43,7 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
 
         self.assertRaises(
-            RuntimeError,
+            RuntimeError("This table is already bound to a query"),
             Query(table).take(5).execute,
             table
         )

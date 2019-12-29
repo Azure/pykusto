@@ -288,6 +288,32 @@ class TestFunction(TestBase):
             Query().where(f.todouble(f.parse_json(col.foo).bar) > 4).render()
         )
 
+    def test_parse_json_all_types(self):
+        self.assertEqual(
+            "| where parse_json(foo)['a']['b'] contains 'bar'",
+            Query().where(f.parse_json(col.foo)['a']['b'].contains('bar')).render()
+        )
+        self.assertEqual(
+            "| where parse_json(foo).a.b == 'bar'",
+            Query().where(f.parse_json(col.foo).a.b == 'bar').render()
+        )
+        self.assertEqual(
+            "| where foo[4] contains 'bar'",
+            Query().where(col.foo[4].contains('bar')).render()
+        )
+        self.assertEqual(
+            "| where foo.a.b contains 'bar'",
+            Query().where(col.foo.a.b.contains('bar')).render()
+        )
+        self.assertEqual(
+            "| where foo['a']['b'] == 'bar'",
+            Query().where(col.foo['a']['b'] == 'bar').render()
+        )
+        self.assertEqual(
+            "| where foo[4].a contains 'bar'",
+            Query().where(col.foo[4].a.contains('bar')).render()
+        )
+
     def test_pow(self):
         self.assertEqual(
             " | where (pow(foo, bar)) > 3",

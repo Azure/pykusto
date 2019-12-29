@@ -1,4 +1,5 @@
 import datetime
+import unittest
 
 from pykusto import functions as f
 from pykusto.expressions import column_generator as col
@@ -484,6 +485,7 @@ class TestFunction(TestBase):
             Query().summarize(f.arg_min(col.foo, col.bar, col.fam)).render()
         )
 
+    @unittest.skip("Re-enable once issue #1 is resolved")
     def test_avg(self):
         self.assertEqual(
             " | summarize avg(foo)",

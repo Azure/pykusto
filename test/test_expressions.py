@@ -55,6 +55,16 @@ class TestExpressions(TestBase):
             " | extend ['foo.bar'] = (shoo * 2)",
             Query().extend((col.shoo * 2).assign_to(col.foo.bar)).render(),
         )
+        self.assertEqual(
+            " | extend foo = (shoo * 2)",
+            Query().extend(foo=(col.shoo * 2)).render(),
+        )
+
+    def test_extend_const(self):
+        self.assertEqual(
+            " | extend foo = (5), bar = (\"bar\"), other_col = other",
+            Query().extend(foo=5, bar="bar", other_col=col.other).render(),
+        )
 
     def test_between_timespan(self):
         self.assertEqual(
@@ -70,7 +80,7 @@ class TestExpressions(TestBase):
 
     def test_method_does_not_exist(self):
         self.assertRaises(
-            AttributeError,
+            AttributeError("No such method: non_existant_method"),
             col.foo.non_existant_method,
         )
 

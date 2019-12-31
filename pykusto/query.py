@@ -12,7 +12,7 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression, \
     AssignmentFromColumnToColumn
 from pykusto.udf import stringify_python_func
-from pykusto.utils import KQL, logger
+from pykusto.utils import KQL, logger, to_kql
 
 
 class Order(Enum):
@@ -137,7 +137,10 @@ class Query:
             else:
                 assignments.append(arg)
         for column_name, expression in kwargs.items():
-            assignments.append(expression.assign_to(Column(column_name)))
+            if isinstance(expression, BaseExpression):
+                assignments.append(expression.assign_to(Column(column_name)))
+            else:
+                assignments.append(BaseExpression(to_kql(expression)).assign_to(Column(column_name)))
         return ExtendQuery(self, *assignments)
 
     def summarize(self, *args: Union[AggregationExpression, AssignmentFromAggregationToColumn],

@@ -1,4 +1,5 @@
 import datetime
+import unittest
 
 from pykusto import functions as f
 from pykusto.expressions import column_generator as col
@@ -6,7 +7,7 @@ from pykusto.query import Query
 from test.test_base import TestBase
 
 
-# TODO dcount_hll, iif
+# TODO dcount_hll
 
 class TestFunction(TestBase):
     def test_acos(self):
@@ -484,6 +485,7 @@ class TestFunction(TestBase):
             Query().summarize(f.arg_min(col.foo, col.bar, col.fam)).render()
         )
 
+    @unittest.skip("Re-enable once issue #1 is resolved")
     def test_avg(self):
         self.assertEqual(
             " | summarize avg(foo)",
@@ -672,4 +674,17 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize active_days = dcount(bin(timestamp, time(1.0:0:0.0)))",
             Query().summarize(active_days=f.dcount(f.bin(col.timestamp, datetime.timedelta(1)))).render()
+        )
+
+    def test_iff(self):
+        self.assertEqual(
+            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0)))",
+            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), datetime.timedelta(4))).render()
+        )
+
+    def test_iif(self):
+        # iif is just an alias to iff
+        self.assertEqual(
+            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0)))",
+            Query().project(foo=f.iif(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), datetime.timedelta(4))).render()
         )

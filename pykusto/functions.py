@@ -548,7 +548,8 @@ def sign(expr: NumberType) -> NumberExpression:
 # def sin(self): return
 #
 #
-# def split(self): return
+def split(string: StringType, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
+    return StringExpression(KQL(string)).split(delimiter, requested_index)
 
 
 def sqrt(expr: NumberType) -> NumberExpression:

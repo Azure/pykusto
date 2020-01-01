@@ -40,7 +40,7 @@ class TestFunction(TestBase):
 
     def test_case(self):
         self.assertEqual(
-            " | extend bucket = case((foo <= 3), \"Small\", (foo <= 10), \"Medium\", \"Large\")",
+            " | extend bucket = case(foo <= 3, \"Small\", foo <= 10, \"Medium\", \"Large\")",
             Query().extend(bucket=f.case(col.foo <= 3, "Small", col.foo <= 10, 'Medium', 'Large')).render()
         )
 

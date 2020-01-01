@@ -115,6 +115,7 @@ class BaseExpression:
 class BooleanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
+        # noinspection PyTypeChecker
         return BaseExpression.base_binary_op(left, operator, right, bool)
 
     def __and__(self, other: BooleanType) -> 'BooleanExpression':
@@ -131,6 +132,7 @@ class BooleanExpression(BaseExpression):
 class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
+        # noinspection PyTypeChecker
         return BaseExpression.base_binary_op(left, operator, right, Number)
 
     def __lt__(self, other: NumberType) -> BooleanExpression:
@@ -234,6 +236,7 @@ class NumberExpression(BaseExpression):
 class StringExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'StringExpression':
+        # noinspection PyTypeChecker
         return BaseExpression.base_binary_op(left, operator, right, str)
 
     def __len__(self) -> NumberExpression:
@@ -302,6 +305,7 @@ class StringExpression(BaseExpression):
 class DatetimeExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'DatetimeExpression':
+        # noinspection PyTypeChecker
         return BaseExpression.base_binary_op(left, operator, right, datetime)
 
     def __lt__(self, other: DatetimeType) -> BooleanExpression:
@@ -412,6 +416,7 @@ class DatetimeExpression(BaseExpression):
 class TimespanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'TimespanExpression':
+        # noinspection PyTypeChecker
         return BaseExpression.base_binary_op(left, operator, right, timedelta)
 
     def __add__(self, other: TimespanType) -> 'TimespanExpression':
@@ -601,10 +606,6 @@ class AssignmentToMultipleColumns(AssignmentBase):
 class AssignmentFromAggregationToColumn(AssignmentBase):
     def __init__(self, column: Optional['Column'], aggregation: AggregationExpression) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
-
-
-class AnyExpression(AnyExpression):
-    pass
 
 
 class Column(AnyExpression):

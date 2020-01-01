@@ -29,7 +29,7 @@ def timedelta_to_kql(td: timedelta) -> KQL:
 @kql_converter(Mapping, List, Tuple)
 def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     query = list(json.dumps(d))
-    # Issue #11
+    # Convert square brackets to round brackets (Issue #11)
     counter = 0
     prev = ""
     for i, c in enumerate(query):

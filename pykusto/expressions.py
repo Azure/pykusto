@@ -448,21 +448,11 @@ class TimespanExpression(BaseExpression):
         )))
 
 
-class ArrayBaseExpression(BaseExpression):
+@plain_expression(List, Tuple)
+class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
 
-
-class MappingBaseExpression(BaseExpression):
-    def __getitem__(self, index: StringType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
-
-    def __getattr__(self, name: str) -> 'AnyExpression':
-        return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
-
-
-@plain_expression(List, Tuple)
-class ArrayExpression(ArrayBaseExpression):
     def __len__(self) -> NumberExpression:
         return self.array_length()
 
@@ -488,7 +478,13 @@ class ArrayExpression(ArrayBaseExpression):
 
 
 @plain_expression(Mapping)
-class MappingExpression(MappingBaseExpression):
+class MappingExpression(BaseExpression):
+    def __getitem__(self, index: StringType) -> 'AnyExpression':
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+    def __getattr__(self, name: str) -> 'AnyExpression':
+        return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
+
     def keys(self) -> ArrayExpression:
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
 

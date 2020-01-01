@@ -269,6 +269,41 @@ class TestFunction(TestBase):
             Query().where(col.foo < f.now(datetime.timedelta(-3))).render()
         )
 
+    def test_parse_json_to_string(self):
+        self.assertEqual(
+            ' | where (tostring(parse_json(foo))) contains "ABC"',
+            Query().where(f.parse_json(col.foo).to_string().contains('ABC')).render()
+        )
+
+    def test_parse_json_brackets(self):
+        self.assertEqual(
+            ' | where (tostring(parse_json(foo)["bar"])) contains "ABC"',
+            Query().where(f.parse_json(col.foo)['bar'].to_string().contains('ABC')).render()
+        )
+
+    def test_parse_json_dot(self):
+        self.assertEqual(
+            ' | where (tostring(parse_json(foo).bar)) contains "ABC"',
+            Query().where(f.parse_json(col.foo).bar.to_string().contains('ABC')).render()
+        )
+
+    def test_parse_json_number_expression(self):
+        self.assertEqual(
+            ' | where (todouble(parse_json(foo).bar)) > 4',
+            Query().where(f.todouble(f.parse_json(col.foo).bar) > 4).render()
+        )
+
+    def test_parse_json_array(self):
+        self.assertEqual(
+            ' | where (parse_json(foo)[2]) == 3',
+            Query().where(f.parse_json(col.foo)[2] == 3).render()
+        )
+
+    def test_parse_json_nesting(self):
+        self.assertEqual(
+            ' | where (parse_json(foo)["a"].b[2]) contains "bar"',
+            Query().where(f.parse_json(col.foo)['a'].b[2].contains('bar')).render())
+
     def test_pow(self):
         self.assertEqual(
             " | where (pow(foo, bar)) > 3",

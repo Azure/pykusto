@@ -38,10 +38,22 @@ class TestExpressions(TestBase):
             Query().where(col.arr[col.foo * 2] == 'bar').render(),
         )
 
+    def test_array_access_yields_any_expression(self):
+        self.assertEqual(
+            ' | where (cos(arr[3])) < 1',
+            Query().where(col.arr[3].cos() < 1).render(),
+        )
+
     def test_mapping_access(self):
         self.assertEqual(
             ' | where (dict["key"]) == "bar"',
             Query().where(col.dict['key'] == 'bar').render(),
+        )
+
+    def test_mapping_access_attribute(self):
+        self.assertEqual(
+            ' | where (dict.key) == "bar"',
+            Query().where(col.dict.key == 'bar').render(),
         )
 
     def test_mapping_access_expression_index(self):
@@ -50,10 +62,32 @@ class TestExpressions(TestBase):
             Query().where(col.dict[col.foo] == 'bar').render(),
         )
 
+    def test_mapping_access_yields_any_expression(self):
+        self.assertEqual(
+            ' | where (dict["key"]) contains "substr"',
+            Query().where(col.dict['key'].contains("substr")).render(),
+        )
+
+    def test_dynamic(self):
+        self.assertEqual(
+            ' | where (dict["foo"][0].bar[1][2][(tolower(bar))]) > time(1.0:0:0.0)',
+            Query().where(col.dict['foo'][0].bar[1][2][col.bar.lower()] > timedelta(1)).render(),
+        )
+
     def test_assign_to(self):
         self.assertEqual(
-            " | extend ['foo.bar'] = (shoo * 2)",
-            Query().extend((col.shoo * 2).assign_to(col.foo.bar)).render(),
+            " | extend bar = (foo * 2)",
+            Query().extend((col.foo * 2).assign_to(col.bar)).render(),
+        )
+        self.assertEqual(
+            " | extend foo = (shoo * 2)",
+            Query().extend(foo=(col.shoo * 2)).render(),
+        )
+
+    def test_extend_const(self):
+        self.assertEqual(
+            " | extend foo = (5), bar = (\"bar\"), other_col = other",
+            Query().extend(foo=5, bar="bar", other_col=col.other).render(),
         )
 
     def test_between_timespan(self):
@@ -68,19 +102,7 @@ class TestExpressions(TestBase):
             col.foo.is_empty().kql,
         )
 
-    def test_method_does_not_exist(self):
-        self.assertRaises(
-            AttributeError("No such method: non_existant_method"),
-            col.foo.non_existant_method,
-        )
-
     def test_column_generator(self):
-        self.assertEqual(
-            " | project ['foo.bar']",
-            Query().project(col.foo.bar).render(),
-        )
-
-    def test_column_generator_2(self):
         self.assertEqual(
             " | project ['foo.bar']",
             Query().project(col['foo.bar']).render(),

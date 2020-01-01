@@ -120,6 +120,8 @@ def ceiling(expr: NumberType) -> NumberExpression:
 
 def cos(expr: NumberType) -> NumberExpression:
     return expr.cos()
+
+
 #
 # def cot(self): return
 
@@ -257,12 +259,12 @@ def hourofday(expr: DatetimeType) -> NumberExpression:
     return expr.hourofday()
 
 
-def iif(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('iif({}, {}, {})'.format(predicate, if_true, if_false)))
-
-
 def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
-    return BaseExpression(KQL('iff({}, {}, {})'.format(predicate, if_true, if_false)))
+    return BaseExpression(KQL('iff({}, {}, {})'.format(predicate, _subexpr_to_kql(if_true), _subexpr_to_kql(if_false))))
+
+
+def iif(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
+    return iff(predicate, if_true, if_false)
 
 
 #

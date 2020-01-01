@@ -334,3 +334,4 @@ ASALocalRun/
 /.idea/checkstyle-idea.xml
 *.iml
 /.idea/misc.xml
+/venv

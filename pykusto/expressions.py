@@ -443,8 +443,21 @@ class TimespanExpression(BaseExpression):
         )))
 
 
+class ArrayBaseExpression(BaseExpression):
+    def __getitem__(self, index: NumberType) -> 'AnyExpression':
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+
+class MappingBaseExpression(BaseExpression):
+    def __getitem__(self, index: StringType) -> 'AnyExpression':
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+    def __getattr__(self, name: str) -> 'AnyExpression':
+        return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
+
+
 @plain_expression(List, Tuple)
-class ArrayExpression(BaseExpression):
+class ArrayExpression(ArrayBaseExpression):
     def __len__(self) -> NumberExpression:
         return self.array_length()
 
@@ -470,7 +483,7 @@ class ArrayExpression(BaseExpression):
 
 
 @plain_expression(Mapping)
-class MappingExpression(BaseExpression):
+class MappingExpression(MappingBaseExpression):
     def keys(self) -> ArrayExpression:
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
 
@@ -480,8 +493,18 @@ class MappingExpression(BaseExpression):
             ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
         )))
 
-    def __getitem__(self, index: StringType) -> BaseExpression:
+
+class DynamicExpression(ArrayExpression, MappingExpression):
+    def __getitem__(self, index: Union[StringType, NumberType]) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+
+class AnyExpression(
+    NumberExpression, BooleanExpression,
+    StringExpression, DynamicExpression,
+    DatetimeExpression, TimespanExpression
+):
+    pass
 
 
 class AggregationExpression(BaseExpression):
@@ -580,11 +603,7 @@ class AssignmentFromAggregationToColumn(AssignmentBase):
         super().__init__(None if column is None else column.kql, aggregation)
 
 
-class AnyExpression(
-    NumberExpression, BooleanExpression, StringExpression,
-    ArrayExpression, MappingExpression, DatetimeExpression,
-    TimespanExpression
-):
+class AnyExpression(AnyExpression):
     pass
 
 
@@ -594,9 +613,6 @@ class Column(AnyExpression):
     def __init__(self, name: str) -> None:
         super().__init__(KQL("['{}']".format(name) if '.' in name else name))
         self._name = name
-
-    def __getattr__(self, name: str) -> 'Column':
-        return Column(self._name + '.' + name)
 
     def as_subexpression(self) -> KQL:
         return self.kql
@@ -610,10 +626,6 @@ class Column(AnyExpression):
         if len(columns) == 1:
             return AssignmentFromColumnToColumn(columns[0], self)
         return ArrayExpression.assign_to(self, *columns)
-
-    def __call__(self, *args, **kwargs):
-        # Someone tried to call a non-existent method, and a column object was generated
-        raise AttributeError("No such method: " + self._name.split('.')[-1])
 
 
 class ColumnGenerator:

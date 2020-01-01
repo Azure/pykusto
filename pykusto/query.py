@@ -1,18 +1,19 @@
-from abc import abstractmethod
-from copy import copy, deepcopy
-from enum import Enum
 from itertools import chain
-from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
+from abc import abstractmethod
 from azure.kusto.data.helpers import dataframe_from_result_table
+from copy import copy, deepcopy
+from enum import Enum
+from types import FunctionType
 
 from pykusto.client import Table
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression, \
-    AssignmentFromColumnToColumn
+    AssignmentFromColumnToColumn, AnyExpression, to_kql
+from pykusto.kql_converters import KQL
+from pykusto.type_utils import logger
 from pykusto.udf import stringify_python_func
-from pykusto.utils import KQL, logger, to_kql
 
 
 class Order(Enum):
@@ -127,7 +128,7 @@ class Query:
         return DistinctQuery(self, columns)
 
     def distinct_all(self):
-        return DistinctQuery(self, (BaseExpression(KQL("*")),))
+        return DistinctQuery(self, (AnyExpression(KQL("*")),))
 
     def extend(self, *args: Union[BaseExpression, AssignmentBase], **kwargs: ExpressionType) -> 'ExtendQuery':
         assignments: List[AssignmentBase] = []
@@ -140,7 +141,7 @@ class Query:
             if isinstance(expression, BaseExpression):
                 assignments.append(expression.assign_to(Column(column_name)))
             else:
-                assignments.append(BaseExpression(to_kql(expression)).assign_to(Column(column_name)))
+                assignments.append(AnyExpression(to_kql(expression)).assign_to(Column(column_name)))
         return ExtendQuery(self, *assignments)
 
     def summarize(self, *args: Union[AggregationExpression, AssignmentFromAggregationToColumn],

@@ -1,4 +1,4 @@
-from pykusto import utils
+from pykusto.expressions import to_kql
 from test.test_base import TestBase
 
 
@@ -12,5 +12,5 @@ class TestUtils(TestBase):
         }
         self.assertEqual(
             "{\"name\": \"Alan\", \"age\": 21, \"address\": (\"NY\", 36), \"pets\": (\"Libby\", \"Panda\", \"]\", \"[\")}",
-            utils.to_kql(dict)
+            to_kql(dict)
         )

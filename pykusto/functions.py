@@ -2,6 +2,7 @@ from pykusto import utils
 from pykusto.expressions import *
 from pykusto.expressions import _subexpr_to_kql, Column
 from pykusto.utils import KQL
+from expressions import DynamicExpression
 
 
 # Scalar functions
@@ -640,7 +641,8 @@ def todatetime(expr: StringType) -> DatetimeExpression:
     return DatetimeExpression(KQL('todatetime({})'.format(expr)))
 
 
-def todecimal(): raise NotImplemented  # TODO
+def todecimal(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("todecimal({})".format(expr)))
 
 
 def todouble(expr: NumberType) -> NumberExpression:
@@ -653,19 +655,26 @@ def todynamic(): raise NotImplemented  # TODO
 def toguid(): raise NotImplemented  # TODO
 
 
+#todo: tohex receives int or long and does not support other types (float is a numbertype). hot to do when second expression is optional?
+# def tohex(expr1: NumberType, expr2: NumberType) -> StringExpression:
+#     return StringExpression(KQL("tohex({}, {})".format(expr1, expr2)))
 def tohex(): raise NotImplemented  # TODO
 
 
-def toint(): raise NotImplemented  # TODO
+def toint(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("toint({})".format(expr)))
 
 
-def tolong(): raise NotImplemented  # TODO
+def tolong(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("tolong({})".format(expr)))
 
 
-def tolower(): raise NotImplemented  # TODO
+def tolower(expr: StringType) -> StringExpression:
+    return expr.lower()
 
 
-def toreal(): raise NotImplemented  # TODO
+def toreal(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("toreal({})".format(expr)))
 
 
 def tostring(expr: ExpressionType):
@@ -675,8 +684,8 @@ def tostring(expr: ExpressionType):
 def totimespan(): raise NotImplemented  # TODO
 
 
-def toupper(): raise NotImplemented  # TODO
-
+def toupper(expr: StringType) -> StringExpression:
+    return expr.upper()
 
 # def to_utf8(self): return
 #

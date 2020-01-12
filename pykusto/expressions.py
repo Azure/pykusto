@@ -238,8 +238,8 @@ class StringExpression(BaseExpression):
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
-            return ArrayExpression(KQL('split({}, "{}")'.format(_subexpr_to_kql(self.kql), delimiter)))
-        return ArrayExpression(KQL('split({}, "{}", {})'.format(_subexpr_to_kql(self.kql), delimiter, requested_index)))
+            return ArrayExpression(KQL('split({}, {})'.format(_subexpr_to_kql(self.kql), _subexpr_to_kql(delimiter))))
+        return ArrayExpression(KQL('split({}, {}, {})'.format(_subexpr_to_kql(self.kql), _subexpr_to_kql(delimiter), requested_index)))
 
     def equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)

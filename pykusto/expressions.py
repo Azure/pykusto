@@ -21,6 +21,14 @@ OrderType = Union[DatetimeType, TimespanType, NumberType, StringType]
 # All classes in the same file to prevent circular dependencies
 
 def _subexpr_to_kql(obj: ExpressionType) -> KQL:
+    """
+    Convert the given expression to KQL, enclosing it in parentheses if it is a compound expression. This guarantees
+    correct evaluation order. When parentheses are not needed, for example when the expressions is used as an argument
+    to a function, use `to_kql` instead.
+
+    :param obj: Expression to convert to KQL
+    :return: KQL that represents the given expression
+    """
     if isinstance(obj, BaseExpression):
         return obj.as_subexpression()
     return to_kql(obj)
@@ -643,6 +651,15 @@ column_generator = ColumnGenerator()
 
 
 def to_kql(obj: ExpressionType) -> KQL:
+    """
+    Convert the given expression to KQL. If this is a subexpression of a greater expression, neighboring operators might
+    take precedence over operators included in this expression, causing an incorrect evaluation order.
+    If this is a concern, use `_subexpr_to_kql` instead, which will enclose this expression in parentheses if it is
+    a compound expression.
+
+    :param obj: Expression to convert to KQL
+    :return: KQL that represents the given expression
+    """
     if isinstance(obj, BaseExpression):
         return obj.kql
     return kql_converter.for_obj(obj)

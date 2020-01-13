@@ -3,7 +3,8 @@ from typing import Union
 from pykusto.expressions import Column, NumberType, NumberExpression, TimespanType, \
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
-    NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression
+    NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
+    ArrayExpression
 from pykusto.kql_converters import KQL
 from pykusto.type_utils import plain_expression
 

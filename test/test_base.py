@@ -3,7 +3,7 @@ import sys
 from typing import Callable
 from unittest import TestCase
 
-from pykusto.type_utils import logger
+from pykusto.logger import logger
 
 
 class TestBase(TestCase):

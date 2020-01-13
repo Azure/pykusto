@@ -1,9 +1,6 @@
-import logging
 from datetime import datetime, timedelta
 from numbers import Number
 from typing import Union, Mapping, Type, Dict, Callable, Tuple, List
-
-logger = logging.getLogger("pykusto")
 
 KustoTypes = Union[str, Number, bool, datetime, Mapping, List, Tuple, timedelta]
 # TODO: Unhandled data types: guid, decimal

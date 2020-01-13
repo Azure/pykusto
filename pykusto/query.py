@@ -1,18 +1,18 @@
-from itertools import chain
-from typing import Tuple, List, Union, Optional
-
 from abc import abstractmethod
-from azure.kusto.data.helpers import dataframe_from_result_table
 from copy import copy, deepcopy
 from enum import Enum
+from itertools import chain
 from types import FunctionType
+from typing import Tuple, List, Union, Optional
+
+from azure.kusto.data.helpers import dataframe_from_result_table
 
 from pykusto.client import Table
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression, \
     AssignmentFromColumnToColumn, AnyExpression, to_kql
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import logger
+from pykusto.logger import logger
 from pykusto.udf import stringify_python_func
 
 

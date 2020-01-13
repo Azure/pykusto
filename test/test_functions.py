@@ -425,6 +425,20 @@ class TestFunction(TestBase):
             Query().where(f.substring(col.foo, col.bar, 4) == 'ABC,ABC').render()
         )
 
+    def test_split(self):
+        self.assertEqual(
+            ' | extend foo = (split(bar, "_", 3))',
+            Query().extend(foo=f.split(col.bar, "_", 3)).render()
+        )
+        self.assertEqual(
+            ' | extend foo = (split(bar, "_")[3])',
+            Query().extend(foo=f.split(col.bar, "_")[3]).render()
+        )
+        self.assertEqual(
+            ' | extend foo = (split("1_2", "_")[3])',
+            Query().extend(foo=f.split("1_2", "_")[3]).render()
+        )
+
     def test_tobool(self):
         self.assertEqual(
             " | where tobool(foo)",

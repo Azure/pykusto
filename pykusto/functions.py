@@ -1,3 +1,4 @@
+import json
 from typing import Union
 
 from pykusto.expressions import Column, NumberType, NumberExpression, TimespanType, \
@@ -583,16 +584,20 @@ def startofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpres
     return expr.startofyear(offset)
 
 
-def strcat(expr1: StringType, expr2: StringType, *exprs: StringType) -> StringExpression:
-    res = 'strcat({}, {}'.format(to_kql(expr1),
-                                 to_kql(expr2))
-    if len(exprs) > 0:
-        res = res + ', ' + ', '.join([to_kql(expr) for expr in exprs])
-    return StringExpression(KQL(res + ')'))
+def strcat(*strings: StringType) -> StringExpression:
+    if len(strings) < 2:
+        raise ValueError("strcat requires at least two arguments")
+    return StringExpression(KQL('strcat({})'.format(', '.join(to_kql(s) for s in strings))))
+
+
+def to_literal_dynamic(d: DynamicType) -> KQL:
+    if isinstance(d, BaseExpression):
+        return d.kql
+    return KQL('dynamic({})'.format(json.dumps(d)))
 
 
 def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
-    return StringExpression(KQL('strcat_array({}, {})'.format(to_kql(expr), to_kql(delimiter))))
+    return StringExpression(KQL('strcat_array({}, {})'.format(to_literal_dynamic(expr), to_kql(delimiter))))
 
 
 def strcat_delim(delimiter: StringType, expr1: StringType, expr2: StringType, *exprs: StringType) -> StringExpression:

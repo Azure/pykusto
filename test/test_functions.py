@@ -1,5 +1,4 @@
 import datetime
-import unittest
 
 from pykusto import functions as f
 from pykusto.expressions import column_generator as col
@@ -372,7 +371,6 @@ class TestFunction(TestBase):
             Query().extend(f.strcat_delim('-', ',', col.foo)).render()
         )
 
-    @unittest.skip("Enabled after #40 is fixed")
     def test_strcat_array(self):
         self.assertEqual(
             " | where (strcat_array(foo, \",\")) == \"A,B,C\"",

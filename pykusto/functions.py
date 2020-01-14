@@ -7,7 +7,7 @@ from pykusto.expressions import Column, NumberType, NumberExpression, TimespanTy
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
     ArrayExpression
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression
+from pykusto.type_utils import plain_expression, get_base_types
 
 
 # Scalar functions
@@ -266,10 +266,16 @@ def hourofday(expr: DatetimeType) -> NumberExpression:
 
 
 def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
-    return_type = type(if_true)
-    if type(if_false) is not return_type:
-        raise TypeError("The second and third arguments must be of the same type")
-    return plain_expression.for_type(return_type)(
+    return_types = get_base_types(if_true)
+    other_types = get_base_types(if_false)
+    common_types = other_types & return_types
+    if len(common_types) == 0:
+        # If there is not at least one common type, then certainly the arguments are not of the same type
+        raise TypeError("The second and third arguments must be of the same type, but they are: {} and {}".format(
+            ", ".join(t.__name__ for t in return_types),
+            ", ".join(t.__name__ for t in other_types)
+        ))
+    return plain_expression.for_type(next(iter(common_types)))(
         KQL('iff({}, {}, {})'.format(to_kql(predicate), to_kql(if_true), to_kql(if_false)))
     )
 

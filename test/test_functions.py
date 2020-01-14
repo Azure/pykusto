@@ -680,12 +680,34 @@ class TestFunction(TestBase):
     def test_iff(self):
         self.assertEqual(
             " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0)))",
-            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), datetime.timedelta(4))).render()
+            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3),
+                                      datetime.timedelta(4))).render()
+        )
+
+    def test_iff_expression_return_type(self):
+        self.assertEqual(
+            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), array_length(bar), array_length(baz)))",
+            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), f.array_length(col.bar),
+                                      f.array_length(col.baz))).render()
+        )
+
+    def test_iff_different_types(self):
+        self.assertRaises(
+            TypeError("The second and third arguments must be of the same type, but they are: timedelta and str"),
+            lambda: Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), "hello"))
+                .render()
+        )
+
+    def test_iff_related_types(self):
+        self.assertEqual(
+            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), 2, array_length(bar)))",
+            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), 2, f.array_length(col.bar))).render()
         )
 
     def test_iif(self):
         # iif is just an alias to iff
         self.assertEqual(
             " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0)))",
-            Query().project(foo=f.iif(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), datetime.timedelta(4))).render()
+            Query().project(foo=f.iif(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3),
+                                      datetime.timedelta(4))).render()
         )

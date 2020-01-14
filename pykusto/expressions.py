@@ -15,11 +15,10 @@ MappingType = Union[Mapping, 'MappingExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
 DynamicType = Union[ArrayType, MappingType]
-OrderType = Union[DatetimeType, TimespanType, NumberType, StringType]
+OrderedType = Union[DatetimeType, TimespanType, NumberType, StringType]
 
 
 # All classes in the same file to prevent circular dependencies
-
 def _subexpr_to_kql(obj: ExpressionType) -> KQL:
     """
     Convert the given expression to KQL, enclosing it in parentheses if it is a compound expression. This guarantees

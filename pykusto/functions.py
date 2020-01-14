@@ -655,11 +655,8 @@ def todynamic(): raise NotImplemented  # TODO
 def toguid(): raise NotImplemented  # TODO
 
 
-#todo: tohex receives int or long and does not support other types (float is a numbertype). hot to do when second expression is optional?
-# def tohex(expr1: NumberType, expr2: NumberType) -> StringExpression:
-#     return StringExpression(KQL("tohex({}, {})".format(expr1, expr2)))
-def tohex(): raise NotImplemented  # TODO
-
+def tohex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
+    return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(expr1, expr2)))
 
 def toint(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL("toint({})".format(expr)))

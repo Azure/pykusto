@@ -490,6 +490,12 @@ class TestFunction(TestBase):
         )
 
 
+    def test_tohex(self):
+        self.assertEqual(
+            " | where (tohex(256)) == \"100\"",
+            Query().where(f.tohex(256) == "100").render()
+        )
+
 
     # ------------------------------------------------------
     # Aggregative Functions

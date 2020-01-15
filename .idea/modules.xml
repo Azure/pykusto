@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/pykusto.iml" filepath="$PROJECT_DIR$/.idea/pykusto.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pykusto.iml" filepath="$PROJECT_DIR$/pykusto.iml" />
     </modules>
   </component>
 </project>

@@ -1,5 +1,4 @@
 from typing import Union, List, Tuple
-
 # noinspection PyProtectedMember
 from urllib.parse import urlparse
 
@@ -7,7 +6,7 @@ from urllib.parse import urlparse
 from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 
-from pykusto.utils import KQL
+from pykusto.kql_converters import KQL
 
 
 class PyKustoClient:

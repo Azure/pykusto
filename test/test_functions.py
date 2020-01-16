@@ -1,5 +1,4 @@
 import datetime
-import unittest
 
 from pykusto import functions as f
 from pykusto.expressions import column_generator as col
@@ -40,7 +39,7 @@ class TestFunction(TestBase):
 
     def test_case(self):
         self.assertEqual(
-            " | extend bucket = case((foo <= 3), \"Small\", (foo <= 10), \"Medium\", \"Large\")",
+            " | extend bucket = case(foo <= 3, \"Small\", foo <= 10, \"Medium\", \"Large\")",
             Query().extend(bucket=f.case(col.foo <= 3, "Small", col.foo <= 10, 'Medium', 'Large')).render()
         )
 
@@ -378,7 +377,7 @@ class TestFunction(TestBase):
             Query().where(f.strcat_array(col.foo, ',') == 'A,B,C').render()
         )
         self.assertEqual(
-            " | where (strcat_array(['A', 'B', 'C'], \",\")) == \"A,B,C\"",
+            " | where (strcat_array(dynamic([\"A\", \"B\", \"C\"]), \",\")) == \"A,B,C\"",
             Query().where(f.strcat_array(['A', 'B', 'C'], ',') == 'A,B,C').render()
         )
 
@@ -424,6 +423,20 @@ class TestFunction(TestBase):
             Query().where(f.substring(col.foo, col.bar, 4) == 'ABC,ABC').render()
         )
 
+    def test_split(self):
+        self.assertEqual(
+            ' | extend foo = (split(bar, "_", 3))',
+            Query().extend(foo=f.split(col.bar, "_", 3)).render()
+        )
+        self.assertEqual(
+            ' | extend foo = (split(bar, "_")[3])',
+            Query().extend(foo=f.split(col.bar, "_")[3]).render()
+        )
+        self.assertEqual(
+            ' | extend foo = (split("1_2", "_")[3])',
+            Query().extend(foo=f.split("1_2", "_")[3]).render()
+        )
+
     def test_tobool(self):
         self.assertEqual(
             " | where tobool(foo)",
@@ -444,7 +457,7 @@ class TestFunction(TestBase):
     #         Query().where(f.todatetime('') > datetime.datetime(2019, 7, 23)).render(),
     #         " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)")
     # def todatetime(expr: StringType) -> DatetimeExpression:
-    #     return DatetimeExpression(KQL('todatetime({})'.format(expr)))
+    #     return DatetimeExpression(KQL('todatetime({})'.format(_subexpr_to_kql(expr))))
 
     def test_todouble(self):
         self.assertEqual(
@@ -519,14 +532,13 @@ class TestFunction(TestBase):
             Query().summarize(f.arg_min(col.foo, col.bar, col.fam)).render()
         )
 
-    @unittest.skip("Re-enable once issue #1 is resolved")
     def test_avg(self):
         self.assertEqual(
             " | summarize avg(foo)",
             Query().summarize(f.avg(col.foo)).render()
         )
         self.assertEqual(
-            " | summarize avg(foo)-5",
+            " | summarize avg(foo) - 5",
             Query().summarize(f.avg(col.foo) - 5).render()
         )
 

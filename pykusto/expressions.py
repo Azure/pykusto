@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Tuple, Mapping, Optional
+from numbers import Number
+from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
-from pykusto.utils import KQL
-from pykusto.utils import KustoTypes, to_kql
+from pykusto.kql_converters import KQL
+from pykusto.type_utils import plain_expression, aggregation_expression, KustoTypes, kql_converter
 
 ExpressionType = Union[KustoTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -13,14 +14,21 @@ ArrayType = Union[List, Tuple, 'ArrayExpression']
 MappingType = Union[Mapping, 'MappingExpression']
 DatetimeType = Union[datetime, 'DatetimeExpression']
 TimespanType = Union[timedelta, 'TimespanExpression']
-AggregationType = Union['AggregationExpression']
-DynamicType = Union['DynamicExpression']
+DynamicType = Union[ArrayType, MappingType]
 OrderType = Union[DatetimeType, TimespanType, NumberType, StringType]
 
 
 # All classes in the same file to prevent circular dependencies
 
 def _subexpr_to_kql(obj: ExpressionType) -> KQL:
+    """
+    Convert the given expression to KQL, enclosing it in parentheses if it is a compound expression. This guarantees
+    correct evaluation order. When parentheses are not needed, for example when the expressions is used as an argument
+    to a function, use `to_kql` instead.
+
+    :param obj: Expression to convert to KQL
+    :return: KQL that represents the given expression
+    """
     if isinstance(obj, BaseExpression):
         return obj.as_subexpression()
     return to_kql(obj)
@@ -29,11 +37,20 @@ def _subexpr_to_kql(obj: ExpressionType) -> KQL:
 class BaseExpression:
     kql: KQL
 
-    def __init__(self, kql: KQL) -> None:
+    def __new__(cls, *args, **kwargs):
+        if cls is 'BaseExpression':
+            raise TypeError("BaseExpression is abstract")
+        return object.__new__(cls)
+
+    def __init__(self, kql: Union[KQL, 'BaseExpression']) -> None:
+        if isinstance(kql, BaseExpression):
+            self.kql = kql.kql
+        elif not isinstance(kql, str):
+            raise ValueError("Either expression or KQL required")
         self.kql = kql
 
     def __repr__(self) -> str:
-        return self.kql
+        return str(self.kql)
 
     def as_subexpression(self) -> KQL:
         return KQL('({})'.format(self.kql))
@@ -58,10 +75,15 @@ class BaseExpression:
         return BooleanExpression(KQL('{} has \"{}\"'.format(self.kql, exp)))
 
     @staticmethod
-    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> KQL:
-        return KQL('{}{}{}'.format(
+    def base_binary_op(
+            left: ExpressionType, operator: str, right: ExpressionType, result_type: Type[KustoTypes]
+    ) -> 'BaseExpression':
+        registrar = plain_expression
+        if isinstance(left, AggregationExpression) or isinstance(right, AggregationExpression):
+            registrar = aggregation_expression
+        return registrar.for_type(result_type)(KQL('{}{}{}'.format(
             _subexpr_to_kql(left), operator, _subexpr_to_kql(right))
-        )
+        ))
 
     def __eq__(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' == ', other)
@@ -100,10 +122,12 @@ class BaseExpression:
         raise ValueError("Only arrays can be assigned to multiple columns")
 
 
+@plain_expression(bool)
 class BooleanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
-        return BooleanExpression(BaseExpression.binary_op(left, operator, right))
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(left, operator, right, bool)
 
     def __and__(self, other: BooleanType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' and ', other)
@@ -115,10 +139,12 @@ class BooleanExpression(BaseExpression):
         return BooleanExpression(KQL('not({})'.format(self.kql)))
 
 
+@plain_expression(Number)
 class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
-        return NumberExpression(BaseExpression.binary_op(left, operator, right))
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(left, operator, right, Number)
 
     def __lt__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' < ', other)
@@ -168,15 +194,15 @@ class NumberExpression(BaseExpression):
         return NumberExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin(self, round_to: NumberType) -> 'BaseExpression':
-        return BaseExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+        return NumberExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin_at(self, round_to: NumberType, fixed_point: NumberType) -> 'BaseExpression':
-        return BaseExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
-                                                              _subexpr_to_kql(round_to),
-                                                              _subexpr_to_kql(fixed_point))))
+        return NumberExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
+                                                                _subexpr_to_kql(round_to),
+                                                                _subexpr_to_kql(fixed_point))))
 
     def bin_auto(self) -> 'BaseExpression':
-        return BaseExpression(KQL('bin_auto({})'.format(self.kql)))
+        return NumberExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def ceiling(self) -> 'NumberExpression':
         return NumberExpression(KQL('ceiling({})'.format(self.kql)))
@@ -213,11 +239,17 @@ class NumberExpression(BaseExpression):
 
     def round(self, precision: NumberType = None) -> 'NumberExpression':
         return NumberExpression(KQL(
-            ('round({}, {})' if precision is None else 'round({}, {})').format(self, precision)
+            ('round({}, {})' if precision is None else 'round({}, {})').format(self.kql, to_kql(precision))
         ))
 
 
+@plain_expression(str)
 class StringExpression(BaseExpression):
+    @staticmethod
+    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'StringExpression':
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(left, operator, right, str)
+
     def __len__(self) -> NumberExpression:
         return self.string_size()
 
@@ -228,7 +260,7 @@ class StringExpression(BaseExpression):
         return BooleanExpression(KQL('isempty({})'.format(self.kql)))
 
     def __add__(self, other: StringType) -> 'StringExpression':
-        return StringExpression(BaseExpression.binary_op(self, ' + ', other))
+        return StringExpression.binary_op(self, ' + ', other)
 
     @staticmethod
     def concat(*strings: StringType) -> 'StringExpression':
@@ -238,8 +270,10 @@ class StringExpression(BaseExpression):
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
-            return ArrayExpression(KQL('split({}, {}'.format(self.kql, delimiter)))
-        return ArrayExpression(KQL('split({}, {}, {}'.format(self.kql, delimiter, requested_index)))
+            return ArrayExpression(KQL('split({}, {})'.format(to_kql(self.kql), to_kql(delimiter))))
+        return ArrayExpression(KQL('split({}, {}, {})'.format(
+            to_kql(self.kql), to_kql(delimiter), to_kql(requested_index)
+        )))
 
     def equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)
@@ -278,10 +312,12 @@ class StringExpression(BaseExpression):
         return BooleanExpression(KQL('isutf8({})'.format(self.kql)))
 
 
+@plain_expression(datetime)
 class DatetimeExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'DatetimeExpression':
-        return DatetimeExpression(BaseExpression.binary_op(left, operator, right))
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(left, operator, right, datetime)
 
     def __lt__(self, other: DatetimeType) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' < ', other)
@@ -316,15 +352,15 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin(self, round_to: TimespanType) -> 'BaseExpression':
-        return BaseExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+        return DatetimeExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin_at(self, round_to: TimespanType, fixed_point: DatetimeType) -> 'BaseExpression':
-        return BaseExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
-                                                              _subexpr_to_kql(round_to),
-                                                              _subexpr_to_kql(fixed_point))))
+        return DatetimeExpression(KQL('bin_at({}, {}, {})'.format(
+            self.kql, _subexpr_to_kql(round_to), to_kql(fixed_point)
+        )))
 
     def bin_auto(self) -> 'BaseExpression':
-        return BaseExpression(KQL('bin_auto({})'.format(self.kql)))
+        return DatetimeExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def endofday(self, offset: NumberType = None) -> 'DatetimeExpression':
         if offset is None:
@@ -364,33 +400,35 @@ class DatetimeExpression(BaseExpression):
         return NumberExpression(KQL('getyear({})'.format(self.kql)))
 
     def hourofday(self) -> NumberExpression:
-        return NumberExpression(KQL('hourofday({})'.format(self)))
+        return NumberExpression(KQL('hourofday({})'.format(self.kql)))
 
     def startofday(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
-            ('startofday({})' if offset is None else 'startofday({}, {})').format(self.kql, offset)
+            ('startofday({})' if offset is None else 'startofday({}, {})').format(self.kql, to_kql(offset))
         ))
 
     def startofmonth(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
-            ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(self.kql, offset)
+            ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(self.kql, to_kql(offset))
         ))
 
     def startofweek(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
-            ('startofweek({})' if offset is None else 'startofweek({}, {})').format(self.kql, offset)
+            ('startofweek({})' if offset is None else 'startofweek({}, {})').format(self.kql, to_kql(offset))
         ))
 
     def startofyear(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
-            ('startofyear({})' if offset is None else 'startofyear({}, {})').format(self.kql, offset)
+            ('startofyear({})' if offset is None else 'startofyear({}, {})').format(self.kql, to_kql(offset))
         ))
 
 
+@plain_expression(timedelta)
 class TimespanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'TimespanExpression':
-        return TimespanExpression(BaseExpression.binary_op(left, operator, right))
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(left, operator, right, timedelta)
 
     def __add__(self, other: TimespanType) -> 'TimespanExpression':
         return TimespanExpression.binary_op(self, ' + ', other)
@@ -402,18 +440,18 @@ class TimespanExpression(BaseExpression):
         return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(self))))
 
     def bin(self, round_to: TimespanType) -> 'BaseExpression':
-        return BaseExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+        return TimespanExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin_at(self, round_to: TimespanType, fixed_point: TimespanType) -> 'BaseExpression':
-        return BaseExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
-                                                              _subexpr_to_kql(round_to),
-                                                              _subexpr_to_kql(fixed_point))))
+        return TimespanExpression(KQL('bin_at({}, {}, {})'.format(
+            self.kql, to_kql(round_to), to_kql(fixed_point)
+        )))
 
     def bin_auto(self) -> 'BaseExpression':
-        return BaseExpression(KQL('bin_auto({})'.format(self.kql)))
+        return TimespanExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def format_timespan(self, format_string: StringType) -> StringExpression:
-        return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
+        return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, to_kql(format_string))))
 
     def between(self, lower: TimespanType, upper: TimespanType) -> BooleanExpression:
         return BooleanExpression(KQL('{} between ({} .. {})'.format(
@@ -421,20 +459,11 @@ class TimespanExpression(BaseExpression):
         )))
 
 
-class ArrayBaseExpression(BaseExpression):
+@plain_expression(List, Tuple)
+class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
 
-
-class MappingBaseExpression(BaseExpression):
-    def __getitem__(self, index: StringType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
-
-    def __getattr__(self, name: str) -> 'AnyExpression':
-        return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
-
-
-class ArrayExpression(ArrayBaseExpression):
     def __len__(self) -> NumberExpression:
         return self.array_length()
 
@@ -450,13 +479,23 @@ class ArrayExpression(ArrayBaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
+    def __getitem__(self, index: NumberType) -> BaseExpression:
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
     def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
         if len(columns) <= 1:
             return super().assign_to(*columns)
         return AssignmentToMultipleColumns(columns, self)
 
 
-class MappingExpression(MappingBaseExpression):
+@plain_expression(Mapping)
+class MappingExpression(BaseExpression):
+    def __getitem__(self, index: StringType) -> 'AnyExpression':
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+
+    def __getattr__(self, name: str) -> 'AnyExpression':
+        return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
+
     def keys(self) -> ArrayExpression:
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
 
@@ -481,6 +520,10 @@ class AnyExpression(
 
 
 class AggregationExpression(BaseExpression):
+    def __new__(cls, *args, **kwargs):
+        if cls is 'AggregationExpression':
+            raise TypeError("AggregationExpression is abstract")
+        return object.__new__(cls)
 
     def assign_to(self, *columns: 'Column') -> 'AssignmentFromAggregationToColumn':
         if len(columns) == 0:
@@ -494,30 +537,37 @@ class AggregationExpression(BaseExpression):
         return self.kql
 
 
+@aggregation_expression(bool)
 class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
     pass
 
 
+@aggregation_expression(Number)
 class NumberAggregationExpression(AggregationExpression, NumberExpression):
     pass
 
 
+@aggregation_expression(str)
 class StringAggregationExpression(AggregationExpression, StringExpression):
     pass
 
 
+@aggregation_expression(datetime)
 class DatetimeAggregationExpression(AggregationExpression, DatetimeExpression):
     pass
 
 
+@aggregation_expression(timedelta)
 class TimespanAggregationExpression(AggregationExpression, TimespanExpression):
     pass
 
 
+@aggregation_expression(List, Tuple)
 class ArrayAggregationExpression(AggregationExpression, ArrayExpression):
     pass
 
 
+@aggregation_expression(Mapping)
 class MappingAggregationExpression(AggregationExpression, MappingExpression):
     pass
 
@@ -561,7 +611,7 @@ class AssignmentToMultipleColumns(AssignmentBase):
 
 
 class AssignmentFromAggregationToColumn(AssignmentBase):
-    def __init__(self, column: Optional['Column'], aggregation: AggregationType) -> None:
+    def __init__(self, column: Optional['Column'], aggregation: AggregationExpression) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
 
 
@@ -597,3 +647,18 @@ class ColumnGenerator:
 # Recommended usage: from pykusto.expressions import column_generator as col
 # TODO: Is there a way to enforce this to be a singleton?
 column_generator = ColumnGenerator()
+
+
+def to_kql(obj: ExpressionType) -> KQL:
+    """
+    Convert the given expression to KQL. If this is a subexpression of a greater expression, neighboring operators might
+    take precedence over operators included in this expression, causing an incorrect evaluation order.
+    If this is a concern, use `_subexpr_to_kql` instead, which will enclose this expression in parentheses if it is
+    a compound expression.
+
+    :param obj: Expression to convert to KQL
+    :return: KQL that represents the given expression
+    """
+    if isinstance(obj, BaseExpression):
+        return obj.kql
+    return kql_converter.for_obj(obj)

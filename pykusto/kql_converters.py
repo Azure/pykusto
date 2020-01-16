@@ -1,20 +1,19 @@
 import json
-import logging
 from datetime import datetime, timedelta
-from typing import Union, Mapping, NewType, Type, Dict, Callable, Any, Tuple, List
+from numbers import Number
+from typing import NewType, Mapping, Union, List, Tuple
 
-logger = logging.getLogger("pykusto")
-
-KustoTypes = Union[str, int, bool, datetime, Mapping, List, Tuple, float, timedelta]
-# TODO: Unhandled date types: guid, decimal
+from pykusto.type_utils import kql_converter
 
 KQL = NewType('KQL', str)
 
 
+@kql_converter(datetime)
 def datetime_to_kql(dt: datetime) -> KQL:
     return KQL(dt.strftime('datetime(%Y-%m-%d %H:%M:%S.%f)'))
 
 
+@kql_converter(timedelta)
 def timedelta_to_kql(td: timedelta) -> KQL:
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
@@ -27,9 +26,10 @@ def timedelta_to_kql(td: timedelta) -> KQL:
     ))
 
 
+@kql_converter(Mapping, List, Tuple)
 def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     query = list(json.dumps(d))
-    # Issue #11
+    # Convert square brackets to round brackets (Issue #11)
     counter = 0
     prev = ""
     for i, c in enumerate(query):
@@ -48,29 +48,21 @@ def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     return KQL("".join(query))
 
 
+@kql_converter(bool)
 def bool_to_kql(b: bool) -> KQL:
     return KQL('true') if b else KQL('false')
 
 
+@kql_converter(str)
 def str_to_kql(s: str) -> KQL:
     return KQL('"{}"'.format(s))
 
 
-KQL_CONVERTER_BY_TYPE: Dict[Type, Callable[[Any], KQL]] = {
-    datetime: datetime_to_kql,
-    timedelta: timedelta_to_kql,
-    Mapping: dynamic_to_kql,
-    List: dynamic_to_kql,
-    Tuple: dynamic_to_kql,
-    bool: bool_to_kql,
-    str: str_to_kql,
-    int: KQL,
-    float: KQL,
-}
+@kql_converter(Number)
+def number_to_kql(n: Number) -> KQL:
+    return KQL(str(n))
 
 
-def to_kql(obj: KustoTypes) -> KQL:
-    for kusto_type, converter in KQL_CONVERTER_BY_TYPE.items():
-        if isinstance(obj, kusto_type):
-            return converter(obj)
-    raise ValueError("No KQL converter found for object {} of type {}".format(obj, type(obj)))
+@kql_converter(type(None))
+def none_to_kql(n: type(None)) -> KQL:
+    return KQL("")

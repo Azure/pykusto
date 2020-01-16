@@ -464,6 +464,51 @@ class TestFunction(TestBase):
             " | where (todouble(foo)) > 0.2",
             Query().where(f.todouble(col.foo) > 0.2).render()
         )
+        
+    def test_todecimal(self):
+        self.assertEqual(
+            " | where (todecimal(foo)) > 0.2",
+            Query().where(f.todecimal(col.foo) > 0.2).render()
+        )
+
+
+    def test_toint(self):
+        self.assertEqual(
+            " | where (toint(foo)) > 1",
+            Query().where(f.toint(col.foo) > 1).render()
+        )
+
+    def test_tolong(self):
+        self.assertEqual(
+            " | where (tolong(foo)) > 2222222222",
+            Query().where(f.tolong(col.foo) > 2222222222).render()
+        )
+
+    def test_tolower(self):
+        self.assertEqual(
+            " | where (tolower(foo)) == \"foo\"",
+            Query().where(f.tolower(col.foo) == "foo").render()
+        )
+
+    def test_toreal(self):
+        self.assertEqual(
+            " | where (toreal(foo)) > 0.2",
+            Query().where(f.toreal(col.foo) > 0.2).render()
+        )
+        
+    def test_toupper(self):
+        self.assertEqual(
+            " | where (toupper(foo)) == \"FOO\"",
+            Query().where(f.toupper(col.foo) == "FOO").render()
+        )
+
+
+    def test_tohex(self):
+        self.assertEqual(
+            " | where (tohex(256)) == \"100\"",
+            Query().where(f.tohex(256) == "100").render()
+        )
+
 
     # ------------------------------------------------------
     # Aggregative Functions

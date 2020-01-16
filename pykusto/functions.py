@@ -665,7 +665,8 @@ def todatetime(expr: StringType) -> DatetimeExpression:
     return DatetimeExpression(KQL('todatetime({})'.format(to_kql(expr))))
 
 
-def todecimal(): raise NotImplemented  # TODO
+def todecimal(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("todecimal({})".format(to_kql(expr))))
 
 
 def todouble(expr: NumberType) -> NumberExpression:
@@ -678,19 +679,23 @@ def todynamic(): raise NotImplemented  # TODO
 def toguid(): raise NotImplemented  # TODO
 
 
-def tohex(): raise NotImplemented  # TODO
+def tohex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
+    return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(to_kql(expr1), to_kql(expr2))))
+
+def toint(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("toint({})".format(to_kql(expr))))
 
 
-def toint(): raise NotImplemented  # TODO
+def tolong(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("tolong({})".format(to_kql(expr))))
 
 
-def tolong(): raise NotImplemented  # TODO
+def tolower(expr: StringType) -> StringExpression:
+    return expr.lower()
 
 
-def tolower(): raise NotImplemented  # TODO
-
-
-def toreal(): raise NotImplemented  # TODO
+def toreal(expr: NumberType) -> NumberExpression:
+    return NumberExpression(KQL("toreal({})".format(to_kql(expr))))
 
 
 def tostring(expr: ExpressionType):
@@ -700,8 +705,8 @@ def tostring(expr: ExpressionType):
 def totimespan(): raise NotImplemented  # TODO
 
 
-def toupper(): raise NotImplemented  # TODO
-
+def toupper(expr: StringType) -> StringExpression:
+    return expr.upper()
 
 # def to_utf8(self): return
 #

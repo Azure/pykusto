@@ -674,7 +674,7 @@ def toguid(): raise NotImplemented  # TODO
 
 
 def tohex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
-    return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(to_kql(expr1, expr2))))
+    return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(to_kql(expr1), to_kql(expr2))))
 
 def toint(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL("toint({})".format(to_kql(expr))))

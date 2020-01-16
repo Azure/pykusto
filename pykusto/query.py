@@ -8,7 +8,7 @@ from typing import Tuple, List, Union, Optional
 from azure.kusto.data.helpers import dataframe_from_result_table
 
 from pykusto.client import Table
-from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderType, \
+from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression, \
     AssignmentFromColumnToColumn, AnyExpression, to_kql
 from pykusto.kql_converters import KQL
@@ -87,10 +87,10 @@ class Query:
     def count(self) -> 'CountQuery':
         return CountQuery(self)
 
-    def sort_by(self, col: OrderType, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
+    def sort_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
         return SortQuery(self, col, order, nulls)
 
-    def order_by(self, col: OrderType, order: Order = None, nulls: Nulls = None) -> 'OrderQuery':
+    def order_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> 'OrderQuery':
         return OrderQuery(self, col, order, nulls)
 
     def top(self, num_rows: int, col: Column, order: Order = None, nulls: Nulls = None) -> 'TopQuery':
@@ -338,11 +338,11 @@ class CountQuery(Query):
 
 class _OrderQueryBase(Query):
     class OrderSpec:
-        col: OrderType
+        col: OrderedType
         order: Order
         nulls: Nulls
 
-        def __init__(self, col: OrderType, order: Order, nulls: Nulls):
+        def __init__(self, col: OrderedType, order: Order, nulls: Nulls):
             self.col = col
             self.order = order
             self.nulls = nulls
@@ -350,13 +350,13 @@ class _OrderQueryBase(Query):
     _query_name: str
     _order_specs: List[OrderSpec]
 
-    def __init__(self, head: Query, query_name: str, col: OrderType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, query_name: str, col: OrderedType, order: Order, nulls: Nulls):
         super(_OrderQueryBase, self).__init__(head)
         self._query_name = query_name
         self._order_specs = []
         self.then_by(col, order, nulls)
 
-    def then_by(self, col: OrderType, order: Order = None, nulls: Nulls = None):
+    def then_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None):
         self._order_specs.append(_OrderQueryBase.OrderSpec(col, order, nulls))
         return self
 
@@ -376,12 +376,12 @@ class _OrderQueryBase(Query):
 
 
 class SortQuery(_OrderQueryBase):
-    def __init__(self, head: Query, col: OrderType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, col: OrderedType, order: Order, nulls: Nulls):
         super(SortQuery, self).__init__(head, "sort", col, order, nulls)
 
 
 class OrderQuery(_OrderQueryBase):
-    def __init__(self, head: Query, col: OrderType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, col: OrderedType, order: Order, nulls: Nulls):
         super(OrderQuery, self).__init__(head, "order", col, order, nulls)
 
 

@@ -1,9 +1,29 @@
 from datetime import datetime, timedelta
 from numbers import Number
-from typing import Union, Mapping, Type, Dict, Callable, Tuple, List
+from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Any, Set
 
 KustoTypes = Union[str, Number, bool, datetime, Mapping, List, Tuple, timedelta]
 # TODO: Unhandled data types: guid, decimal
+
+
+def get_base_types(obj: Any) -> Set[Type[KustoTypes]]:
+    """
+    For a given object, return the associated basic type, which is a member of `KustoTypes`
+
+    :param obj: The given object for which the type is resolved
+    :return: A type which is a member of `KustoTypes`
+    """
+    obj_type = type(obj)
+    for kusto_type in KustoTypes.__args__:
+        if isinstance(obj, kusto_type):
+            # The object is already a member of Kusto types
+            return {kusto_type}
+    # The object is one of the expression types decorated with a TypeRegistrar, therefore the original types are
+    # recorded the field _base_types
+    base_types = getattr(obj_type, '_base_types', None)
+    if base_types is None:
+        raise TypeError("get_base_types called for unsupported type: {}".format(obj_type.__name__))
+    return base_types
 
 
 class TypeRegistrar:
@@ -30,6 +50,7 @@ class TypeRegistrar:
                 previous = self.registry.setdefault(t, wrapped)
                 if previous is not wrapped:
                     raise TypeError("{}: type already registered: {}".format(self, t.__name__))
+            wrapped._base_types = set(types)
             return wrapped
 
         return inner

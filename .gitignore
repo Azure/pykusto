@@ -332,6 +332,5 @@ ASALocalRun/
 # PyCharm / IntelliJ
 /.idea/workspace.xml
 /.idea/checkstyle-idea.xml
-*.iml
 /.idea/misc.xml
 /venv

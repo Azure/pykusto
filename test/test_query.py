@@ -2,6 +2,7 @@ from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion
+from pykusto.type_utils import TypeName
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
 
@@ -190,6 +191,12 @@ class TestQuery(TestBase):
         self.assertEqual(
             " | mv-expand a, b, c",
             Query().mv_expand(col.a, col.b, col.c).render(),
+        )
+
+    def test_mv_expand_to_type(self):
+        self.assertEqual(
+            " | mv-expand a to typeof(string), b to typeof(int), c",
+            Query().mv_expand(col.a.to_type(TypeName.STRING), col.b.to_type(TypeName.INT), col.c).render(),
         )
 
     def test_mv_expand_args(self):

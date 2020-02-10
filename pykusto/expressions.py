@@ -4,7 +4,7 @@ from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, KustoTypes, kql_converter
+from pykusto.type_utils import plain_expression, aggregation_expression, KustoTypes, kql_converter, TypeName
 
 ExpressionType = Union[KustoTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -478,9 +478,6 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
-    def __getitem__(self, index: NumberType) -> BaseExpression:
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
-
     def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
         if len(columns) <= 1:
             return super().assign_to(*columns)
@@ -634,6 +631,10 @@ class Column(AnyExpression):
             return AssignmentFromColumnToColumn(columns[0], self)
         return ArrayExpression.assign_to(self, *columns)
 
+    # Used for mv-expand
+    def to_type(self, type_name: TypeName) -> 'ColumnToType':
+        return ColumnToType(self, type_name)
+
 
 class ColumnGenerator:
     def __getattr__(self, name: str) -> Column:
@@ -646,6 +647,11 @@ class ColumnGenerator:
 # Recommended usage: from pykusto.expressions import column_generator as col
 # TODO: Is there a way to enforce this to be a singleton?
 column_generator = ColumnGenerator()
+
+
+class ColumnToType(BaseExpression):
+    def __init__(self, col: Column, type_name: TypeName) -> None:
+        super().__init__(KQL("{} to typeof({})".format(col.kql, type_name.value)))
 
 
 def to_kql(obj: ExpressionType) -> KQL:

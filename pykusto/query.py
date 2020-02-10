@@ -10,7 +10,7 @@ from azure.kusto.data.helpers import dataframe_from_result_table
 from pykusto.client import Table
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, Column, BaseExpression, \
-    AssignmentFromColumnToColumn, AnyExpression, to_kql
+    AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.udf import stringify_python_func
@@ -158,7 +158,7 @@ class Query:
             assignments.append(AssignmentFromAggregationToColumn(Column(column_name), agg))
         return SummarizeQuery(self, assignments)
 
-    def mv_expand(self, *columns: Column, bag_expansion: BagExpansion = None, with_item_index: Column = None,
+    def mv_expand(self, *columns: Union[Column, ColumnToType], bag_expansion: BagExpansion = None, with_item_index: Column = None,
                   limit: int = None):
         if len(columns) == 0:
             raise ValueError("Please specify one or more columns for mv-expand")
@@ -475,13 +475,12 @@ class SummarizeQuery(Query):
 
 
 class MvExpandQuery(Query):
-    _columns: Tuple[Column]
+    _columns: Tuple[Union[Column, ColumnToType]]
     _bag_expansion: BagExpansion
     _with_item_index: Column
     _limit: int
 
-    def __init__(self, head: Query, columns: Tuple[Column], bag_expansion: BagExpansion, with_item_index: Column,
-                 limit: int):
+    def __init__(self, head: Query, columns: Tuple[Union[Column, ColumnToType]], bag_expansion: BagExpansion, with_item_index: Column, limit: int):
         super(MvExpandQuery, self).__init__(head)
         self._columns = columns
         self._bag_expansion = bag_expansion

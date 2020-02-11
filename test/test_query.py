@@ -167,6 +167,12 @@ class TestQuery(TestBase):
             Query().extend(col.v1 + col.v2, foo=col.bar * 4).render(),
         )
 
+    def test_extend_build_dynamic(self):
+        self.assertEqual(
+            " | extend foo = pack('Name', name, 'Roles', pack_array(role1, role2))",
+            Query().extend(foo={'Name': col.name, 'Roles': [col.role1. col.role2]}).render(),
+        )
+
     def test_summarize(self):
         self.assertEqual(
             " | summarize count(foo), my_count = count(bar)",

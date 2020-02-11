@@ -76,17 +76,17 @@ class TestExpressions(TestBase):
 
     def test_assign_to(self):
         self.assertEqual(
-            " | extend bar = (foo * 2)",
+            " | extend bar = foo * 2",
             Query().extend((col.foo * 2).assign_to(col.bar)).render(),
         )
         self.assertEqual(
-            " | extend foo = (shoo * 2)",
+            " | extend foo = shoo * 2",
             Query().extend(foo=(col.shoo * 2)).render(),
         )
 
     def test_extend_const(self):
         self.assertEqual(
-            " | extend foo = (5), bar = (\"bar\"), other_col = other",
+            ' | extend foo = 5, bar = "bar", other_col = other',
             Query().extend(foo=5, bar="bar", other_col=col.other).render(),
         )
 
@@ -110,16 +110,16 @@ class TestExpressions(TestBase):
 
     def test_is_in(self):
         self.assertEqual(
-            " | where foo in (\"A\", \"B\", \"C\")",
+            ' | where foo in ("A", "B", "C")',
             Query().where(col.foo.is_in(["A", "B", "C"])).render()
         )
         self.assertEqual(
-            " | where foo in (\"[\", \"[[\", \"]\")",
+            ' | where foo in ("[", "[[", "]")',
             Query().where(col.foo.is_in(['[', "[[", "]"])).render()
         )
 
     def test_has(self):
         self.assertEqual(
-            " | where foo has \"test\"",
+            ' | where foo has "test"',
             Query().where(col.foo.has("test")).render()
         )

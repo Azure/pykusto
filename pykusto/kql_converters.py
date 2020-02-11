@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from itertools import chain
 from numbers import Number
 from typing import NewType, Mapping, Union, List, Tuple
 
@@ -28,7 +29,11 @@ def timedelta_to_kql(td: timedelta) -> KQL:
 
 @kql_converter(Mapping, List, Tuple)
 def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
-    query = list(json.dumps(d))
+    try:
+        query = list(json.dumps(d))
+    except TypeError:
+        # Contains non-primitive object
+        return build_dynamic(d)
     # Convert square brackets to round brackets (Issue #11)
     counter = 0
     prev = ""
@@ -46,6 +51,18 @@ def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
         prev = query[i]
     assert counter == 0
     return KQL("".join(query))
+
+
+def build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
+    from pykusto.expressions import BaseExpression
+    if isinstance(d, BaseExpression):
+        return d.kql
+    if isinstance(d, Mapping):
+        return KQL('pack({})'.format(', '.join(map(build_dynamic, chain(*d.items())))))
+    if isinstance(d, (List, Tuple)):
+        return KQL('pack_array({})'.format(', '.join(map(build_dynamic, d))))
+    from pykusto.expressions import to_kql
+    return to_kql(d)
 
 
 @kql_converter(bool)

@@ -1,7 +1,7 @@
 from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
-from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion
+from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
 from pykusto.type_utils import TypeName
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
@@ -295,6 +295,12 @@ class TestQuery(TestBase):
         self.assertEqual(
             " | evaluate some_plugin(foo, 3)",
             Query().evaluate('some_plugin', col.foo, 3).render(),
+        )
+
+    def test_evaluate_with_distibution(self):
+        self.assertEqual(
+            " | evaluate hint.distribution=per_shard some_plugin(foo, 3)",
+            Query().evaluate('some_plugin', col.foo, 3, distribution=Distribution.PER_SHARD).render(),
         )
 
     def test_udf(self):

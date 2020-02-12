@@ -44,6 +44,12 @@ class JoinKind(Enum):
     RIGHTSEMI = "rightsemi"
 
 
+class Distribution(Enum):
+    SINGLE = 'single'
+    PER_NODE = 'per_node'
+    PER_SHARD = 'per_shard'
+
+
 class BagExpansion(Enum):
     BAG = "bag"
     ARRAY = "array"
@@ -170,14 +176,15 @@ class Query:
     def custom(self, custom_query: str) -> 'CustomQuery':
         return CustomQuery(self, custom_query)
 
-    def evaluate(self, plugin_name, *args: ExpressionType) -> 'EvaluateQuery':
-        return EvaluateQuery(self, plugin_name, *args)
+    def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> 'EvaluateQuery':
+        return EvaluateQuery(self, plugin_name, *args, distribution=distribution)
 
-    def evaluate_python(self, udf: FunctionType, extend: bool = True, **type_specs: TypeName) -> 'EvaluateQuery':
+    def evaluate_python(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: TypeName) -> 'EvaluateQuery':
         return EvaluateQuery(
             self, 'python',
             BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in type_specs.items())))),
-            stringify_python_func(udf)
+            stringify_python_func(udf),
+            distribution=distribution
         )
 
     @abstractmethod
@@ -522,14 +529,17 @@ class CustomQuery(Query):
 class EvaluateQuery(Query):
     _plugin_name: str
     _args: Tuple[ExpressionType]
+    _distribution: Distribution
 
-    def __init__(self, head: Query, plugin_name: str, *args: ExpressionType):
+    def __init__(self, head: Query, plugin_name: str, *args: ExpressionType, distribution: Distribution = None):
         super().__init__(head)
         self._plugin_name = plugin_name
         self._args = args
+        self._distribution = distribution
 
     def _compile(self) -> KQL:
-        return KQL('evaluate {}({})'.format(
+        return KQL('evaluate {}{}({})'.format(
+            '' if self._distribution is None else 'hint.distribution={} '.format(self._distribution.value),
             self._plugin_name,
             ', '.join(to_kql(arg) for arg in self._args),
         ))

@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 from enum import Enum
 from itertools import chain
 from types import FunctionType
-from typing import Tuple, List, Union, Optional
+from typing import Tuple, List, Union, Optional, Dict
 
 from azure.kusto.data.helpers import dataframe_from_result_table
 
@@ -13,6 +13,7 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
+from pykusto.type_utils import TypeName
 from pykusto.udf import stringify_python_func
 
 
@@ -167,9 +168,8 @@ class Query:
     def custom(self, custom_query: str):
         return CustomQuery(self, custom_query)
 
-    # TODO convert python types to kusto types
-    def evaluate(self, udf: FunctionType, type_spec_str: str):
-        return EvaluatePythonQuery(self, udf, type_spec_str)
+    def evaluate_python(self, udf: FunctionType, extend: bool = True, **type_specs: TypeName):
+        return EvaluatePythonQuery(self, udf, extend, **type_specs)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -512,15 +512,19 @@ class CustomQuery(Query):
 
 class EvaluatePythonQuery(Query):
     _udf: FunctionType
-    _type_specs: str
+    _type_specs: Dict[str, TypeName]
+    _extend: bool
 
-    def __init__(self, head: Query, udf: FunctionType, type_specs: str):
+    def __init__(self, head: Query, udf: FunctionType, extend: bool = True, **type_specs: TypeName):
         super(EvaluatePythonQuery, self).__init__(head)
         self._udf = udf
         self._type_specs = type_specs
+        self._extend = extend
 
     def _compile(self) -> KQL:
-        return KQL('evaluate python({},"{}")'.format(
-            self._type_specs,
+        return KQL('evaluate python({}, "{}")'.format(
+            'typeof({})'.format(
+                ('*, ' if self._extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in self._type_specs.items())
+            ),
             stringify_python_func(self._udf)
         ))

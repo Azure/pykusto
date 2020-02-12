@@ -5,6 +5,7 @@ from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpan
 from pykusto.type_utils import TypeName
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
+from test.udf import func, STRINGIFIED
 
 
 class TestQuery(TestBase):
@@ -290,14 +291,20 @@ class TestQuery(TestBase):
             Query().distinct_all().render(),
         )
 
+    def test_evaluate(self):
+        self.assertEqual(
+            " | evaluate some_plugin(foo, 3)",
+            Query().evaluate('some_plugin', col.foo, 3).render(),
+        )
+
     def test_udf(self):
-        # noinspection PyGlobalUndefined
-        def func():
-            global result
-            global df
+        self.assertEqual(
+            " | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
+            Query().evaluate_python(func, StateZone=TypeName.STRING).render(),
+        )
 
-            result = df
-            result['StateZone'] = result["State"] + result["Zone"]
-
-        # TODO assert
-        Query().evaluate(func, "typeof(*, StateZone: string)").render()
+    def test_udf_no_extend(self):
+        self.assertEqual(
+            " | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
+            Query().evaluate_python(func, extend=False, StateZone=TypeName.STRING).render(),
+        )

@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 from enum import Enum
 from itertools import chain
 from types import FunctionType
-from typing import Tuple, List, Union, Optional, Dict
+from typing import Tuple, List, Union, Optional
 
 # noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
@@ -173,8 +173,12 @@ class Query:
     def evaluate(self, plugin_name, *args: ExpressionType) -> 'EvaluateQuery':
         return EvaluateQuery(self, plugin_name, *args)
 
-    def evaluate_python(self, udf: FunctionType, extend: bool = True, **type_specs: TypeName) -> 'EvaluatePythonQuery':
-        return EvaluatePythonQuery(self, udf, extend, **type_specs)
+    def evaluate_python(self, udf: FunctionType, extend: bool = True, **type_specs: TypeName) -> 'EvaluateQuery':
+        return EvaluateQuery(
+            self, 'python',
+            BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in type_specs.items())))),
+            stringify_python_func(udf)
+        )
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -528,24 +532,4 @@ class EvaluateQuery(Query):
         return KQL('evaluate {}({})'.format(
             self._plugin_name,
             ', '.join(to_kql(arg) for arg in self._args),
-        ))
-
-
-class EvaluatePythonQuery(Query):
-    _udf: FunctionType
-    _type_specs: Dict[str, TypeName]
-    _extend: bool
-
-    def __init__(self, head: Query, udf: FunctionType, extend: bool = True, **type_specs: TypeName):
-        super(EvaluatePythonQuery, self).__init__(head)
-        self._udf = udf
-        self._type_specs = type_specs
-        self._extend = extend
-
-    def _compile(self) -> KQL:
-        return KQL('evaluate python({}, "{}")'.format(
-            'typeof({})'.format(
-                ('*, ' if self._extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in self._type_specs.items())
-            ),
-            stringify_python_func(self._udf)
         ))

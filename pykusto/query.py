@@ -179,13 +179,18 @@ class Query:
     def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> 'EvaluateQuery':
         return EvaluateQuery(self, plugin_name, *args, distribution=distribution)
 
-    def evaluate_python(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: TypeName) -> 'EvaluateQuery':
+    def evaluate_udf(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: TypeName) -> 'EvaluateQuery':
         return EvaluateQuery(
             self, 'python',
             BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in type_specs.items())))),
             stringify_python_func(udf),
             distribution=distribution
         )
+
+    def bag_unpack(self, col: Column, prefix: str = None) -> 'EvaluateQuery':
+        if prefix is None:
+            return EvaluateQuery(self, 'bag_unpack', col)
+        return EvaluateQuery(self, 'bag_unpack', col, prefix)
 
     @abstractmethod
     def _compile(self) -> KQL:

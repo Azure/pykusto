@@ -297,7 +297,7 @@ class TestQuery(TestBase):
             Query().evaluate('some_plugin', col.foo, 3).render(),
         )
 
-    def test_evaluate_with_distibution(self):
+    def test_evaluate_with_distribution(self):
         self.assertEqual(
             " | evaluate hint.distribution=per_shard some_plugin(foo, 3)",
             Query().evaluate('some_plugin', col.foo, 3, distribution=Distribution.PER_SHARD).render(),
@@ -306,11 +306,23 @@ class TestQuery(TestBase):
     def test_udf(self):
         self.assertEqual(
             " | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_python(func, StateZone=TypeName.STRING).render(),
+            Query().evaluate_udf(func, StateZone=TypeName.STRING).render(),
         )
 
     def test_udf_no_extend(self):
         self.assertEqual(
             " | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_python(func, extend=False, StateZone=TypeName.STRING).render(),
+            Query().evaluate_udf(func, extend=False, StateZone=TypeName.STRING).render(),
+        )
+
+    def test_bag_unpack(self):
+        self.assertEqual(
+            " | evaluate bag_unpack(foo)",
+            Query().bag_unpack(col.foo).render(),
+        )
+
+    def test_bag_unpack_with_prefix(self):
+        self.assertEqual(
+            ' | evaluate bag_unpack(foo, "bar_")',
+            Query().bag_unpack(col.foo, 'bar_').render(),
         )

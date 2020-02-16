@@ -32,8 +32,12 @@ def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     try:
         query = list(json.dumps(d))
     except TypeError:
-        # Contains non-primitive object
+        # Using exceptions as part of normal flow is not best practice, however in this case we have a good reason.
+        # The given object might contain a non-primitive object somewhere inside it, and the only way to find it is to go through the entire hierarchy, which is exactly
+        # what's being done in the process of json conversion.
+        # Also keep in mind that exception handling in Python has no performance overhead (unlike e.g. Java).
         return build_dynamic(d)
+
     # Convert square brackets to round brackets (Issue #11)
     counter = 0
     prev = ""

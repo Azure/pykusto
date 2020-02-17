@@ -5,6 +5,8 @@ from itertools import chain
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
+# noinspection PyProtectedMember
+from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.helpers import dataframe_from_result_table
 
 from pykusto.client import Table
@@ -13,6 +15,7 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
+from pykusto.type_utils import TypeName
 from pykusto.udf import stringify_python_func
 
 
@@ -41,6 +44,12 @@ class JoinKind(Enum):
     RIGHTSEMI = "rightsemi"
 
 
+class Distribution(Enum):
+    SINGLE = 'single'
+    PER_NODE = 'per_node'
+    PER_SHARD = 'per_shard'
+
+
 class BagExpansion(Enum):
     BAG = "bag"
     ARRAY = "array"
@@ -54,7 +63,7 @@ class Query:
         self._head = head if isinstance(head, Query) else None
         self._table = head if isinstance(head, Table) else None
 
-    def __add__(self, other: 'Query'):
+    def __add__(self, other: 'Query') -> 'Query':
         self_copy = deepcopy(self)
         other_copy = deepcopy(other)
 
@@ -66,7 +75,7 @@ class Query:
         other_base._head = self_copy
         return other_copy
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo) -> 'Query':
         new_object = copy(self)
         if self._head is not None:
             new_object._head = self._head.__deepcopy__(memo)
@@ -96,7 +105,7 @@ class Query:
     def top(self, num_rows: int, col: Column, order: Order = None, nulls: Nulls = None) -> 'TopQuery':
         return TopQuery(self, num_rows, col, order, nulls)
 
-    def join(self, query: 'Query', kind: JoinKind = None):
+    def join(self, query: 'Query', kind: JoinKind = None) -> 'JoinQuery':
         return JoinQuery(self, query, kind)
 
     def project(self, *args: Union[Column, AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> 'ProjectQuery':
@@ -121,13 +130,13 @@ class Query:
             assignments.append(AssignmentFromColumnToColumn(Column(column_name), column))
         return ProjectRenameQuery(self, assignments)
 
-    def project_away(self, *columns: StringType):
+    def project_away(self, *columns: StringType) -> 'ProjectAwayQuery':
         return ProjectAwayQuery(self, columns)
 
-    def distinct(self, *columns: BaseExpression):
+    def distinct(self, *columns: BaseExpression) -> 'DistinctQuery':
         return DistinctQuery(self, columns)
 
-    def distinct_all(self):
+    def distinct_all(self) -> 'DistinctQuery':
         return DistinctQuery(self, (AnyExpression(KQL("*")),))
 
     def extend(self, *args: Union[BaseExpression, AssignmentBase], **kwargs: ExpressionType) -> 'ExtendQuery':
@@ -159,17 +168,29 @@ class Query:
         return SummarizeQuery(self, assignments)
 
     def mv_expand(self, *columns: Union[Column, ColumnToType], bag_expansion: BagExpansion = None, with_item_index: Column = None,
-                  limit: int = None):
+                  limit: int = None) -> 'MvExpandQuery':
         if len(columns) == 0:
             raise ValueError("Please specify one or more columns for mv-expand")
         return MvExpandQuery(self, columns, bag_expansion, with_item_index, limit)
 
-    def custom(self, custom_query: str):
+    def custom(self, custom_query: str) -> 'CustomQuery':
         return CustomQuery(self, custom_query)
 
-    # TODO convert python types to kusto types
-    def evaluate(self, udf: FunctionType, type_spec_str: str):
-        return EvaluatePythonQuery(self, udf, type_spec_str)
+    def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> 'EvaluateQuery':
+        return EvaluateQuery(self, plugin_name, *args, distribution=distribution)
+
+    def evaluate_udf(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: TypeName) -> 'EvaluateQuery':
+        return EvaluateQuery(
+            self, 'python',
+            BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in type_specs.items())))),
+            stringify_python_func(udf),
+            distribution=distribution
+        )
+
+    def bag_unpack(self, col: Column, prefix: str = None) -> 'EvaluateQuery':
+        if prefix is None:
+            return EvaluateQuery(self, 'bag_unpack', col)
+        return EvaluateQuery(self, 'bag_unpack', col, prefix)
 
     @abstractmethod
     def _compile(self) -> KQL:
@@ -199,7 +220,7 @@ class Query:
         logger.debug("Complied query: " + result)
         return result
 
-    def execute(self, table: Table = None):
+    def execute(self, table: Table = None) -> KustoResponseDataSet:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
@@ -510,17 +531,20 @@ class CustomQuery(Query):
         return KQL(self._custom_query)
 
 
-class EvaluatePythonQuery(Query):
-    _udf: FunctionType
-    _type_specs: str
+class EvaluateQuery(Query):
+    _plugin_name: str
+    _args: Tuple[ExpressionType]
+    _distribution: Distribution
 
-    def __init__(self, head: Query, udf: FunctionType, type_specs: str):
-        super(EvaluatePythonQuery, self).__init__(head)
-        self._udf = udf
-        self._type_specs = type_specs
+    def __init__(self, head: Query, plugin_name: str, *args: ExpressionType, distribution: Distribution = None):
+        super().__init__(head)
+        self._plugin_name = plugin_name
+        self._args = args
+        self._distribution = distribution
 
     def _compile(self) -> KQL:
-        return KQL('evaluate python({},"{}")'.format(
-            self._type_specs,
-            stringify_python_func(self._udf)
+        return KQL('evaluate {}{}({})'.format(
+            '' if self._distribution is None else 'hint.distribution={} '.format(self._distribution.value),
+            self._plugin_name,
+            ', '.join(to_kql(arg) for arg in self._args),
         ))

@@ -12,8 +12,8 @@ class TestUtils(TestBase):
             "pets": ["Libby", "Panda", "]", "["]
         }
         self.assertEqual(
-            "{\"name\": \"Alan\", \"age\": 21, \"address\": (\"NY\", 36), "
-            "\"pets\": (\"Libby\", \"Panda\", \"]\", \"[\")}",
+            '{"name": "Alan", "age": 21, "address": ("NY", 36), '
+            '"pets": ("Libby", "Panda", "]", "[")}',
             to_kql(test_dict)
         )
 

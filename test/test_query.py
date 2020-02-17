@@ -152,20 +152,26 @@ class TestQuery(TestBase):
 
     def test_extend(self):
         self.assertEqual(
-            " | extend sum = (v1 + v2), foo = (bar * 4) | take 5",
+            " | extend sum = v1 + v2, foo = bar * 4 | take 5",
             Query().extend((col.v1 + col.v2).assign_to(col.sum), foo=col.bar * 4).take(5).render(),
         )
 
     def test_extend_assign_to_multiple_columns(self):
         self.assertEqual(
-            " | extend (foo1, foo2) = foo, shoo = (bar * 4)",
+            " | extend (foo1, foo2) = foo, shoo = bar * 4",
             Query().extend(col.foo.assign_to(col.foo1, col.foo2), shoo=col.bar * 4).render(),
         )
 
     def test_extend_generate_column_name(self):
         self.assertEqual(
-            " | extend (v1 + v2), foo = (bar * 4)",
+            " | extend v1 + v2, foo = bar * 4",
             Query().extend(col.v1 + col.v2, foo=col.bar * 4).render(),
+        )
+
+    def test_extend_build_dynamic(self):
+        self.assertEqual(
+            ' | extend foo = pack("Name", name, "Roles", pack_array(role1, role2))',
+            Query().extend(foo={'Name': col.name, 'Roles': [col.role1, col.role2]}).render(),
         )
 
     def test_summarize(self):
@@ -176,7 +182,7 @@ class TestQuery(TestBase):
 
     def test_summarize_by(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = count(bar) by bla, bin(date, 1), time_range = (bin(time, 10))",
+            " | summarize count(foo), my_count = count(bar) by bla, bin(date, 1), time_range = bin(time, 10)",
             Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
                                                                               time_range=f.bin(col.time, 10)).render(),
         )
@@ -238,7 +244,7 @@ class TestQuery(TestBase):
 
     def test_project_with_expression(self):
         self.assertEqual(
-            " | project foo = (bar * 4)",
+            " | project foo = bar * 4",
             Query().project(foo=col.bar * 4).render(),
         )
 
@@ -250,7 +256,7 @@ class TestQuery(TestBase):
 
     def test_project_unspecified_column(self):
         self.assertEqual(
-            " | project (foo + bar)",
+            " | project foo + bar",
             Query().project(col.foo + col.bar).render(),
         )
 

@@ -574,7 +574,7 @@ class AssignmentBase:
 
     def __init__(self, lvalue: Optional[KQL], rvalue: ExpressionType) -> None:
         self._lvalue = lvalue
-        self._rvalue = rvalue.as_subexpression()
+        self._rvalue = to_kql(rvalue)
 
     def to_kql(self) -> KQL:
         if self._lvalue is None:

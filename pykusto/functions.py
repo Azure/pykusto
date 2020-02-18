@@ -1,7 +1,7 @@
 import json
 from typing import Union
 
-from pykusto.expressions import Column, NumberType, NumberExpression, TimespanType, \
+from pykusto.expressions import UnknownTypeColumn, NumberType, NumberExpression, TimespanType, \
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
@@ -772,7 +772,7 @@ def avgif(expr: ExpressionType, predicate: BooleanType) -> NumberAggregationExpr
 #     return
 
 
-def count(col: Column = None) -> NumberAggregationExpression:
+def count(col: UnknownTypeColumn = None) -> NumberAggregationExpression:
     res = "count()" if col is None else "count({})".format(col.kql)
     return NumberAggregationExpression(KQL(res))
 

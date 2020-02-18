@@ -112,7 +112,7 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
+    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentBase(None, self)
@@ -478,7 +478,7 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
+    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
         if len(columns) <= 1:
             return super().assign_to(*columns)
         return AssignmentToMultipleColumns(columns, self)
@@ -521,7 +521,7 @@ class AggregationExpression(BaseExpression):
             raise TypeError("AggregationExpression is abstract")
         return object.__new__(cls)
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentFromAggregationToColumn':
+    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentFromAggregationToColumn':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentFromAggregationToColumn(None, self)
@@ -583,7 +583,7 @@ class AssignmentBase:
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
     @staticmethod
-    def assign(expression: ExpressionType, *columns: 'Column') -> 'AssignmentBase':
+    def assign(expression: ExpressionType, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             raise ValueError("Provide at least one column")
         if len(columns) == 1:
@@ -592,26 +592,26 @@ class AssignmentBase:
 
 
 class AssignmentToSingleColumn(AssignmentBase):
-    def __init__(self, column: 'Column', expression: ExpressionType) -> None:
+    def __init__(self, column: 'UnknownTypeColumn', expression: ExpressionType) -> None:
         super().__init__(column.kql, expression)
 
 
 class AssignmentFromColumnToColumn(AssignmentToSingleColumn):
-    def __init__(self, target: 'Column', source: 'Column') -> None:
+    def __init__(self, target: 'UnknownTypeColumn', source: 'UnknownTypeColumn') -> None:
         super().__init__(target, source)
 
 
 class AssignmentToMultipleColumns(AssignmentBase):
-    def __init__(self, columns: Union[List['Column'], Tuple['Column']], expression: ArrayType) -> None:
+    def __init__(self, columns: Union[List['UnknownTypeColumn'], Tuple['UnknownTypeColumn']], expression: ArrayType) -> None:
         super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
 
 
 class AssignmentFromAggregationToColumn(AssignmentBase):
-    def __init__(self, column: Optional['Column'], aggregation: AggregationExpression) -> None:
+    def __init__(self, column: Optional['UnknownTypeColumn'], aggregation: AggregationExpression) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
 
 
-class Column(AnyExpression):
+class BaseColumn(BaseExpression):
     _name: str
 
     def __init__(self, name: str) -> None:
@@ -621,27 +621,56 @@ class Column(AnyExpression):
     def as_subexpression(self) -> KQL:
         return self.kql
 
+    # TODO: Move to typed column classes
     def __len__(self) -> NumberExpression:
         raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
+    # TODO: apply by default when column type is known
+    # Used for mv-expand
+    def to_type(self, type_name: TypeName) -> 'ColumnToType':
+        return ColumnToType(self, type_name)
+
+
+class NumberColumn(BaseColumn, NumberExpression):
+    pass
+
+
+class BooleanColumn(BaseColumn, BooleanExpression):
+    pass
+
+
+class DynamicColumn(BaseColumn, DynamicExpression):
+    pass
+
+
+class StringColumn(BaseColumn, StringExpression):
+    pass
+
+
+class DatetimeColumn(BaseColumn, DatetimeExpression):
+    pass
+
+
+class TimespanColumn(BaseColumn, TimespanExpression):
+    pass
+
+
+class UnknownTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
+    # TODO: type-aware behavior?
+    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             return super().assign_to()
         if len(columns) == 1:
             return AssignmentFromColumnToColumn(columns[0], self)
         return ArrayExpression.assign_to(self, *columns)
 
-    # Used for mv-expand
-    def to_type(self, type_name: TypeName) -> 'ColumnToType':
-        return ColumnToType(self, type_name)
-
 
 class ColumnGenerator:
-    def __getattr__(self, name: str) -> Column:
-        return Column(name)
+    def __getattr__(self, name: str) -> UnknownTypeColumn:
+        return UnknownTypeColumn(name)
 
-    def __getitem__(self, name: str) -> Column:
-        return Column(name)
+    def __getitem__(self, name: str) -> UnknownTypeColumn:
+        return UnknownTypeColumn(name)
 
 
 # Recommended usage: from pykusto.expressions import column_generator as col
@@ -650,7 +679,7 @@ column_generator = ColumnGenerator()
 
 
 class ColumnToType(BaseExpression):
-    def __init__(self, col: Column, type_name: TypeName) -> None:
+    def __init__(self, col: BaseColumn, type_name: TypeName) -> None:
         super().__init__(KQL("{} to typeof({})".format(col.kql, type_name.value)))
 
 

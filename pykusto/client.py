@@ -121,6 +121,6 @@ class Table:
         res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType'.format(self.get_table())))
         # noinspection PyTypeChecker
         return tuple(
-            column.registry[INTERNAL_NAME_TO_TYPE[r[1]]](r[0])
-            for r in res.primary_results[0].rows
+            column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
+            for column_name, column_type in res.primary_results[0].rows
         )

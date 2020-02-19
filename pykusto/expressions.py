@@ -112,13 +112,13 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
-    def assign_to_single_column(self, column: 'UnknownTypeColumn') -> 'AssignmentToSingleColumn':
+    def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentToSingleColumn':
         return AssignmentToSingleColumn(column, self)
 
-    def assign_to_multiple_columns(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
+    def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
         raise ValueError("Only arrays can be assigned to multiple columns")
 
-    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
+    def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentBase(None, self)
@@ -289,8 +289,11 @@ class StringExpression(BaseExpression):
     def matches(self, regex: StringType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
-    def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+    def string_contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
+
+    def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+        return self.string_contains(other, case_sensitive)
 
     def not_contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' !contains_cs ' if case_sensitive else ' !contains ', other)
@@ -475,8 +478,11 @@ class ArrayExpression(BaseExpression):
     def array_length(self) -> NumberExpression:
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
-    def contains(self, other: ExpressionType) -> 'BooleanExpression':
+    def array_contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(other, ' in ', self)
+
+    def contains(self, other: ExpressionType) -> 'BooleanExpression':
+        return self.array_contains(other)
 
     @staticmethod
     def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
@@ -484,14 +490,14 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
-    def assign_to_multiple_columns(self, *columns: 'UnknownTypeColumn') -> 'AssignmentToMultipleColumns':
+    def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentToMultipleColumns':
         return AssignmentToMultipleColumns(columns, self)
 
 
 @plain_expression(Mapping)
 class MappingExpression(BaseExpression):
     def __getitem__(self, index: StringType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
 
     def __getattr__(self, name: str) -> 'AnyExpression':
         return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
@@ -525,7 +531,7 @@ class AggregationExpression(BaseExpression):
             raise TypeError("AggregationExpression is abstract")
         return object.__new__(cls)
 
-    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentFromAggregationToColumn':
+    def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentFromAggregationToColumn':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentFromAggregationToColumn(None, self)
@@ -587,7 +593,7 @@ class AssignmentBase:
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
     @staticmethod
-    def assign(expression: ExpressionType, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
+    def assign(expression: ExpressionType, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             raise ValueError("Provide at least one column")
         if len(columns) == 1:
@@ -596,22 +602,22 @@ class AssignmentBase:
 
 
 class AssignmentToSingleColumn(AssignmentBase):
-    def __init__(self, column: 'UnknownTypeColumn', expression: ExpressionType) -> None:
+    def __init__(self, column: 'AnyTypeColumn', expression: ExpressionType) -> None:
         super().__init__(column.kql, expression)
 
 
 class AssignmentFromColumnToColumn(AssignmentToSingleColumn):
-    def __init__(self, target: 'UnknownTypeColumn', source: 'BaseColumn') -> None:
+    def __init__(self, target: 'AnyTypeColumn', source: 'BaseColumn') -> None:
         super().__init__(target, source)
 
 
 class AssignmentToMultipleColumns(AssignmentBase):
-    def __init__(self, columns: Union[List['UnknownTypeColumn'], Tuple['UnknownTypeColumn']], expression: ArrayType) -> None:
+    def __init__(self, columns: Union[List['AnyTypeColumn'], Tuple['AnyTypeColumn']], expression: ArrayType) -> None:
         super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
 
 
 class AssignmentFromAggregationToColumn(AssignmentBase):
-    def __init__(self, column: Optional['UnknownTypeColumn'], aggregation: AggregationExpression) -> None:
+    def __init__(self, column: Optional['AnyTypeColumn'], aggregation: AggregationExpression) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
 
 
@@ -625,13 +631,17 @@ class BaseColumn(BaseExpression):
     def as_subexpression(self) -> KQL:
         return self.kql
 
-    # TODO: apply by default when column type is known
+    def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentFromColumnToColumn':
+        return AssignmentFromColumnToColumn(column, self)
+
     # Used for mv-expand
-    def to_type(self, type_name: TypeName) -> 'ColumnToType':
+    def to_type(self, type_name: TypeName = None) -> 'ColumnToType':
+        if type_name is None:
+            type_name = self.get_kusto_type_name()
         return ColumnToType(self, type_name)
 
-    def assign_to_single_column(self, column: 'UnknownTypeColumn') -> 'AssignmentFromColumnToColumn':
-        return AssignmentFromColumnToColumn(column, self)
+    def get_kusto_type_name(self) -> TypeName:
+        raise NotImplementedError("BaseColumn has no type")
 
 
 class NumberColumn(BaseColumn, NumberExpression):
@@ -639,15 +649,18 @@ class NumberColumn(BaseColumn, NumberExpression):
 
 
 class BooleanColumn(BaseColumn, BooleanExpression):
-    pass
+    def get_kusto_type_name(self) -> TypeName:
+        return TypeName.BOOL
 
 
 class ArrayColumn(BaseColumn, ArrayExpression):
-    pass
+    def get_kusto_type_name(self) -> TypeName:
+        return TypeName.DYNAMIC
 
 
 class MappingColumn(BaseColumn, MappingExpression):
-    pass
+    def get_kusto_type_name(self) -> TypeName:
+        return TypeName.DYNAMIC
 
 
 class DynamicColumn(ArrayColumn, MappingColumn):
@@ -655,28 +668,37 @@ class DynamicColumn(ArrayColumn, MappingColumn):
 
 
 class StringColumn(BaseColumn, StringExpression):
-    pass
+    def get_kusto_type_name(self) -> TypeName:
+        return TypeName.STRING
 
 
 class DatetimeColumn(BaseColumn, DatetimeExpression):
-    pass
+    def get_kusto_type_name(self) -> TypeName:
+        return TypeName.DATETIME
 
 
 class TimespanColumn(BaseColumn, TimespanExpression):
-    pass
+    def get_kusto_type_name(self) -> TypeName:
+        return TypeName.TIMESPAN
 
 
-class UnknownTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
+class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
     def __len__(self) -> NumberExpression:
-        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
+        raise ValueError("Column type unknown, instead use 'string_size' or 'array_length'")
+
+    def contains(self, other: ExpressionType) -> 'BooleanExpression':
+        raise ValueError("Column type unknown, instead use 'string_contains' or 'array_contains'")
+
+    def get_kusto_type_name(self) -> TypeName:
+        raise ValueError("Column type unknown")
 
 
 class ColumnGenerator:
-    def __getattr__(self, name: str) -> UnknownTypeColumn:
-        return UnknownTypeColumn(name)
+    def __getattr__(self, name: str) -> AnyTypeColumn:
+        return AnyTypeColumn(name)
 
-    def __getitem__(self, name: str) -> UnknownTypeColumn:
-        return UnknownTypeColumn(name)
+    def __getitem__(self, name: str) -> AnyTypeColumn:
+        return AnyTypeColumn(name)
 
 
 # Recommended usage: from pykusto.expressions import column_generator as col

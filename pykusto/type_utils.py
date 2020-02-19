@@ -43,7 +43,9 @@ class KustoTypes:
     NULL = KustoType('null', 'null', type(None))
 
 
-ALL_TYPES = tuple(getattr(KustoTypes, f) for f in dir(KustoTypes) if not f.startswith('__'))
+# noinspection PyTypeChecker
+ALL_TYPES: Tuple[KustoType] = tuple(getattr(KustoTypes, f) for f in dir(KustoTypes) if not f.startswith('__'))
+INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in ALL_TYPES}
 
 
 def get_base_types(obj: Any) -> Set[KustoType]:

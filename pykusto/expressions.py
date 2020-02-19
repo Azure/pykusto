@@ -3,7 +3,7 @@ from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, KustoTypes
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, KustoTypes, column
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -643,20 +643,24 @@ class BaseColumn(BaseExpression):
         raise NotImplementedError("BaseColumn has no type")
 
 
+@column(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
 class NumberColumn(BaseColumn, NumberExpression):
     pass
 
 
+@column(KustoTypes.BOOL)
 class BooleanColumn(BaseColumn, BooleanExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.BOOL
 
 
+@column(KustoTypes.ARRAY)
 class ArrayColumn(BaseColumn, ArrayExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.ARRAY
 
 
+@column(KustoTypes.MAPPING)
 class MappingColumn(BaseColumn, MappingExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.MAPPING
@@ -667,16 +671,19 @@ class DynamicColumn(ArrayColumn, MappingColumn):
         raise ValueError("Column type unknown")
 
 
+@column(KustoTypes.STRING)
 class StringColumn(BaseColumn, StringExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.STRING
 
 
+@column(KustoTypes.DATETIME)
 class DatetimeColumn(BaseColumn, DatetimeExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.DATETIME
 
 
+@column(KustoTypes.TIMESPAN)
 class TimespanColumn(BaseColumn, TimespanExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.TIMESPAN

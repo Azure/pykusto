@@ -1,5 +1,4 @@
 from typing import Union, List, Tuple
-# noinspection PyProtectedMember
 from urllib.parse import urlparse
 
 # noinspection PyProtectedMember
@@ -8,6 +7,7 @@ from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, 
 
 from pykusto.expressions import BaseColumn
 from pykusto.kql_converters import KQL
+from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column
 
 
 class PyKustoClient:
@@ -119,10 +119,8 @@ class Table:
 
     def _get_columns(self) -> Tuple[BaseColumn]:
         res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType'.format(self.get_table())))
+        # noinspection PyTypeChecker
         return tuple(
-            (
-                r[0],  # Column name
-                r[1],  # Column type
-            )
+            column.registry[INTERNAL_NAME_TO_TYPE[r[1]]](r[0])
             for r in res.primary_results[0].rows
         )

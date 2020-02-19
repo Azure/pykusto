@@ -99,7 +99,7 @@ class Database:
         self._tables_future.add_done_callback(self._set_tables)
 
     # For use mainly in tests
-    def wait_for_table(self):
+    def wait_for_tables(self):
         wait((self._tables_future,))
 
     def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:

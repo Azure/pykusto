@@ -181,12 +181,22 @@ class TestTable(TestBase):
         self.assertEqual(AnyTypeColumn, type(table['baz']))
 
     def test_column_retrieve_slow(self):
-        mock_response = Future()
+        mock_response_future = Future()
         try:
-            mock_kusto_client = MockKustoClient(columns_response=lambda: mock_response.result())
+            mock_kusto_client = MockKustoClient(columns_response=lambda: mock_response_future.result())
             table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
             self.assertEqual(AnyTypeColumn, type(table.foo))
             self.assertEqual(AnyTypeColumn, type(table.bar))
             self.assertEqual(AnyTypeColumn, type(table.baz))
         finally:
-            mock_response.set_result(mock_columns_response([])())
+            mock_response_future.set_result(mock_columns_response([])())
+
+    def test_table_retrieve(self):
+        mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([('test_table', [('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)])]))
+        db = PyKustoClient(mock_kusto_client)['test_db']
+        db.wait_for_tables()  # Avoid race condition
+        table = db.test_table
+        self.assertEqual(StringColumn, type(table.foo))
+        self.assertEqual(NumberColumn, type(table.bar))
+        self.assertEqual(AnyTypeColumn, type(table.baz))
+        self.assertEqual(AnyTypeColumn, type(db.other_table.foo))

@@ -16,7 +16,11 @@ def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Cal
     return lambda: type(
         'KustoResponseDataSet',
         (object,),
-        {'primary_results': (type('KustoResultTable', (object,), {'rows': tuple((c_name, c_type.internal_name) for c_name, c_type in columns)}),)}
+        {'primary_results': (type(
+            'KustoResultTable',
+            (object,),
+            {'rows': tuple((c_name, c_type.internal_name) for c_name, c_type in columns)}
+        ),)}
     )
 
 
@@ -159,7 +163,7 @@ class TestTable(TestBase):
         self.assertEqual(NumberColumn, type(table['bar']))
         self.assertEqual(AnyTypeColumn, type(table['baz']))
 
-    def test_column_retrieve_failed(self):
+    def test_column_retrieve_slow(self):
         mock_response = Future()
         try:
             mock_kusto_client = MockKustoClient(columns_response=lambda: mock_response.result())

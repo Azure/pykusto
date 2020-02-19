@@ -17,12 +17,20 @@ from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column, DOT_NAME_TO_TYPE
 POOL = ThreadPoolExecutor(max_workers=4)
 
 
+# There has to be code somewhere that already does this, but I didn't find it
+def is_empty(s: str) -> bool:
+    return s is None or len(s.strip()) == 0
+
+
 class PyKustoClient:
     """
     Handle to a Kusto cluster
     """
     _client: KustoClient
     _cluster_name: str
+    _databases: Union[None, Dict[str, 'Database']]
+    _databases_future: Union[None, Future]
+    _lock: Lock
 
     def __init__(self, client_or_cluster: Union[str, KustoClient]) -> None:
         """
@@ -31,6 +39,8 @@ class PyKustoClient:
         :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given,
             a KustoClient is generated with AAD device authentication
         """
+        self._lock = Lock()
+        self._databases_future = None
         if isinstance(client_or_cluster, KustoClient):
             self._client = client_or_cluster
             # noinspection PyProtectedMember
@@ -38,6 +48,8 @@ class PyKustoClient:
         else:
             self._client = self._get_client_for_cluster(client_or_cluster)
             self._cluster_name = client_or_cluster
+        self._databases = None
+        self.refresh()
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self._client.execute(database, query, properties)
@@ -56,6 +68,20 @@ class PyKustoClient:
     def _get_client_for_cluster(cluster: str) -> KustoClient:
         return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
 
+    def _get_databases(self) -> Dict[str, 'Database']:
+        with self._lock:
+            res: KustoResponseDataSet = self.execute('', KQL('.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000'))
+            database_to_table_to_columns = defaultdict(lambda: defaultdict(list))
+            for database_name, table_name, column_name, column_type in res.primary_results[0].rows:
+                if is_empty(database_name) or is_empty(table_name) or is_empty(column_name):
+                    continue
+                database_to_table_to_columns[database_name][table_name].append(column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
+            return {
+                database_name: {
+                    table_name: tuple(Table(None, table_name, tuple(columns)) for table_name, columns in table_to_columns.items())
+                } for database_name, table_to_columns in database_to_table_to_columns.items()
+            }
+
 
 class Database:
     """
@@ -64,13 +90,14 @@ class Database:
     client: PyKustoClient
     name: str
     _tables: Union[None, Dict[str, 'Table']]
-    _tables_future: Future
+    _tables_future: Union[None, Future]
     _lock: Lock
 
     def __init__(self, client: PyKustoClient, name: str, tables: Tuple['Table', ...] = None) -> None:
         self._lock = Lock()
         self.client = client
         self.name = name
+        self._tables_future = None
         if tables is None:
             self._tables = None
             self.refresh()
@@ -100,7 +127,8 @@ class Database:
 
     # For use mainly in tests
     def wait_for_tables(self):
-        wait((self._tables_future,))
+        if self._tables_future is not None:
+            wait((self._tables_future,))
 
     def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self.client.execute(self.name, query, properties)
@@ -120,6 +148,8 @@ class Database:
             res: KustoResponseDataSet = self.execute(KQL('.show database schema | project TableName, ColumnName, ColumnType | limit 10000'))
             table_to_columns = defaultdict(list)
             for table_name, column_name, column_type in res.primary_results[0].rows:
+                if is_empty(table_name) or is_empty(column_name):
+                    continue
                 table_to_columns[table_name].append(column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
             return {table_name: Table(self, table_name, tuple(columns)) for table_name, columns in table_to_columns.items()}
 
@@ -131,7 +161,7 @@ class Table:
     database: Database
     tables: Tuple[str, ...]
     _columns: Union[None, Dict[str, BaseColumn]]
-    _columns_future: Future
+    _columns_future: Union[None, Future]
     _lock: Lock
 
     def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn, ...] = None) -> None:
@@ -143,6 +173,7 @@ class Table:
             name contains a wildcard, the Kusto 'union' statement will be used.
         """
         self._lock = Lock()
+        self._columns_future = None
         self.database = database
         self.tables = (tables,) if isinstance(tables, str) else tuple(tables)
         if columns is None:
@@ -174,7 +205,8 @@ class Table:
 
     # For use mainly in tests
     def wait_for_columns(self):
-        wait((self._columns_future,))
+        if self._columns_future is not None:
+            wait((self._columns_future,))
 
     def get_table(self) -> KQL:
         result = KQL(', '.join(self.tables))

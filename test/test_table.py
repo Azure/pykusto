@@ -4,8 +4,8 @@ from urllib.parse import urljoin
 
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
 
-from pykusto.expressions import column_generator as col
 from pykusto.client import PyKustoClient
+from pykusto.expressions import column_generator as col
 from pykusto.query import Query
 from test.test_base import TestBase
 
@@ -19,6 +19,12 @@ class MockKustoClient(KustoClient):
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
+        if rendered_query.startswith('.show table '):
+            return type(
+                'KustoResponseDataSet',
+                (object,),
+                {'primary_results': (type('KustoResultTable', (object,), {'rows': tuple()}),)}
+            )
         self.executions.append((database, rendered_query, properties))
 
 

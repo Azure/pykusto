@@ -627,6 +627,9 @@ class BaseColumn(BaseExpression):
         super().__init__(KQL("['{}']".format(name) if '.' in name else name))
         self._name = name
 
+    def get_name(self) -> str:
+        return self._name
+
     def as_subexpression(self) -> KQL:
         return self.kql
 

@@ -1,13 +1,20 @@
-from typing import Union, List, Tuple
+# noinspection PyProtectedMember
+from concurrent.futures._base import Future
+from concurrent.futures.thread import ThreadPoolExecutor
+from itertools import chain
+from threading import Lock
+from typing import Union, List, Tuple, Dict, Iterable
 from urllib.parse import urlparse
 
 # noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 
-from pykusto.expressions import BaseColumn
+from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.kql_converters import KQL
 from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column
+
+POOL = ThreadPoolExecutor(max_workers=4)
 
 
 class PyKustoClient:
@@ -80,10 +87,11 @@ class Table:
     Handle to a Kusto table
     """
     database: Database
-    tables: Union[str, List[str], Tuple[str, ...]]
-    columns: Tuple[BaseColumn]
+    tables: Tuple[str, ...]
+    columns: Dict[str, BaseColumn]
+    _lock: Lock
 
-    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn] = None) -> None:
+    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn, ...] = None) -> None:
         """
         Create a new handle to a Kusto table
 
@@ -91,10 +99,33 @@ class Table:
         :param tables: Either a single table name, or a list of tables. If more than one table is given OR the table
             name contains a wildcard, the Kusto 'union' statement will be used.
         """
-
+        self._lock = Lock()
         self.database = database
-        self.tables = [tables] if isinstance(tables, str) else tables
-        self.columns = columns
+        self.tables = (tables,) if isinstance(tables, str) else tuple(tables)
+        if columns is None:
+            self.refresh()
+        else:
+            self.columns = {c.get_name(): c for c in columns}
+
+    def get_column(self, name: str) -> BaseColumn:
+        if self.columns is None:
+            return AnyTypeColumn(name)
+        resolved_column = self.columns.get(name)
+        if resolved_column is None:
+            return AnyTypeColumn(name)
+        return resolved_column
+
+    def __getattr__(self, name: str) -> BaseColumn:
+        return self.get_column(name)
+
+    def __getitem__(self, name: str) -> BaseColumn:
+        return self.get_column(name)
+
+    def __dir__(self) -> Iterable[str]:
+        return sorted(chain(super().__dir__(), tuple() if self.columns is None else self.columns.keys()))
+
+    def refresh(self):
+        POOL.submit(self._get_columns).add_done_callback(self._set_columns)
 
     def get_table(self) -> KQL:
         result = KQL(', '.join(self.tables))
@@ -117,10 +148,14 @@ class Table:
     def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
         return self.database.execute(rendered_query)
 
-    def _get_columns(self) -> Tuple[BaseColumn]:
-        res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType'.format(self.get_table())))
-        # noinspection PyTypeChecker
-        return tuple(
-            column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
-            for column_name, column_type in res.primary_results[0].rows
-        )
+    def _set_columns(self, columns_future: Future):
+        self.columns = columns_future.result()
+
+    def _get_columns(self) -> Dict[str, BaseColumn]:
+        with self._lock:
+            # TODO: Handle unions
+            res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType'.format(self.get_table())))
+            return {
+                column_name: column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
+                for column_name, column_type in res.primary_results[0].rows
+            }

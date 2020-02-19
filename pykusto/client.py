@@ -1,5 +1,4 @@
-# noinspection PyProtectedMember
-from concurrent.futures._base import Future
+from concurrent.futures import Future, wait
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import chain
 from threading import Lock
@@ -89,6 +88,7 @@ class Table:
     database: Database
     tables: Tuple[str, ...]
     columns: Dict[str, BaseColumn]
+    _columns_future: Future
     _lock: Lock
 
     def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn, ...] = None) -> None:
@@ -125,7 +125,12 @@ class Table:
         return sorted(chain(super().__dir__(), tuple() if self.columns is None else self.columns.keys()))
 
     def refresh(self):
-        POOL.submit(self._get_columns).add_done_callback(self._set_columns)
+        self._columns_future = POOL.submit(self._get_columns)
+        self._columns_future.add_done_callback(self._set_columns)
+
+    # For use mainly in tests
+    def wait_for_columns(self):
+        wait((self._columns_future,))
 
     def get_table(self) -> KQL:
         result = KQL(', '.join(self.tables))
@@ -154,7 +159,7 @@ class Table:
     def _get_columns(self) -> Dict[str, BaseColumn]:
         with self._lock:
             # TODO: Handle unions
-            res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType'.format(self.get_table())))
+            res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType | limit 10000'.format(self.get_table())))
             return {
                 column_name: column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
                 for column_name, column_type in res.primary_results[0].rows

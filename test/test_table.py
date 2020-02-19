@@ -5,25 +5,28 @@ from urllib.parse import urljoin
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
 
 from pykusto.client import PyKustoClient
-from pykusto.expressions import column_generator as col
+from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn
 from pykusto.query import Query
+from pykusto.type_utils import KustoType, KustoTypes
 from test.test_base import TestBase
 
 
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
     executions: List[Tuple[str, str, ClientRequestProperties]]
+    columns: List[Tuple[str, KustoType]]
 
-    def __init__(self, cluster="https://test_cluster.kusto.windows.net"):
+    def __init__(self, cluster="https://test_cluster.kusto.windows.net", columns: List[Tuple[str, KustoType]] = tuple()):
         self.executions = []
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
+        self.columns = columns
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
         if rendered_query.startswith('.show table '):
             return type(
                 'KustoResponseDataSet',
                 (object,),
-                {'primary_results': (type('KustoResultTable', (object,), {'rows': tuple()}),)}
+                {'primary_results': (type('KustoResultTable', (object,), {'rows': tuple((c_name, c_type.internal_name) for c_name, c_type in self.columns)}),)}
             )
         self.executions.append((database, rendered_query, properties))
 
@@ -134,3 +137,11 @@ class TestTable(TestBase):
               None)],
             mock_kusto_client_1.executions,
         )
+
+    def test_column_retrieve(self):
+        mock_kusto_client = MockKustoClient(columns=[('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)])
+        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table.wait_for_columns()  # Avoid race condition
+        self.assertIsInstance(table.foo, StringColumn)
+        self.assertIsInstance(table.bar, NumberColumn)
+        self.assertIsInstance(table.baz, AnyTypeColumn)

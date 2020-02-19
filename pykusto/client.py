@@ -87,7 +87,7 @@ class Table:
     """
     database: Database
     tables: Tuple[str, ...]
-    columns: Dict[str, BaseColumn]
+    columns: Union[None, Dict[str, BaseColumn]]
     _columns_future: Future
     _lock: Lock
 
@@ -103,6 +103,7 @@ class Table:
         self.database = database
         self.tables = (tables,) if isinstance(tables, str) else tuple(tables)
         if columns is None:
+            self.columns = None
             self.refresh()
         else:
             self.columns = {c.get_name(): c for c in columns}

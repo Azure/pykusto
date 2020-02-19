@@ -333,4 +333,9 @@ ASALocalRun/
 /.idea/workspace.xml
 /.idea/checkstyle-idea.xml
 /.idea/misc.xml
+
+# Python venv and installation files
 /venv
+/build
+/dist
+/pykusto.egg-info

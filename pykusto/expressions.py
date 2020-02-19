@@ -112,13 +112,19 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
+    def assign_to_single_column(self, column: 'UnknownTypeColumn') -> 'AssignmentToSingleColumn':
+        return AssignmentToSingleColumn(column, self)
+
+    def assign_to_multiple_columns(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
+        raise ValueError("Only arrays can be assigned to multiple columns")
+
     def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentBase(None, self)
         if len(columns) == 1:
-            return AssignmentToSingleColumn(columns[0], self)
-        raise ValueError("Only arrays can be assigned to multiple columns")
+            return self.assign_to_single_column(columns[0])
+        return self.assign_to_multiple_columns(*columns)
 
 
 @plain_expression(bool)
@@ -478,9 +484,7 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
-    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
-        if len(columns) <= 1:
-            return super().assign_to(*columns)
+    def assign_to_multiple_columns(self, *columns: 'UnknownTypeColumn') -> 'AssignmentToMultipleColumns':
         return AssignmentToMultipleColumns(columns, self)
 
 
@@ -597,7 +601,7 @@ class AssignmentToSingleColumn(AssignmentBase):
 
 
 class AssignmentFromColumnToColumn(AssignmentToSingleColumn):
-    def __init__(self, target: 'UnknownTypeColumn', source: 'UnknownTypeColumn') -> None:
+    def __init__(self, target: 'UnknownTypeColumn', source: 'BaseColumn') -> None:
         super().__init__(target, source)
 
 
@@ -621,14 +625,13 @@ class BaseColumn(BaseExpression):
     def as_subexpression(self) -> KQL:
         return self.kql
 
-    # TODO: Move to typed column classes
-    def __len__(self) -> NumberExpression:
-        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
-
     # TODO: apply by default when column type is known
     # Used for mv-expand
     def to_type(self, type_name: TypeName) -> 'ColumnToType':
         return ColumnToType(self, type_name)
+
+    def assign_to_single_column(self, column: 'UnknownTypeColumn') -> 'AssignmentFromColumnToColumn':
+        return AssignmentFromColumnToColumn(column, self)
 
 
 class NumberColumn(BaseColumn, NumberExpression):
@@ -639,7 +642,15 @@ class BooleanColumn(BaseColumn, BooleanExpression):
     pass
 
 
-class DynamicColumn(BaseColumn, DynamicExpression):
+class ArrayColumn(BaseColumn, ArrayExpression):
+    pass
+
+
+class MappingColumn(BaseColumn, MappingExpression):
+    pass
+
+
+class DynamicColumn(ArrayColumn, MappingColumn):
     pass
 
 
@@ -656,13 +667,8 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 
 
 class UnknownTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
-    # TODO: type-aware behavior?
-    def assign_to(self, *columns: 'UnknownTypeColumn') -> 'AssignmentBase':
-        if len(columns) == 0:
-            return super().assign_to()
-        if len(columns) == 1:
-            return AssignmentFromColumnToColumn(columns[0], self)
-        return ArrayExpression.assign_to(self, *columns)
+    def __len__(self) -> NumberExpression:
+        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
 
 
 class ColumnGenerator:

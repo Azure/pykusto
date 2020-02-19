@@ -26,7 +26,7 @@ def ago(expr: TimespanType) -> DatetimeExpression:
 
 
 def array_length(expr: ArrayType) -> NumberExpression:
-    return expr.array_length()
+    return ArrayExpression(expr).array_length()
 
 
 # def array_slice(): return
@@ -621,7 +621,7 @@ def strcmp(expr1: StringType, expr2: StringType) -> NumberExpression:
 
 
 def string_size(expr: StringType) -> NumberExpression:
-    return NumberExpression(KQL('string_size({})'.format(to_kql(expr))))
+    return StringExpression(expr).string_size()
 
 
 def strlen(expr: StringType) -> NumberExpression:

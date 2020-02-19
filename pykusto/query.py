@@ -16,7 +16,7 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
-from pykusto.type_utils import TypeName
+from pykusto.type_utils import KustoType
 from pykusto.udf import stringify_python_func
 
 
@@ -180,10 +180,10 @@ class Query:
     def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> 'EvaluateQuery':
         return EvaluateQuery(self, plugin_name, *args, distribution=distribution)
 
-    def evaluate_udf(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: TypeName) -> 'EvaluateQuery':
+    def evaluate_udf(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: KustoType) -> 'EvaluateQuery':
         return EvaluateQuery(
             self, 'python',
-            BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + type_name.value for field_name, type_name in type_specs.items())))),
+            BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + kusto_type.name for field_name, kusto_type in type_specs.items())))),
             stringify_python_func(udf),
             distribution=distribution
         )

@@ -738,7 +738,7 @@ class TestFunction(TestBase):
 
     def test_iff_different_types(self):
         self.assertRaises(
-            TypeError("The second and third arguments must be of the same type, but they are: timedelta and str"),
+            TypeError("The second and third arguments must be of the same type, but they are: timespan and string"),
             lambda: Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), "hello"))
                 .render()
         )

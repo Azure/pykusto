@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 
+from pykusto.expressions import BaseColumn
 from pykusto.kql_converters import KQL
 
 
@@ -80,8 +81,9 @@ class Table:
     """
     database: Database
     tables: Union[str, List[str], Tuple[str, ...]]
+    columns: Tuple[BaseColumn]
 
-    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]]) -> None:
+    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn] = None) -> None:
         """
         Create a new handle to a Kusto table
 
@@ -92,6 +94,7 @@ class Table:
 
         self.database = database
         self.tables = [tables] if isinstance(tables, str) else tables
+        self.columns = columns
 
     def get_table(self) -> KQL:
         result = KQL(', '.join(self.tables))
@@ -114,8 +117,8 @@ class Table:
     def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
         return self.database.execute(rendered_query)
 
-    def show_columns(self) -> Tuple[Tuple[str, str], ...]:
-        res: KustoResponseDataSet = self.execute(KQL('.show table {}'.format(self.get_table())))
+    def _get_columns(self) -> Tuple[BaseColumn]:
+        res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType'.format(self.get_table())))
         return tuple(
             (
                 r[0],  # Column name

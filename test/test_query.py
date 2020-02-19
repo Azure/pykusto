@@ -2,7 +2,7 @@ from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
-from pykusto.type_utils import TypeName
+from pykusto.type_utils import KustoTypes
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
 from test.udf import func, STRINGIFIED
@@ -203,7 +203,7 @@ class TestQuery(TestBase):
     def test_mv_expand_to_type(self):
         self.assertEqual(
             " | mv-expand a to typeof(string), b to typeof(int), c",
-            Query().mv_expand(col.a.to_type(TypeName.STRING), col.b.to_type(TypeName.INT), col.c).render(),
+            Query().mv_expand(col.a.to_type(KustoTypes.STRING), col.b.to_type(KustoTypes.INT), col.c).render(),
         )
 
     def test_mv_expand_args(self):
@@ -312,13 +312,13 @@ class TestQuery(TestBase):
     def test_udf(self):
         self.assertEqual(
             " | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_udf(func, StateZone=TypeName.STRING).render(),
+            Query().evaluate_udf(func, StateZone=KustoTypes.STRING).render(),
         )
 
     def test_udf_no_extend(self):
         self.assertEqual(
             " | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_udf(func, extend=False, StateZone=TypeName.STRING).render(),
+            Query().evaluate_udf(func, extend=False, StateZone=KustoTypes.STRING).render(),
         )
 
     def test_bag_unpack(self):

@@ -1,5 +1,5 @@
 from pykusto.expressions import to_kql
-from pykusto.type_utils import TypeRegistrar
+from pykusto.type_utils import TypeRegistrar, KustoTypes
 from test.test_base import TestBase
 
 
@@ -20,7 +20,7 @@ class TestUtils(TestBase):
     def test_type_registrar_for_type(self):
         test_annotation = TypeRegistrar("Test annotation")
 
-        @test_annotation(str)
+        @test_annotation(KustoTypes.STRING)
         def str_annotated(s: str) -> str:
             return "response to " + s
 
@@ -32,7 +32,7 @@ class TestUtils(TestBase):
     def test_type_registrar_for_obj(self):
         test_annotation = TypeRegistrar("Test annotation")
 
-        @test_annotation(str)
+        @test_annotation(KustoTypes.STRING)
         def str_annotated(s: str) -> str:
             return "response to " + s
 
@@ -44,7 +44,7 @@ class TestUtils(TestBase):
     def test_type_registrar_for_type_not_found(self):
         test_annotation = TypeRegistrar("Test annotation")
 
-        @test_annotation(str)
+        @test_annotation(KustoTypes.STRING)
         def str_annotated(s: str) -> str:
             return "response to " + s
 
@@ -56,7 +56,7 @@ class TestUtils(TestBase):
     def test_type_registrar_for_obj_not_found(self):
         test_annotation = TypeRegistrar("Test annotation")
 
-        @test_annotation(str)
+        @test_annotation(KustoTypes.STRING)
         def str_annotated(s: str) -> str:
             return "response to " + s
 
@@ -68,7 +68,7 @@ class TestUtils(TestBase):
     def test_type_registrar_collision(self):
         test_annotation = TypeRegistrar("Test annotation")
 
-        @test_annotation(str)
+        @test_annotation(KustoTypes.STRING)
         def str_annotated_1(s: str) -> str:
             return "response to " + s
 
@@ -76,6 +76,6 @@ class TestUtils(TestBase):
             return "response to " + s
 
         self.assertRaises(
-            TypeError("Test annotation: type already registered: str"),
-            lambda: test_annotation(str)(str_annotated_2)
+            TypeError("Test annotation: type already registered: string"),
+            lambda: test_annotation(KustoTypes.STRING)(str_annotated_2)
         )

@@ -8,11 +8,13 @@ PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timed
 class KustoType:
     name: str
     internal_name: str
+    dot_net_name: str
     python_types: Tuple[Type[PythonTypes]]
 
-    def __init__(self, name: str, internal_name: str, *python_types: Type[PythonTypes]) -> None:
+    def __init__(self, name: str, internal_name: str, dot_net_name: str, *python_types: Type[PythonTypes]) -> None:
         self.name = name
         self.internal_name = internal_name
+        self.dot_net_name = dot_net_name
         self.python_types = python_types
 
     def is_type_of(self, obj) -> bool:
@@ -29,23 +31,26 @@ class KustoType:
 
 
 class KustoTypes:
-    BOOL = KustoType('bool', 'I8', bool)
-    DATETIME = KustoType('datetime', 'DateTime', datetime)
-    DECIMAL = KustoType('decimal', 'Decimal', None)  # TODO
-    ARRAY = KustoType('dynamic', 'Dynamic', List, Tuple)
-    MAPPING = KustoType('dynamic', 'Dynamic', Mapping)
-    GUID = KustoType('guid', 'UniqueId', None)  # TODO
-    INT = KustoType('int', 'I32', int)
-    LONG = KustoType('long', 'I64', int)
-    REAL = KustoType('real', 'R64', float)
-    STRING = KustoType('string', 'StringBuffer', str)
-    TIMESPAN = KustoType('timespan', 'TimeSpan', timedelta)
-    NULL = KustoType('null', 'null', type(None))
+    BOOL = KustoType('bool', 'I8', 'System.SByte', bool)
+    DATETIME = KustoType('datetime', 'DateTime', 'System.DateTime', datetime)
+    # noinspection PyTypeChecker
+    DECIMAL = KustoType('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', None)  # TODO
+    ARRAY = KustoType('dynamic', 'Dynamic', 'System.Object', List, Tuple)
+    MAPPING = KustoType('dynamic', 'Dynamic', 'System.Object', Mapping)
+    # noinspection PyTypeChecker
+    GUID = KustoType('guid', 'UniqueId', 'System.Guid', None)  # TODO
+    INT = KustoType('int', 'I32', 'System.Int32', int)
+    LONG = KustoType('long', 'I64', 'System.Int64', int)
+    REAL = KustoType('real', 'R64', 'System.Double', float)
+    STRING = KustoType('string', 'StringBuffer', 'System.String', str)
+    TIMESPAN = KustoType('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
+    NULL = KustoType('null', 'null', 'null', type(None))
 
 
 # noinspection PyTypeChecker
 ALL_TYPES: Tuple[KustoType] = tuple(getattr(KustoTypes, f) for f in dir(KustoTypes) if not f.startswith('__'))
 INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in ALL_TYPES}
+DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in ALL_TYPES}
 
 
 def get_base_types(obj: Any) -> Set[KustoType]:

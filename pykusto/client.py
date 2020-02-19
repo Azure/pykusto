@@ -1,3 +1,4 @@
+from collections import defaultdict
 from concurrent.futures import Future, wait
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import chain
@@ -11,7 +12,7 @@ from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, 
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column
+from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column, DOT_NAME_TO_TYPE
 
 POOL = ThreadPoolExecutor(max_workers=4)
 
@@ -62,10 +63,44 @@ class Database:
     """
     client: PyKustoClient
     name: str
+    _tables: Union[None, Dict[str, 'Table']]
+    _tables_future: Future
+    _lock: Lock
 
-    def __init__(self, client: PyKustoClient, name: str) -> None:
+    def __init__(self, client: PyKustoClient, name: str, tables: Tuple['Table', ...] = None) -> None:
+        self._lock = Lock()
         self.client = client
         self.name = name
+        if tables is None:
+            self._tables = None
+            self.refresh()
+        else:
+            self._tables = {t.tables[0]: t for t in tables}
+
+    def get_table(self, name: str) -> 'Table':
+        if self._tables is None:
+            return self.get_tables(name)
+        resolved_table = self._tables.get(name)
+        if resolved_table is None:
+            return self.get_tables(name)
+        return resolved_table
+
+    def __getattr__(self, name: str) -> 'Table':
+        return self.get_table(name)
+
+    def __getitem__(self, name: str) -> 'Table':
+        return self.get_table(name)
+
+    def __dir__(self) -> Iterable[str]:
+        return sorted(chain(super().__dir__(), tuple() if self._tables is None else self._tables.keys()))
+
+    def refresh(self):
+        self._tables_future = POOL.submit(self._get_tables)
+        self._tables_future.add_done_callback(self._set_tables)
+
+    # For use mainly in tests
+    def wait_for_table(self):
+        wait((self._tables_future,))
 
     def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self.client.execute(self.name, query, properties)
@@ -77,8 +112,16 @@ class Database:
     def get_tables(self, *tables: str):
         return Table(self, tables)
 
-    def __getitem__(self, table_name: str) -> 'Table':
-        return self.get_tables(table_name)
+    def _set_tables(self, columns_future: Future):
+        self._tables = columns_future.result()
+
+    def _get_tables(self) -> Dict[str, 'Table']:
+        with self._lock:
+            res: KustoResponseDataSet = self.execute(KQL('.show database schema | project TableName, ColumnName, ColumnType | limit 10000'))
+            table_to_columns = defaultdict(list)
+            for table_name, column_name, column_type in res.primary_results[0].rows:
+                table_to_columns[table_name].append(column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
+            return {table_name: Table(self, table_name, tuple(columns)) for table_name, columns in table_to_columns.items()}
 
 
 class Table:
@@ -87,7 +130,7 @@ class Table:
     """
     database: Database
     tables: Tuple[str, ...]
-    columns: Union[None, Dict[str, BaseColumn]]
+    _columns: Union[None, Dict[str, BaseColumn]]
     _columns_future: Future
     _lock: Lock
 
@@ -103,15 +146,15 @@ class Table:
         self.database = database
         self.tables = (tables,) if isinstance(tables, str) else tuple(tables)
         if columns is None:
-            self.columns = None
+            self._columns = None
             self.refresh()
         else:
-            self.columns = {c.get_name(): c for c in columns}
+            self._columns = {c.get_name(): c for c in columns}
 
     def get_column(self, name: str) -> BaseColumn:
-        if self.columns is None:
+        if self._columns is None:
             return AnyTypeColumn(name)
-        resolved_column = self.columns.get(name)
+        resolved_column = self._columns.get(name)
         if resolved_column is None:
             return AnyTypeColumn(name)
         return resolved_column
@@ -123,7 +166,7 @@ class Table:
         return self.get_column(name)
 
     def __dir__(self) -> Iterable[str]:
-        return sorted(chain(super().__dir__(), tuple() if self.columns is None else self.columns.keys()))
+        return sorted(chain(super().__dir__(), tuple() if self._columns is None else self._columns.keys()))
 
     def refresh(self):
         self._columns_future = POOL.submit(self._get_columns)
@@ -155,7 +198,7 @@ class Table:
         return self.database.execute(rendered_query)
 
     def _set_columns(self, columns_future: Future):
-        self.columns = columns_future.result()
+        self._columns = columns_future.result()
 
     def _get_columns(self) -> Dict[str, BaseColumn]:
         with self._lock:

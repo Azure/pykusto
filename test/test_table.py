@@ -1,5 +1,5 @@
 from concurrent.futures import Future
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Any
 from unittest.mock import patch
 from urllib.parse import urljoin
 
@@ -12,29 +12,46 @@ from pykusto.type_utils import KustoType, KustoTypes
 from test.test_base import TestBase
 
 
-def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
-    return lambda: type(
+def mock_response(rows: Tuple[Any, ...]):
+    return type(
         'KustoResponseDataSet',
         (object,),
         {'primary_results': (type(
             'KustoResultTable',
             (object,),
-            {'rows': tuple((c_name, c_type.internal_name) for c_name, c_type in columns)}
+            {'rows': rows}
         ),)}
     )
+
+
+def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns))
+
+
+def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns))
 
 
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
     executions: List[Tuple[str, str, ClientRequestProperties]]
     columns_response: Callable
+    tables_response: Callable
 
-    def __init__(self, cluster="https://test_cluster.kusto.windows.net", columns_response: Callable = mock_columns_response([])):
+    def __init__(
+            self,
+            cluster="https://test_cluster.kusto.windows.net",
+            columns_response: Callable = mock_columns_response([]),
+            tables_response: Callable = mock_tables_response([]),
+    ):
         self.executions = []
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
         self.columns_response = columns_response
+        self.tables_response = tables_response
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
+        if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
+            return self.tables_response()
         if rendered_query.startswith('.show table '):
             return self.columns_response()
         self.executions.append((database, rendered_query, properties))

@@ -631,10 +631,6 @@ class Column(AnyExpression):
             return AssignmentFromColumnToColumn(columns[0], self)
         return ArrayExpression.assign_to(self, *columns)
 
-    # Used for mv-expand
-    def to_type(self, type_name: TypeName) -> 'ColumnToType':
-        return ColumnToType(self, type_name)
-
 
 class ColumnGenerator:
     def __getattr__(self, name: str) -> Column:

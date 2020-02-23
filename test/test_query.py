@@ -196,7 +196,7 @@ class TestQuery(TestBase):
     def test_mv_expand_to_type(self):
         self.assertEqual(
             " | mv-expand a to typeof(string), b to typeof(int), c",
-            Query().mv_expand(col.a.to_type(TypeName.STRING), col.b.to_type(TypeName.INT), col.c).render(),
+            Query().mv_expand(f.to_type(col.a, TypeName.STRING), f.to_type(col.b, TypeName.INT), col.c).render(),
         )
 
     def test_mv_expand_args(self):

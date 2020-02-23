@@ -32,28 +32,37 @@ def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] =
     return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns))
 
 
+def mock_databases_response(databases: List[Tuple[str, Tuple[str, List[Tuple[str, KustoType]]]]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for d_name, tables in databases for t_name, columns in tables for c_name, c_type in columns))
+
+
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
     executions: List[Tuple[str, str, ClientRequestProperties]]
     columns_response: Callable
     tables_response: Callable
+    databases_response: Callable
 
     def __init__(
             self,
             cluster="https://test_cluster.kusto.windows.net",
             columns_response: Callable = mock_columns_response([]),
             tables_response: Callable = mock_tables_response([]),
+            databases_response: Callable = mock_databases_response([]),
     ):
         self.executions = []
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
         self.columns_response = columns_response
         self.tables_response = tables_response
+        self.databases_response = databases_response
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
         if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
             return self.tables_response()
         if rendered_query.startswith('.show table '):
             return self.columns_response()
+        if rendered_query.startswith('.show databases schema '):
+            return self.databases_response()
         self.executions.append((database, rendered_query, properties))
 
 

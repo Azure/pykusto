@@ -1,5 +1,4 @@
 from collections import defaultdict
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Union, List, Tuple, Dict, Any
 from urllib.parse import urlparse
 
@@ -11,8 +10,6 @@ from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.kql_converters import KQL
 from pykusto.retriever import Retriever
 from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column, DOT_NAME_TO_TYPE
-
-POOL = ThreadPoolExecutor(max_workers=4)
 
 
 class PyKustoClient(Retriever):
@@ -38,6 +35,9 @@ class PyKustoClient(Retriever):
             self._cluster_name = client_or_cluster
         self._items = None
         super().__init__()
+
+    def __repr__(self) -> str:
+        return f'PyKustoClient({self._cluster_name})'
 
     def new_item(self, name: str) -> 'Database':
         return Database(self, name)
@@ -87,6 +87,9 @@ class Database(Retriever):
             self._items = {table_name: Table(self, table_name, columns) for table_name, columns in tables.items()}
         super().__init__()
 
+    def __repr__(self) -> str:
+        return f'{self.client}.Database({self.name})'
+
     def new_item(self, name: str) -> 'Table':
         return self.get_tables(name)
 
@@ -131,6 +134,9 @@ class Table(Retriever):
         else:
             self._items = {c.get_name(): c for c in columns}
         super().__init__()
+
+    def __repr__(self) -> str:
+        return f'{self.database}.Table({self.tables})'
 
     def new_item(self, name: str) -> BaseColumn:
         return AnyTypeColumn(name)

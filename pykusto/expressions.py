@@ -639,6 +639,8 @@ class BaseColumn(BaseExpression):
     def get_kusto_type(self) -> KustoType:
         raise NotImplementedError("BaseColumn has no type")
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self._name})'
 
 @column(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
 class NumberColumn(BaseColumn, NumberExpression):

@@ -3,7 +3,7 @@ from itertools import chain
 from threading import Lock
 from typing import Union, Dict, Any, Iterable
 
-POOL = ThreadPoolExecutor(max_workers=4)
+POOL = ThreadPoolExecutor(max_workers=1)
 
 
 class Retriever:
@@ -47,7 +47,8 @@ class Retriever:
             wait((self._future,))
 
     def _set_items(self, future: Future):
-        self._items = future.result()
+        with self._lock:
+            self._items = future.result()
 
     def _internal_get_items(self) -> Dict[str, Any]:
         raise NotImplementedError()

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from enum import Enum
 from numbers import Number
 from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Any, Set
 
@@ -84,3 +85,16 @@ class TypeRegistrar:
 kql_converter = TypeRegistrar("KQL Converter")
 plain_expression = TypeRegistrar("Plain expression")
 aggregation_expression = TypeRegistrar("Aggregation expression")
+
+
+class TypeName(Enum):
+    BOOL = 'bool'
+    DATETIME = 'datetime'
+    DECIMAL = 'decimal'
+    DYNAMIC = 'dynamic'
+    GUID = 'guid'
+    INT = 'int'
+    LONG = 'long'
+    REAL = 'real'
+    STRING = 'string'
+    TIMESPAN = 'timespan'

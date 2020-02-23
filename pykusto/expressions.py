@@ -636,12 +636,6 @@ class BaseColumn(BaseExpression):
     def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentFromColumnToColumn':
         return AssignmentFromColumnToColumn(column, self)
 
-    # Used for mv-expand
-    def to_type(self, kusto_type: KustoType = None) -> 'ColumnToType':
-        if kusto_type is None:
-            kusto_type = self.get_kusto_type()
-        return ColumnToType(self, kusto_type)
-
     def get_kusto_type(self) -> KustoType:
         raise NotImplementedError("BaseColumn has no type")
 

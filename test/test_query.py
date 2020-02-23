@@ -1,9 +1,11 @@
 from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
-from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion
+from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
+from pykusto.type_utils import TypeName
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
+from test.udf import func, STRINGIFIED
 
 
 class TestQuery(TestBase):
@@ -198,6 +200,12 @@ class TestQuery(TestBase):
             Query().mv_expand(col.a, col.b, col.c).render(),
         )
 
+    def test_mv_expand_to_type(self):
+        self.assertEqual(
+            " | mv-expand a to typeof(string), b to typeof(int), c",
+            Query().mv_expand(f.to_type(col.a, TypeName.STRING), f.to_type(col.b, TypeName.INT), col.c).render(),
+        )
+
     def test_mv_expand_args(self):
         self.assertEqual(
             " | mv-expand bagexpansion=bag with_itemindex=foo a, b, c limit 4",
@@ -289,14 +297,38 @@ class TestQuery(TestBase):
             Query().distinct_all().render(),
         )
 
+    def test_evaluate(self):
+        self.assertEqual(
+            " | evaluate some_plugin(foo, 3)",
+            Query().evaluate('some_plugin', col.foo, 3).render(),
+        )
+
+    def test_evaluate_with_distribution(self):
+        self.assertEqual(
+            " | evaluate hint.distribution=per_shard some_plugin(foo, 3)",
+            Query().evaluate('some_plugin', col.foo, 3, distribution=Distribution.PER_SHARD).render(),
+        )
+
     def test_udf(self):
-        # noinspection PyGlobalUndefined
-        def func():
-            global result
-            global df
+        self.assertEqual(
+            " | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
+            Query().evaluate_udf(func, StateZone=TypeName.STRING).render(),
+        )
 
-            result = df
-            result['StateZone'] = result["State"] + result["Zone"]
+    def test_udf_no_extend(self):
+        self.assertEqual(
+            " | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
+            Query().evaluate_udf(func, extend=False, StateZone=TypeName.STRING).render(),
+        )
 
-        # TODO assert
-        Query().evaluate(func, "typeof(*, StateZone: string)").render()
+    def test_bag_unpack(self):
+        self.assertEqual(
+            " | evaluate bag_unpack(foo)",
+            Query().bag_unpack(col.foo).render(),
+        )
+
+    def test_bag_unpack_with_prefix(self):
+        self.assertEqual(
+            ' | evaluate bag_unpack(foo, "bar_")',
+            Query().bag_unpack(col.foo, 'bar_').render(),
+        )

@@ -130,6 +130,6 @@ class TypeRegistrar:
 
 
 kql_converter = TypeRegistrar("KQL Converter")
-column = TypeRegistrar("Column")
+typed_column = TypeRegistrar("Column")
 plain_expression = TypeRegistrar("Plain expression")
 aggregation_expression = TypeRegistrar("Aggregation expression")

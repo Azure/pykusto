@@ -9,7 +9,7 @@ from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.kql_converters import KQL
 from pykusto.retriever import Retriever
-from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column, DOT_NAME_TO_TYPE
+from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
 
 
 class PyKustoClient(Retriever):
@@ -64,7 +64,7 @@ class PyKustoClient(Retriever):
         for database_name, table_name, column_name, column_type in res.primary_results[0].rows:
             if is_empty(database_name) or is_empty(table_name) or is_empty(column_name):
                 continue
-            database_to_table_to_columns[database_name][table_name].append(column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
+            database_to_table_to_columns[database_name][table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
         return {
             database_name: Database(self, database_name, {table_name: tuple(columns) for table_name, columns in table_to_columns.items()})
             for database_name, table_to_columns in database_to_table_to_columns.items()
@@ -108,7 +108,7 @@ class Database(Retriever):
         for table_name, column_name, column_type in res.primary_results[0].rows:
             if is_empty(table_name) or is_empty(column_name):
                 continue
-            table_to_columns[table_name].append(column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
+            table_to_columns[table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
         return {table_name: Table(self, table_name, tuple(columns)) for table_name, columns in table_to_columns.items()}
 
 
@@ -166,7 +166,7 @@ class Table(Retriever):
         # TODO: Handle unions
         res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType | limit 10000'.format(self.get_table())))
         return {
-            column_name: column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
+            column_name: typed_column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
             for column_name, column_type in res.primary_results[0].rows
         }
 

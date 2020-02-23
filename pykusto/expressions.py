@@ -3,7 +3,7 @@ from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, KustoTypes, column
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, KustoTypes, typed_column
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -642,24 +642,25 @@ class BaseColumn(BaseExpression):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._name})'
 
-@column(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
+
+@typed_column(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
 class NumberColumn(BaseColumn, NumberExpression):
     pass
 
 
-@column(KustoTypes.BOOL)
+@typed_column(KustoTypes.BOOL)
 class BooleanColumn(BaseColumn, BooleanExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.BOOL
 
 
-@column(KustoTypes.ARRAY)
+@typed_column(KustoTypes.ARRAY)
 class ArrayColumn(BaseColumn, ArrayExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.ARRAY
 
 
-@column(KustoTypes.MAPPING)
+@typed_column(KustoTypes.MAPPING)
 class MappingColumn(BaseColumn, MappingExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.MAPPING
@@ -670,19 +671,19 @@ class DynamicColumn(ArrayColumn, MappingColumn):
         raise ValueError("Column type unknown")
 
 
-@column(KustoTypes.STRING)
+@typed_column(KustoTypes.STRING)
 class StringColumn(BaseColumn, StringExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.STRING
 
 
-@column(KustoTypes.DATETIME)
+@typed_column(KustoTypes.DATETIME)
 class DatetimeColumn(BaseColumn, DatetimeExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.DATETIME
 
 
-@column(KustoTypes.TIMESPAN)
+@typed_column(KustoTypes.TIMESPAN)
 class TimespanColumn(BaseColumn, TimespanExpression):
     def get_kusto_type(self) -> KustoType:
         return KustoTypes.TIMESPAN

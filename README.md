@@ -16,29 +16,29 @@ pip install pykusto
 from datetime import timedelta
 from pykusto.client import PyKustoClient
 from pykusto.query import Query
-from pykusto.expressions import column_generator as col
 
 # Connect to cluster with AAD device authentication
+# Databases, tables, and columns are auto-retrieved
 client = PyKustoClient('https://help.kusto.windows.net')
 
 # Show databases
 print(client.show_databases())
 
 # Show tables in 'Samples' database
-print(client['Samples'].show_tables())
+print(client.Samples.show_tables())
 
 # Connect to 'StormEvents' table
-table = client['Samples']['StormEvents']
+t = client.Samples.StormEvents
 
 # Build query
 (
-    Query(table)        
-        # Access columns using 'col' global variable 
-        .project(col.StartTime, col.EndTime, col.EventType, col.Source)
+    Query(t)        
+        # Access columns using table variable 
+        .project(t.StartTime, t.EndTime, t.EventType, t.Source)
         # Specify new column name using Python keyword argument   
-        .extend(Duration=col.EndTime - col.StartTime)
+        .extend(Duration=t.EndTime - t.StartTime)
         # Python types are implicitly converted to Kusto types
-        .where(col.Duration > timedelta(hours=1))
+        .where(t.Duration > timedelta(hours=1))
         .take(5)
         # Output to pandas dataframe
         .to_dataframe()

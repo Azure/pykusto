@@ -136,7 +136,7 @@ class Table(Retriever):
         super().__init__()
 
     def __repr__(self) -> str:
-        return f'{self.database}.Table({self.tables})'
+        return f'{self.database}.Table({self.get_table()})'
 
     def new_item(self, name: str) -> BaseColumn:
         return AnyTypeColumn(name)

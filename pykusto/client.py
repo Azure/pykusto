@@ -17,11 +17,6 @@ from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, column, DOT_NAME_TO_TYPE
 POOL = ThreadPoolExecutor(max_workers=4)
 
 
-# There has to be code somewhere that already does this, but I didn't find it
-def is_empty(s: str) -> bool:
-    return s is None or len(s.strip()) == 0
-
-
 class PyKustoClient:
     """
     Handle to a Kusto cluster
@@ -51,6 +46,27 @@ class PyKustoClient:
         self._databases = None
         self.refresh()
 
+    def get_database(self, name: str) -> 'Database':
+        if self._databases is None:
+            return Database(self, name)
+        resolved_database = self._databases.get(name)
+        if resolved_database is None:
+            return Database(self, name)
+        return resolved_database
+
+    def __getattr__(self, name: str) -> 'Database':
+        return self.get_database(name)
+
+    def __getitem__(self, name: str) -> 'Database':
+        return self.get_database(name)
+
+    def __dir__(self) -> Iterable[str]:
+        return sorted(chain(super().__dir__(), tuple() if self._databases is None else self._tables.keys()))
+
+    def refresh(self):
+        self._databases_future = POOL.submit(self._get_databases)
+        self._databases_future.add_done_callback(self._set_databases)
+
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self._client.execute(database, query, properties)
 
@@ -58,15 +74,15 @@ class PyKustoClient:
         res: KustoResponseDataSet = self.execute('', KQL('.show databases'))
         return tuple(r[0] for r in res.primary_results[0].rows)
 
-    def __getitem__(self, database_name: str) -> 'Database':
-        return Database(self, database_name)
-
     def get_cluster_name(self) -> str:
         return self._cluster_name
 
     @staticmethod
     def _get_client_for_cluster(cluster: str) -> KustoClient:
         return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+
+    def _set_databases(self, databases_future: Future):
+        self._databases = databases_future.result()
 
     def _get_databases(self) -> Dict[str, 'Database']:
         with self._lock:
@@ -77,9 +93,8 @@ class PyKustoClient:
                     continue
                 database_to_table_to_columns[database_name][table_name].append(column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
             return {
-                database_name: {
-                    table_name: tuple(Table(None, table_name, tuple(columns)) for table_name, columns in table_to_columns.items())
-                } for database_name, table_to_columns in database_to_table_to_columns.items()
+                database_name: Database(self, database_name, {table_name: tuple(columns) for table_name, columns in table_to_columns.items()})
+                for database_name, table_to_columns in database_to_table_to_columns.items()
             }
 
 
@@ -93,7 +108,7 @@ class Database:
     _tables_future: Union[None, Future]
     _lock: Lock
 
-    def __init__(self, client: PyKustoClient, name: str, tables: Tuple['Table', ...] = None) -> None:
+    def __init__(self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn]] = None) -> None:
         self._lock = Lock()
         self.client = client
         self.name = name
@@ -102,7 +117,7 @@ class Database:
             self._tables = None
             self.refresh()
         else:
-            self._tables = {t.tables[0]: t for t in tables}
+            self._tables = {table_name: Table(self, table_name, columns) for table_name, columns in tables.items()}
 
     def get_table(self, name: str) -> 'Table':
         if self._tables is None:
@@ -140,8 +155,8 @@ class Database:
     def get_tables(self, *tables: str):
         return Table(self, tables)
 
-    def _set_tables(self, columns_future: Future):
-        self._tables = columns_future.result()
+    def _set_tables(self, tables_future: Future):
+        self._tables = tables_future.result()
 
     def _get_tables(self) -> Dict[str, 'Table']:
         with self._lock:
@@ -240,3 +255,8 @@ class Table:
                 column_name: column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
                 for column_name, column_type in res.primary_results[0].rows
             }
+
+
+# There has to be code somewhere that already does this, but I didn't find it
+def is_empty(s: str) -> bool:
+    return s is None or len(s.strip()) == 0

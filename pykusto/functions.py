@@ -5,9 +5,9 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType
+    ArrayExpression, ColumnToType, BaseColumn
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, get_base_types, TypeName
+from pykusto.type_utils import plain_expression, get_base_types, KustoType
 
 
 # Scalar functions
@@ -881,5 +881,5 @@ def variancep(expr: ExpressionType) -> AggregationExpression:
 
 
 # Used for mv-expand
-def to_type(column: Column, type_name: TypeName) -> ColumnToType:
+def to_type(column: BaseColumn, type_name: KustoType) -> ColumnToType:
     return ColumnToType(column, type_name)

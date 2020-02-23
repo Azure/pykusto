@@ -67,6 +67,11 @@ class PyKustoClient:
         self._databases_future = POOL.submit(self._get_databases)
         self._databases_future.add_done_callback(self._set_databases)
 
+    # For use mainly in tests
+    def wait_for_databases(self):
+        if self._databases_future is not None:
+            wait((self._databases_future,))
+
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self._client.execute(database, query, properties)
 

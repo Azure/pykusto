@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
 
 from pykusto.client import PyKustoClient
-from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn
+from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
 from pykusto.query import Query
 from pykusto.type_utils import KustoType, KustoTypes
 from test.test_base import TestBase
@@ -32,8 +32,13 @@ def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] =
     return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns))
 
 
-def mock_databases_response(databases: List[Tuple[str, Tuple[str, List[Tuple[str, KustoType]]]]] = tuple()) -> Callable:
-    return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for d_name, tables in databases for t_name, columns in tables for c_name, c_type in columns))
+def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, KustoType]]]]]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple(
+        (d_name, t_name, c_name, c_type.dot_net_name)
+        for d_name, tables in databases
+        for t_name, columns in tables
+        for c_name, c_type in columns
+    ))
 
 
 # noinspection PyMissingConstructor
@@ -209,3 +214,25 @@ class TestTable(TestBase):
         self.assertEqual(NumberColumn, type(table.bar))
         self.assertEqual(AnyTypeColumn, type(table.baz))
         self.assertEqual(AnyTypeColumn, type(db.other_table.foo))
+
+    def test_two_tables_retrieve(self):
+        mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([
+            ('test_table_1', [('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)]),
+            ('test_table_2', [('baz', KustoTypes.BOOL)])
+        ]))
+        db = PyKustoClient(mock_kusto_client)['test_db']
+        db.wait_for_tables()  # Avoid race condition
+        self.assertEqual(StringColumn, type(db.test_table_1.foo))
+        self.assertEqual(NumberColumn, type(db.test_table_1.bar))
+        self.assertEqual(BooleanColumn, type(db.test_table_2.baz))
+        self.assertEqual(AnyTypeColumn, type(db.other_table.foo))
+
+    def test_database_retrieve(self):
+        mock_kusto_client = MockKustoClient(databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)])])]))
+        client = PyKustoClient(mock_kusto_client)
+        client.wait_for_databases()
+        table = client.test_db.test_table
+        self.assertEqual(StringColumn, type(table.foo))
+        self.assertEqual(NumberColumn, type(table.bar))
+        self.assertEqual(AnyTypeColumn, type(table.baz))
+        self.assertEqual(AnyTypeColumn, type(client.other_db.other_table.foo))

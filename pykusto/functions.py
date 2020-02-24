@@ -567,7 +567,7 @@ def sign(expr: NumberType) -> NumberExpression:
 #
 #
 def split(string: StringType, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
-    return StringExpression(KQL(string)).split(delimiter, requested_index)
+    return StringExpression(to_kql(string)).split(delimiter, requested_index)
 
 
 def sqrt(expr: NumberType) -> NumberExpression:
@@ -835,7 +835,7 @@ def percentile(expr: ExpressionType, per: NumberType) -> AggregationExpression:
 
 
 def percentiles(expr: ExpressionType, *pers: NumberType) -> AggregationExpression:
-    res = 'percentiles({}, {})'.format(expr,
+    res = 'percentiles({}, {})'.format(expr.kql,
                                        ', '.join([str(to_kql(per)) for per in pers]))
     return AggregationExpression(KQL(res))
 

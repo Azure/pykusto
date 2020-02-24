@@ -43,7 +43,8 @@ class BaseExpression:
     def __init__(self, kql: Union[KQL, 'BaseExpression']) -> None:
         if isinstance(kql, BaseExpression):
             self.kql = kql.kql
-        elif not isinstance(kql, str):
+            return
+        if not isinstance(kql, str):
             raise ValueError("Either expression or KQL required")
         self.kql = kql
 
@@ -230,16 +231,16 @@ class NumberExpression(BaseExpression):
         return BooleanExpression(KQL('isnan({})'.format(self.kql)))
 
     def log(self) -> 'NumberExpression':
-        return NumberExpression(KQL('log({})'.format(self)))
+        return NumberExpression(KQL('log({})'.format(self.kql)))
 
     def log10(self) -> 'NumberExpression':
-        return NumberExpression(KQL('log10({})'.format(self)))
+        return NumberExpression(KQL('log10({})'.format(self.kql)))
 
     def log2(self) -> 'NumberExpression':
-        return NumberExpression(KQL('log2({})'.format(self)))
+        return NumberExpression(KQL('log2({})'.format(self.kql)))
 
     def loggamma(self) -> 'NumberExpression':
-        return NumberExpression(KQL('loggamma({})'.format(self)))
+        return NumberExpression(KQL('loggamma({})'.format(self.kql)))
 
     def round(self, precision: NumberType = None) -> 'NumberExpression':
         return NumberExpression(KQL(
@@ -274,9 +275,9 @@ class StringExpression(BaseExpression):
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
-            return ArrayExpression(KQL('split({}, {})'.format(to_kql(self.kql), to_kql(delimiter))))
+            return ArrayExpression(KQL('split({}, {})'.format(self.kql, to_kql(delimiter))))
         return ArrayExpression(KQL('split({}, {}, {})'.format(
-            to_kql(self.kql), to_kql(delimiter), to_kql(requested_index)
+            self.kql, to_kql(delimiter), to_kql(requested_index)
         )))
 
     def equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:

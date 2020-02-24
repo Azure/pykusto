@@ -184,7 +184,7 @@ class TestTable(TestBase):
         table.wait_for_items()  # Avoid race condition
         self.assertEqual(StringColumn, type(table.foo))
         self.assertEqual(NumberColumn, type(table.bar))
-        self.assertEqual(AnyTypeColumn, type(table.baz))
+        self.assertEqual(AnyTypeColumn, type(table['baz']))
 
     def test_column_retrieve_brackets(self):
         mock_kusto_client = MockKustoClient(columns_response=mock_columns_response([('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)]))
@@ -199,9 +199,9 @@ class TestTable(TestBase):
         try:
             mock_kusto_client = MockKustoClient(columns_response=lambda: mock_response_future.result())
             table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
-            self.assertEqual(AnyTypeColumn, type(table.foo))
-            self.assertEqual(AnyTypeColumn, type(table.bar))
-            self.assertEqual(AnyTypeColumn, type(table.baz))
+            self.assertEqual(AnyTypeColumn, type(table['foo']))
+            self.assertEqual(AnyTypeColumn, type(table['bar']))
+            self.assertEqual(AnyTypeColumn, type(table['baz']))
         finally:
             mock_response_future.set_result(mock_columns_response([])())
 
@@ -212,8 +212,8 @@ class TestTable(TestBase):
         table = db.test_table
         self.assertEqual(StringColumn, type(table.foo))
         self.assertEqual(NumberColumn, type(table.bar))
-        self.assertEqual(AnyTypeColumn, type(table.baz))
-        self.assertEqual(AnyTypeColumn, type(db.other_table.foo))
+        self.assertEqual(AnyTypeColumn, type(table['baz']))
+        self.assertEqual(AnyTypeColumn, type(db['other_table']['foo']))
 
     def test_two_tables_retrieve(self):
         mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([
@@ -224,8 +224,8 @@ class TestTable(TestBase):
         db.wait_for_items()  # Avoid race condition
         self.assertEqual(StringColumn, type(db.test_table_1.foo))
         self.assertEqual(NumberColumn, type(db.test_table_1.bar))
-        self.assertEqual(BooleanColumn, type(db.test_table_2.baz))
-        self.assertEqual(AnyTypeColumn, type(db.other_table.foo))
+        self.assertEqual(BooleanColumn, type(db.test_table_2['baz']))
+        self.assertEqual(AnyTypeColumn, type(db['other_table']['foo']))
 
     def test_database_retrieve(self):
         mock_kusto_client = MockKustoClient(databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)])])]))
@@ -234,5 +234,5 @@ class TestTable(TestBase):
         table = client.test_db.test_table
         self.assertEqual(StringColumn, type(table.foo))
         self.assertEqual(NumberColumn, type(table.bar))
-        self.assertEqual(AnyTypeColumn, type(table.baz))
-        self.assertEqual(AnyTypeColumn, type(client.other_db.other_table.foo))
+        self.assertEqual(AnyTypeColumn, type(table['baz']))
+        self.assertEqual(AnyTypeColumn, type(client.test_db['other_table']['foo']))

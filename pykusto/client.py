@@ -19,7 +19,7 @@ class PyKustoClient(Retriever):
     _client: KustoClient
     _cluster_name: str
 
-    def __init__(self, client_or_cluster: Union[str, KustoClient]) -> None:
+    def __init__(self, client_or_cluster: Union[str, KustoClient], retrieve_by_default: bool = True) -> None:
         """
         Create a new handle to Kusto cluster
 
@@ -34,16 +34,16 @@ class PyKustoClient(Retriever):
             self._client = self._get_client_for_cluster(client_or_cluster)
             self._cluster_name = client_or_cluster
         self._items = None
-        super().__init__()
+        super().__init__(retrieve_by_default)
 
     def __repr__(self) -> str:
         return f'PyKustoClient({self._cluster_name})'
 
-    def new_item(self, name: str) -> 'Database':
-        return Database(self, name)
+    def _new_item(self, name: str) -> 'Database':
+        return Database(self, name, retrieve_by_default=self._retrieve_by_default)
 
     def get_database(self, name: str) -> 'Database':
-        return self.get_item(name)
+        return self._get_item(name)
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self._client.execute(database, query, properties)
@@ -66,7 +66,9 @@ class PyKustoClient(Retriever):
                 continue
             database_to_table_to_columns[database_name][table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
         return {
-            database_name: Database(self, database_name, {table_name: tuple(columns) for table_name, columns in table_to_columns.items()})
+            database_name: Database(
+                self, database_name, {table_name: tuple(columns) for table_name, columns in table_to_columns.items()}, retrieve_by_default=self._retrieve_by_default
+            )
             for database_name, table_to_columns in database_to_table_to_columns.items()
         }
 
@@ -78,19 +80,19 @@ class Database(Retriever):
     client: PyKustoClient
     name: str
 
-    def __init__(self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn]] = None) -> None:
+    def __init__(self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn]] = None, retrieve_by_default: bool = True) -> None:
         self.client = client
         self.name = name
         if tables is None:
             self._items = None
         else:
-            self._items = {table_name: Table(self, table_name, columns) for table_name, columns in tables.items()}
-        super().__init__()
+            self._items = {table_name: Table(self, table_name, columns, retrieve_by_default=retrieve_by_default) for table_name, columns in tables.items()}
+        super().__init__(retrieve_by_default)
 
     def __repr__(self) -> str:
         return f'{self.client}.Database({self.name})'
 
-    def new_item(self, name: str) -> 'Table':
+    def _new_item(self, name: str) -> 'Table':
         return self.get_tables(name)
 
     def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
@@ -100,7 +102,7 @@ class Database(Retriever):
         return tuple(self._items.keys())
 
     def get_tables(self, *tables: str):
-        return Table(self, tables)
+        return Table(self, tables, retrieve_by_default=self._retrieve_by_default)
 
     def _internal_get_items(self) -> Dict[str, 'Table']:
         res: KustoResponseDataSet = self.execute(KQL('.show database schema | project TableName, ColumnName, ColumnType | limit 10000'))
@@ -109,7 +111,7 @@ class Database(Retriever):
             if is_empty(table_name) or is_empty(column_name):
                 continue
             table_to_columns[table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
-        return {table_name: Table(self, table_name, tuple(columns)) for table_name, columns in table_to_columns.items()}
+        return {table_name: Table(self, table_name, tuple(columns), retrieve_by_default=self._retrieve_by_default) for table_name, columns in table_to_columns.items()}
 
 
 class Table(Retriever):
@@ -119,7 +121,7 @@ class Table(Retriever):
     database: Database
     tables: Tuple[str, ...]
 
-    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn, ...] = None) -> None:
+    def __init__(self, database: Database, tables: Union[str, List[str], Tuple[str, ...]], columns: Tuple[BaseColumn, ...] = None, retrieve_by_default: bool = True) -> None:
         """
         Create a new handle to a Kusto table
 
@@ -133,12 +135,12 @@ class Table(Retriever):
             self._items = None
         else:
             self._items = {c.get_name(): c for c in columns}
-        super().__init__()
+        super().__init__(retrieve_by_default)
 
     def __repr__(self) -> str:
         return f'{self.database}.Table({self.get_table()})'
 
-    def new_item(self, name: str) -> BaseColumn:
+    def _new_item(self, name: str) -> BaseColumn:
         return AnyTypeColumn(name)
 
     def get_table(self) -> KQL:

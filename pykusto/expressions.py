@@ -624,6 +624,11 @@ class AssignmentFromAggregationToColumn(AssignmentBase):
 class BaseColumn(BaseExpression):
     _name: str
 
+    def __new__(cls, *args, **kwargs):
+        if cls is 'BaseColumn':
+            raise TypeError("BaseColumn is abstract")
+        return object.__new__(cls)
+
     def __init__(self, name: str) -> None:
         super().__init__(KQL("['{}']".format(name) if '.' in name else name))
         self._name = name

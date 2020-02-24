@@ -7,32 +7,44 @@ POOL = ThreadPoolExecutor(max_workers=1)
 
 
 class Retriever:
+    _retrieve_by_default: bool
     _items: Union[None, Dict[str, Any]]
     _future: Union[None, Future]
     _lock: Lock
 
-    def __init__(self) -> None:
+    def __new__(cls, *args, **kwargs):
+        if cls is 'Retriever':
+            raise TypeError("Retriever is abstract")
+        return object.__new__(cls)
+
+    def __init__(self, retrieve_by_default: bool = True) -> None:
         self._lock = Lock()
         self._future = None
-        if self._items is None:
+        self._retrieve_by_default = retrieve_by_default
+        if retrieve_by_default and self._items is None:
             self.refresh()
 
-    def new_item(self, name: str) -> Any:
+    def _new_item(self, name: str) -> Any:
         raise NotImplementedError()
 
-    def get_item(self, name: str) -> Any:
+    def _get_item(self, name: str) -> Any:
         if self._items is None:
-            return self.new_item(name)
+            return self._new_item(name)
         resolved_item = self._items.get(name)
         if resolved_item is None:
-            return self.new_item(name)
+            return self._new_item(name)
         return resolved_item
 
     def __getattr__(self, name: str) -> Any:
-        return self.get_item(name)
+        if self._items is None:
+            raise AttributeError()
+        resolved_item = self._items.get(name)
+        if resolved_item is None:
+            raise AttributeError()
+        return resolved_item
 
     def __getitem__(self, name: str) -> Any:
-        return self.get_item(name)
+        return self._get_item(name)
 
     def __dir__(self) -> Iterable[str]:
         return sorted(chain(super().__dir__(), tuple() if self._items is None else self._items.keys()))

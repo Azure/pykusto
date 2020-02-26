@@ -39,7 +39,7 @@ class TestFunction(TestBase):
 
     def test_case(self):
         self.assertEqual(
-            " | extend bucket = case(foo <= 3, \"Small\", foo <= 10, \"Medium\", \"Large\")",
+            ' | extend bucket = case(foo <= 3, "Small", foo <= 10, "Medium", "Large")',
             Query().extend(bucket=f.case(col.foo <= 3, "Small", col.foo <= 10, 'Medium', 'Large')).render()
         )
 
@@ -119,13 +119,13 @@ class TestFunction(TestBase):
 
     def test_format_datetime(self):
         self.assertEqual(
-            " | where (format_datetime(foo, \"yy-MM-dd [HH:mm:ss]\")) == \"2019-07-23 00:00:00\"",
+            ' | where (format_datetime(foo, "yy-MM-dd [HH:mm:ss]")) == "2019-07-23 00:00:00"',
             Query().where(f.format_datetime(col.foo, 'yy-MM-dd [HH:mm:ss]') == '2019-07-23 00:00:00').render()
         )
 
     def test_format_timespan(self):
         self.assertEqual(
-            " | where (format_timespan(foo, \"h:m:s.fffffff\")) == \"2:3:4.1234500\"",
+            ' | where (format_timespan(foo, "h:m:s.fffffff")) == "2:3:4.1234500"',
             Query().where(f.format_timespan(col.foo, 'h:m:s.fffffff') == "2:3:4.1234500").render()
         )
 
@@ -137,7 +137,7 @@ class TestFunction(TestBase):
 
     def test_gettype(self):
         self.assertEqual(
-            " | where (gettype(foo)) == \"datetime\"",
+            ' | where (gettype(foo)) == "datetime"',
             Query().where(f.gettype(col.foo) == 'datetime').render()
         )
 
@@ -353,31 +353,31 @@ class TestFunction(TestBase):
 
     def test_strcat(self):
         self.assertEqual(
-            " | extend (strcat(\"hello\", \",\", foo, \"!\"))",
+            ' | extend strcat("hello", ",", foo, "!")',
             Query().extend(f.strcat("hello", ',', col.foo, '!')).render()
         )
         self.assertEqual(
-            " | extend (strcat(foo, \"!\"))",
+            ' | extend strcat(foo, "!")',
             Query().extend(f.strcat(col.foo, '!')).render()
         )
 
     def test_strcat_delim(self):
         self.assertEqual(
-            " | extend (strcat_delim(\"-\", \"hello\", \",\", foo, \"!\"))",
+            ' | extend strcat_delim("-", "hello", ",", foo, "!")',
             Query().extend(f.strcat_delim('-', "hello", ',', col.foo, '!')).render()
         )
         self.assertEqual(
-            " | extend (strcat_delim(\"-\", \",\", foo))",
+            ' | extend strcat_delim("-", ",", foo)',
             Query().extend(f.strcat_delim('-', ',', col.foo)).render()
         )
 
     def test_strcat_array(self):
         self.assertEqual(
-            " | where (strcat_array(foo, \",\")) == \"A,B,C\"",
+            ' | where (strcat_array(foo, ",")) == "A,B,C"',
             Query().where(f.strcat_array(col.foo, ',') == 'A,B,C').render()
         )
         self.assertEqual(
-            " | where (strcat_array(dynamic([\"A\", \"B\", \"C\"]), \",\")) == \"A,B,C\"",
+            ' | where (strcat_array(dynamic(["A", "B", "C"]), ",")) == "A,B,C"',
             Query().where(f.strcat_array(['A', 'B', 'C'], ',') == 'A,B,C').render()
         )
 
@@ -401,39 +401,39 @@ class TestFunction(TestBase):
 
     def test_strrep(self):
         self.assertEqual(
-            " | where (strrep(foo, bar)) == \"ABCABC\"",
+            ' | where (strrep(foo, bar)) == "ABCABC"',
             Query().where(f.strrep(col.foo, col.bar) == 'ABCABC').render()
         )
         self.assertEqual(
-            " | where (strrep(foo, bar, \",\")) == \"ABC,ABC\"",
+            ' | where (strrep(foo, bar, ",")) == "ABC,ABC"',
             Query().where(f.strrep(col.foo, col.bar, ',') == 'ABC,ABC').render()
         )
         self.assertEqual(
-            " | where (strrep(foo, bar, fam)) == \"ABC,ABC\"",
+            ' | where (strrep(foo, bar, fam)) == "ABC,ABC"',
             Query().where(f.strrep(col.foo, col.bar, col.fam) == 'ABC,ABC').render()
         )
 
     def test_substring(self):
         self.assertEqual(
-            " | where (substring(foo, bar)) == \"ABCABC\"",
+            ' | where (substring(foo, bar)) == "ABCABC"',
             Query().where(f.substring(col.foo, col.bar) == 'ABCABC').render()
         )
         self.assertEqual(
-            " | where (substring(foo, bar, 4)) == \"ABC,ABC\"",
+            ' | where (substring(foo, bar, 4)) == "ABC,ABC"',
             Query().where(f.substring(col.foo, col.bar, 4) == 'ABC,ABC').render()
         )
 
     def test_split(self):
         self.assertEqual(
-            ' | extend foo = (split(bar, "_", 3))',
+            ' | extend foo = split(bar, "_", 3)',
             Query().extend(foo=f.split(col.bar, "_", 3)).render()
         )
         self.assertEqual(
-            ' | extend foo = (split(bar, "_")[3])',
+            ' | extend foo = split(bar, "_")[3]',
             Query().extend(foo=f.split(col.bar, "_")[3]).render()
         )
         self.assertEqual(
-            ' | extend foo = (split("1_2", "_")[3])',
+            ' | extend foo = split("1_2", "_")[3]',
             Query().extend(foo=f.split("1_2", "_")[3]).render()
         )
 
@@ -486,7 +486,7 @@ class TestFunction(TestBase):
 
     def test_tolower(self):
         self.assertEqual(
-            " | where (tolower(foo)) == \"foo\"",
+            ' | where (tolower(foo)) == "foo"',
             Query().where(f.tolower(col.foo) == "foo").render()
         )
 
@@ -498,14 +498,14 @@ class TestFunction(TestBase):
         
     def test_toupper(self):
         self.assertEqual(
-            " | where (toupper(foo)) == \"FOO\"",
+            ' | where (toupper(foo)) == "FOO"',
             Query().where(f.toupper(col.foo) == "FOO").render()
         )
 
 
     def test_tohex(self):
         self.assertEqual(
-            " | where (tohex(256)) == \"100\"",
+            ' | where (tohex(256)) == "100"',
             Query().where(f.tohex(256) == "100").render()
         )
 
@@ -724,14 +724,14 @@ class TestFunction(TestBase):
 
     def test_iff(self):
         self.assertEqual(
-            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0)))",
+            " | project foo = iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0))",
             Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3),
                                       datetime.timedelta(4))).render()
         )
 
     def test_iff_expression_return_type(self):
         self.assertEqual(
-            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), array_length(bar), array_length(baz)))",
+            " | project foo = iff(foo > (ago(time(2.0:0:0.0))), array_length(bar), array_length(baz))",
             Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), f.array_length(col.bar),
                                       f.array_length(col.baz))).render()
         )
@@ -745,14 +745,14 @@ class TestFunction(TestBase):
 
     def test_iff_related_types(self):
         self.assertEqual(
-            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), 2, array_length(bar)))",
+            " | project foo = iff(foo > (ago(time(2.0:0:0.0))), 2, array_length(bar))",
             Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), 2, f.array_length(col.bar))).render()
         )
 
     def test_iif(self):
         # iif is just an alias to iff
         self.assertEqual(
-            " | project foo = (iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0)))",
+            " | project foo = iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0))",
             Query().project(foo=f.iif(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3),
                                       datetime.timedelta(4))).render()
         )

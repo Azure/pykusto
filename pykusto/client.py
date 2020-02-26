@@ -40,7 +40,7 @@ class PyKustoClient(Retriever):
         return f'PyKustoClient({self._cluster_name})'
 
     def _new_item(self, name: str) -> 'Database':
-        return Database(self, name, retrieve_by_default=self._retrieve_by_default)
+        return Database(self, name, retrieve_by_default=False)
 
     def get_database(self, name: str) -> 'Database':
         return self[name]
@@ -93,7 +93,7 @@ class Database(Retriever):
         return f'{self.client}.Database({self.name})'
 
     def _new_item(self, name: str) -> 'Table':
-        return self.get_tables(name)
+        return Table(self, name, retrieve_by_default=False)
 
     def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self.client.execute(self.name, query, properties)

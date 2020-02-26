@@ -181,6 +181,7 @@ class TestTable(TestBase):
     def test_column_retrieve(self):
         mock_kusto_client = MockKustoClient(columns_response=mock_columns_response([('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)]))
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table.refresh()
         table.wait_for_items()  # Avoid race condition
         self.assertEqual(StringColumn, type(table.foo))
         self.assertEqual(NumberColumn, type(table.bar))
@@ -189,6 +190,7 @@ class TestTable(TestBase):
     def test_column_retrieve_brackets(self):
         mock_kusto_client = MockKustoClient(columns_response=mock_columns_response([('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)]))
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table.refresh()
         table.wait_for_items()  # Avoid race condition
         self.assertEqual(StringColumn, type(table['foo']))
         self.assertEqual(NumberColumn, type(table['bar']))
@@ -208,6 +210,7 @@ class TestTable(TestBase):
     def test_table_retrieve(self):
         mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([('test_table', [('foo', KustoTypes.STRING), ('bar', KustoTypes.INT)])]))
         db = PyKustoClient(mock_kusto_client)['test_db']
+        db.refresh()
         db.wait_for_items()  # Avoid race condition
         table = db.test_table
         self.assertEqual(StringColumn, type(table.foo))
@@ -221,6 +224,7 @@ class TestTable(TestBase):
             ('test_table_2', [('baz', KustoTypes.BOOL)])
         ]))
         db = PyKustoClient(mock_kusto_client)['test_db']
+        db.refresh()
         db.wait_for_items()  # Avoid race condition
         self.assertEqual(StringColumn, type(db.test_table_1.foo))
         self.assertEqual(NumberColumn, type(db.test_table_1.bar))

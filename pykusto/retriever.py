@@ -35,6 +35,7 @@ class Retriever:
             return self._new_item(name)
         return resolved_item
 
+    # Retrieving with dot notation - only if we are sure such an item exists (except for new columns - see overriding method in Table class)
     def __getattr__(self, name: str) -> Any:
         if self._items is None:
             raise AttributeError()
@@ -43,8 +44,14 @@ class Retriever:
             raise AttributeError()
         return resolved_item
 
+    # Retrieving with bracket notation - create new item if needed
     def __getitem__(self, name: str) -> Any:
-        return self._get_item(name)
+        if self._items is None:
+            return self._new_item(name)
+        resolved_item = self._items.get(name)
+        if resolved_item is None:
+            return self._new_item(name)
+        return resolved_item
 
     def __dir__(self) -> Iterable[str]:
         return sorted(chain(super().__dir__(), tuple() if self._items is None else self._items.keys()))

@@ -43,7 +43,7 @@ class PyKustoClient(Retriever):
         return Database(self, name, retrieve_by_default=self._retrieve_by_default)
 
     def get_database(self, name: str) -> 'Database':
-        return self._get_item(name)
+        return self[name]
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         return self._client.execute(database, query, properties)
@@ -142,6 +142,10 @@ class Table(Retriever):
 
     def _new_item(self, name: str) -> BaseColumn:
         return AnyTypeColumn(name)
+
+    # For columns we allow creating new ones with dot notation, since new columns can be generated on the fly with 'extend'
+    def __getattr__(self, name: str) -> Any:
+        return self[name]
 
     def get_table(self) -> KQL:
         result = KQL(', '.join(self.tables))

@@ -3,6 +3,8 @@ from itertools import chain
 from threading import Lock
 from typing import Union, Dict, Any, Iterable
 
+# Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
+# Also, this makes it easy to use more than one thread, if the need ever arises.s
 POOL = ThreadPoolExecutor(max_workers=1)
 
 

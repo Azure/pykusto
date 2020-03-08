@@ -46,7 +46,6 @@ class KustoType(Enum):
         return False
 
 
-# noinspection PyTypeChecker
 INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in KustoType}
 DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in KustoType}
 

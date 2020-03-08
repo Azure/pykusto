@@ -9,6 +9,9 @@ POOL = ThreadPoolExecutor(max_workers=1)
 
 
 class Retriever:
+    """
+    Abstract class that caches a collection of items, retrieving them in certain scenarios.
+    """
     _retrieve_by_default: bool
     _items: Union[None, Dict[str, Any]]
     _future: Union[None, Future]
@@ -20,6 +23,11 @@ class Retriever:
         return object.__new__(cls)
 
     def __init__(self, items: Union[None, Dict[str, Any]], retrieve_by_default: bool) -> None:
+        """
+        :param items: Initial items. If not None, items will not be retrieved until the "refresh" method is explicitly called.
+        :param retrieve_by_default: When true, items will be retrieved in the constructor, but only if they were not supplied as a parameter. Subclasses are encouraged to pass
+                                    on the value of "retrieve_by_default" to child retrievers.
+        """
         self._lock = Lock()
         self._future = None
         self._retrieve_by_default = retrieve_by_default

@@ -183,7 +183,8 @@ class Query:
     def evaluate_udf(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: KustoType) -> 'EvaluateQuery':
         return EvaluateQuery(
             self, 'python',
-            BaseExpression(KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + kusto_type.name for field_name, kusto_type in type_specs.items())))),
+            BaseExpression(
+                KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + kusto_type.primary_name for field_name, kusto_type in type_specs.items())))),
             stringify_python_func(udf),
             distribution=distribution
         )

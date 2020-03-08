@@ -272,8 +272,8 @@ def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionTyp
     if len(common_types) == 0:
         # If there is not at least one common type, then certainly the arguments are not of the same type
         raise TypeError("The second and third arguments must be of the same type, but they are: {} and {}".format(
-            ", ".join(t.name for t in return_types),
-            ", ".join(t.name for t in other_types)
+            ", ".join(t.primary_name for t in return_types),
+            ", ".join(t.primary_name for t in other_types)
         ))
     return plain_expression.registry[next(iter(common_types))](
         KQL('iff({}, {}, {})'.format(to_kql(predicate), to_kql(if_true), to_kql(if_false)))

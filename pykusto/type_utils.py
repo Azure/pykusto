@@ -1,18 +1,34 @@
 from datetime import datetime, timedelta
+from enum import Enum
 from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Any, Set
 
 # TODO: Unhandled data types: guid, decimal
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
 
 
-class KustoType:
-    name: str
+class KustoType(Enum):
+    BOOL = ('bool', 'I8', 'System.SByte', bool)
+    DATETIME = ('datetime', 'DateTime', 'System.DateTime', datetime)
+    # noinspection PyTypeChecker
+    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', None)  # TODO
+    ARRAY = ('dynamic', 'Dynamic', 'System.Object', List, Tuple)
+    MAPPING = ('dynamic', 'Dynamic', 'System.Object', Mapping)
+    # noinspection PyTypeChecker
+    GUID = ('guid', 'UniqueId', 'System.Guid', None)  # TODO
+    INT = ('int', 'I32', 'System.Int32', int)
+    LONG = ('long', 'I64', 'System.Int64', int)
+    REAL = ('real', 'R64', 'System.Double', float)
+    STRING = ('string', 'StringBuffer', 'System.String', str)
+    TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
+    NULL = ('null', 'null', 'null', type(None))
+
+    primary_name: str
     internal_name: str
     dot_net_name: str
     python_types: Tuple[Type[PythonTypes]]
 
-    def __init__(self, name: str, internal_name: str, dot_net_name: str, *python_types: Type[PythonTypes]) -> None:
-        self.name = name
+    def __init__(self, primary_name: str, internal_name: str, dot_net_name: str, *python_types: Type[PythonTypes]) -> None:
+        self.primary_name = primary_name
         self.internal_name = internal_name
         self.dot_net_name = dot_net_name
         self.python_types = python_types
@@ -30,27 +46,9 @@ class KustoType:
         return False
 
 
-class KustoTypes:
-    BOOL = KustoType('bool', 'I8', 'System.SByte', bool)
-    DATETIME = KustoType('datetime', 'DateTime', 'System.DateTime', datetime)
-    # noinspection PyTypeChecker
-    DECIMAL = KustoType('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', None)  # TODO
-    ARRAY = KustoType('dynamic', 'Dynamic', 'System.Object', List, Tuple)
-    MAPPING = KustoType('dynamic', 'Dynamic', 'System.Object', Mapping)
-    # noinspection PyTypeChecker
-    GUID = KustoType('guid', 'UniqueId', 'System.Guid', None)  # TODO
-    INT = KustoType('int', 'I32', 'System.Int32', int)
-    LONG = KustoType('long', 'I64', 'System.Int64', int)
-    REAL = KustoType('real', 'R64', 'System.Double', float)
-    STRING = KustoType('string', 'StringBuffer', 'System.String', str)
-    TIMESPAN = KustoType('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
-    NULL = KustoType('null', 'null', 'null', type(None))
-
-
 # noinspection PyTypeChecker
-ALL_TYPES: Tuple[KustoType] = tuple(getattr(KustoTypes, f) for f in dir(KustoTypes) if not f.startswith('__'))
-INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in ALL_TYPES}
-DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in ALL_TYPES}
+INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in KustoType}
+DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in KustoType}
 
 
 def get_base_types(obj: Any) -> Set[KustoType]:
@@ -60,7 +58,7 @@ def get_base_types(obj: Any) -> Set[KustoType]:
     :param obj: The given object for which the type is resolved
     :return: A type which is a member of `KustoTypes`
     """
-    for kusto_type in ALL_TYPES:
+    for kusto_type in KustoType:
         if kusto_type.is_type_of(obj):
             # The object is already a member of Kusto types
             return {kusto_type}
@@ -97,7 +95,7 @@ class TypeRegistrar:
             for t in types:
                 previous = self.registry.setdefault(t, wrapped)
                 if previous is not wrapped:
-                    raise TypeError("{}: type already registered: {}".format(self, t.name))
+                    raise TypeError("{}: type already registered: {}".format(self, t.primary_name))
             wrapped._base_types = set(types)
             return wrapped
 

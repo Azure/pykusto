@@ -3,7 +3,7 @@ from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, KustoTypes, typed_column
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -75,7 +75,7 @@ class BaseExpression:
 
     @staticmethod
     def base_binary_op(
-            left: ExpressionType, operator: str, right: ExpressionType, result_type: Type[KustoTypes]
+            left: ExpressionType, operator: str, right: ExpressionType, result_type: Type[KustoType]
     ) -> 'BaseExpression':
         registrar = plain_expression
         if isinstance(left, AggregationExpression) or isinstance(right, AggregationExpression):
@@ -127,7 +127,7 @@ class BaseExpression:
         return self.assign_to_multiple_columns(*columns)
 
 
-@plain_expression(KustoTypes.BOOL)
+@plain_expression(KustoType.BOOL)
 class BooleanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
@@ -144,7 +144,7 @@ class BooleanExpression(BaseExpression):
         return BooleanExpression(KQL('not({})'.format(self.kql)))
 
 
-@plain_expression(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
+@plain_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
 class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
@@ -248,7 +248,7 @@ class NumberExpression(BaseExpression):
         ))
 
 
-@plain_expression(KustoTypes.STRING)
+@plain_expression(KustoType.STRING)
 class StringExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'StringExpression':
@@ -320,7 +320,7 @@ class StringExpression(BaseExpression):
         return BooleanExpression(KQL('isutf8({})'.format(self.kql)))
 
 
-@plain_expression(KustoTypes.DATETIME)
+@plain_expression(KustoType.DATETIME)
 class DatetimeExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'DatetimeExpression':
@@ -431,7 +431,7 @@ class DatetimeExpression(BaseExpression):
         ))
 
 
-@plain_expression(KustoTypes.TIMESPAN)
+@plain_expression(KustoType.TIMESPAN)
 class TimespanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'TimespanExpression':
@@ -467,7 +467,7 @@ class TimespanExpression(BaseExpression):
         )))
 
 
-@plain_expression(KustoTypes.ARRAY)
+@plain_expression(KustoType.ARRAY)
 class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
@@ -494,7 +494,7 @@ class ArrayExpression(BaseExpression):
         return AssignmentToMultipleColumns(columns, self)
 
 
-@plain_expression(KustoTypes.MAPPING)
+@plain_expression(KustoType.MAPPING)
 class MappingExpression(BaseExpression):
     def __getitem__(self, index: StringType) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
@@ -543,37 +543,37 @@ class AggregationExpression(BaseExpression):
         return self.kql
 
 
-@aggregation_expression(KustoTypes.BOOL)
+@aggregation_expression(KustoType.BOOL)
 class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
     pass
 
 
-@aggregation_expression(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
+@aggregation_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
 class NumberAggregationExpression(AggregationExpression, NumberExpression):
     pass
 
 
-@aggregation_expression(KustoTypes.STRING)
+@aggregation_expression(KustoType.STRING)
 class StringAggregationExpression(AggregationExpression, StringExpression):
     pass
 
 
-@aggregation_expression(KustoTypes.DATETIME)
+@aggregation_expression(KustoType.DATETIME)
 class DatetimeAggregationExpression(AggregationExpression, DatetimeExpression):
     pass
 
 
-@aggregation_expression(KustoTypes.TIMESPAN)
+@aggregation_expression(KustoType.TIMESPAN)
 class TimespanAggregationExpression(AggregationExpression, TimespanExpression):
     pass
 
 
-@aggregation_expression(KustoTypes.ARRAY)
+@aggregation_expression(KustoType.ARRAY)
 class ArrayAggregationExpression(AggregationExpression, ArrayExpression):
     pass
 
 
-@aggregation_expression(KustoTypes.MAPPING)
+@aggregation_expression(KustoType.MAPPING)
 class MappingAggregationExpression(AggregationExpression, MappingExpression):
     pass
 
@@ -649,27 +649,27 @@ class BaseColumn(BaseExpression):
         return f'{self.__class__.__name__}({self._name})'
 
 
-@typed_column(KustoTypes.INT, KustoTypes.LONG, KustoTypes.REAL)
+@typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL)
 class NumberColumn(BaseColumn, NumberExpression):
     pass
 
 
-@typed_column(KustoTypes.BOOL)
+@typed_column(KustoType.BOOL)
 class BooleanColumn(BaseColumn, BooleanExpression):
     def get_kusto_type(self) -> KustoType:
-        return KustoTypes.BOOL
+        return KustoType.BOOL
 
 
-@typed_column(KustoTypes.ARRAY)
+@typed_column(KustoType.ARRAY)
 class ArrayColumn(BaseColumn, ArrayExpression):
     def get_kusto_type(self) -> KustoType:
-        return KustoTypes.ARRAY
+        return KustoType.ARRAY
 
 
-@typed_column(KustoTypes.MAPPING)
+@typed_column(KustoType.MAPPING)
 class MappingColumn(BaseColumn, MappingExpression):
     def get_kusto_type(self) -> KustoType:
-        return KustoTypes.MAPPING
+        return KustoType.MAPPING
 
 
 class DynamicColumn(ArrayColumn, MappingColumn):
@@ -677,22 +677,22 @@ class DynamicColumn(ArrayColumn, MappingColumn):
         raise ValueError("Column type unknown")
 
 
-@typed_column(KustoTypes.STRING)
+@typed_column(KustoType.STRING)
 class StringColumn(BaseColumn, StringExpression):
     def get_kusto_type(self) -> KustoType:
-        return KustoTypes.STRING
+        return KustoType.STRING
 
 
-@typed_column(KustoTypes.DATETIME)
+@typed_column(KustoType.DATETIME)
 class DatetimeColumn(BaseColumn, DatetimeExpression):
     def get_kusto_type(self) -> KustoType:
-        return KustoTypes.DATETIME
+        return KustoType.DATETIME
 
 
-@typed_column(KustoTypes.TIMESPAN)
+@typed_column(KustoType.TIMESPAN)
 class TimespanColumn(BaseColumn, TimespanExpression):
     def get_kusto_type(self) -> KustoType:
-        return KustoTypes.TIMESPAN
+        return KustoType.TIMESPAN
 
 
 class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
@@ -721,7 +721,7 @@ column_generator = ColumnGenerator()
 
 class ColumnToType(BaseExpression):
     def __init__(self, col: BaseColumn, kusto_type: KustoType) -> None:
-        super().__init__(KQL("{} to typeof({})".format(col.kql, kusto_type.name)))
+        super().__init__(KQL("{} to typeof({})".format(col.kql, kusto_type.primary_name)))
 
 
 def to_kql(obj: ExpressionType) -> KQL:

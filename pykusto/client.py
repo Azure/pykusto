@@ -143,8 +143,15 @@ class Table(Retriever):
     def _new_item(self, name: str) -> BaseColumn:
         return AnyTypeColumn(name)
 
-    # For columns we allow creating new ones with dot notation, since new columns can be generated on the fly with 'extend'
     def __getattr__(self, name: str) -> Any:
+        """
+        Convenience function for retrieving a column using dot notation.
+        In contrast with the overridden method from the Retriever class, a new column is generated if needed, since new columns can be created on the fly in the course of the
+        query (e.g. using 'extend'), and there is no fear of undesired erroneous queries sent to Kusto.
+
+        :param name: Name of column
+        :return: The retrieved column
+        """
         return self[name]
 
     def get_table(self) -> KQL:

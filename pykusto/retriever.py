@@ -4,7 +4,7 @@ from threading import Lock
 from typing import Union, Dict, Any, Iterable
 
 # Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
-# Also, this makes it easy to use more than one thread, if the need ever arises.s
+# Also, this makes it easy to use more than one thread, if the need ever arises.
 POOL = ThreadPoolExecutor(max_workers=1)
 
 
@@ -37,8 +37,16 @@ class Retriever:
             return self._new_item(name)
         return resolved_item
 
-    # Retrieving with dot notation - only if we are sure such an item exists (except for new columns - see overriding method in Table class)
     def __getattr__(self, name: str) -> Any:
+        """
+        Convenience function for retrieving an item using dot notation.
+        Often dot notation is used for other purposes, and sometimes that happens implicitly. For example Jupyter notebooks automatically run dot-notation code in the background
+        on objects. For this reason, to avoid undesired erroneous queries sent to Kusto, an item is retrieved only if one already exists, and a new item is not generated otherwise
+        (in contrast to bracket notation).
+
+        :param name: Name of item retrieve
+        :return: The retrieved item
+        """
         if self._items is None:
             raise AttributeError()
         resolved_item = self._items.get(name)
@@ -46,8 +54,14 @@ class Retriever:
             raise AttributeError()
         return resolved_item
 
-    # Retrieving with bracket notation - create new item if needed
     def __getitem__(self, name: str) -> Any:
+        """
+        Convenience function for retrieving an item using bracket notation.
+        Since bracket notation is only used explicitly, a new item is generated if needed (in contrast to dot notation).
+
+        :param name: Name of item retrieve
+        :return: The retrieved item
+        """
         if self._items is None:
             return self._new_item(name)
         resolved_item = self._items.get(name)

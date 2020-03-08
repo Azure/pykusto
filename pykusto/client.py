@@ -146,8 +146,8 @@ class Table(Retriever):
     def __getattr__(self, name: str) -> Any:
         """
         Convenience function for retrieving a column using dot notation.
-        In contrast with the overridden method from the Retriever class, a new column is generated if needed, since new columns can be created on the fly in the course of the
-        query (e.g. using 'extend'), and there is no fear of undesired erroneous queries sent to Kusto.
+        In contrast with the overridden method from the :class:`Retriever` class, a new column is generated if needed, since new columns can be created on the fly in the course of
+        the query (e.g. using 'extend'), and there is no fear of undesired erroneous queries sent to Kusto.
 
         :param name: Name of column
         :return: The retrieved column

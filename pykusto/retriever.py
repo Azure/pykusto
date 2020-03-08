@@ -39,6 +39,7 @@ class Retriever:
 
         :param name: Name of item retrieve
         :return: The retrieved item
+        :raises AttributeError: If there is no such item
         """
         return self._get_item(name, lambda: _raise(AttributeError(f"{self} has no attribute '{name}'")))
 
@@ -63,11 +64,18 @@ class Retriever:
         return sorted(chain(super().__dir__(), tuple() if self._items is None else self._items.keys()))
 
     def refresh(self):
+        """
+        Retrieves all items in a separate thread, making them available after the tread finishes executing. The 'wait_for_items' method can be used to wait for that to happen.
+        The specific retrieval logic is defined in concrete subclasses.
+        """
         self._future = POOL.submit(self._get_items)
         self._future.add_done_callback(self._set_items)
 
-    # For use mainly in tests
     def wait_for_items(self):
+        """
+        If item retrieval is currently in progress, wait until it is done and return, otherwise return immediately.
+        If several retrievals are in progress, wait for the most recent one.
+        """
         if self._future is not None:
             wait((self._future,))
 

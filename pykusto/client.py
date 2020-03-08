@@ -26,6 +26,10 @@ class PyKustoClient(Retriever):
         :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given,
             a KustoClient is generated with AAD device authentication
         """
+        self._set_client(client_or_cluster)
+        super().__init__(None, retrieve_by_default)
+
+    def _set_client(self, client_or_cluster):
         if isinstance(client_or_cluster, KustoClient):
             self._client = client_or_cluster
             # noinspection PyProtectedMember
@@ -33,8 +37,6 @@ class PyKustoClient(Retriever):
         else:
             self._client = self._get_client_for_cluster(client_or_cluster)
             self._cluster_name = client_or_cluster
-        self._items = None
-        super().__init__(retrieve_by_default)
 
     def __repr__(self) -> str:
         return f'PyKustoClient({self._cluster_name})'
@@ -81,13 +83,12 @@ class Database(Retriever):
     name: str
 
     def __init__(self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn]] = None, retrieve_by_default: bool = True) -> None:
+        super().__init__(
+            None if tables is None else {table_name: Table(self, table_name, columns, retrieve_by_default=retrieve_by_default) for table_name, columns in tables.items()},
+            retrieve_by_default
+        )
         self.client = client
         self.name = name
-        if tables is None:
-            self._items = None
-        else:
-            self._items = {table_name: Table(self, table_name, columns, retrieve_by_default=retrieve_by_default) for table_name, columns in tables.items()}
-        super().__init__(retrieve_by_default)
 
     def __repr__(self) -> str:
         return f'{self.client}.Database({self.name})'
@@ -129,13 +130,12 @@ class Table(Retriever):
         :param tables: Either a single table name, or a list of tables. If more than one table is given OR the table
             name contains a wildcard, the Kusto 'union' statement will be used.
         """
+        super().__init__(
+            None if columns is None else {c.get_name(): c for c in columns},
+            retrieve_by_default
+        )
         self.database = database
         self.tables = (tables,) if isinstance(tables, str) else tuple(tables)
-        if columns is None:
-            self._items = None
-        else:
-            self._items = {c.get_name(): c for c in columns}
-        super().__init__(retrieve_by_default)
 
     def __repr__(self) -> str:
         return f'{self.database}.Table({self.get_table()})'

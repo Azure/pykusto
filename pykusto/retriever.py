@@ -19,11 +19,12 @@ class Retriever:
             raise TypeError("Retriever is abstract")
         return object.__new__(cls)
 
-    def __init__(self, retrieve_by_default: bool = True) -> None:
+    def __init__(self, items: Union[None, Dict[str, Any]], retrieve_by_default: bool) -> None:
         self._lock = Lock()
         self._future = None
         self._retrieve_by_default = retrieve_by_default
-        if retrieve_by_default and self._items is None:
+        self._items = items
+        if items is None and retrieve_by_default:
             self.refresh()
 
     def _new_item(self, name: str) -> Any:

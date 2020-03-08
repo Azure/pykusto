@@ -294,11 +294,8 @@ class StringExpression(BaseExpression):
     def matches(self, regex: StringType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
-    def string_contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
-
     def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
-        return self.string_contains(other, case_sensitive)
+        return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
 
     def not_contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' !contains_cs ' if case_sensitive else ' !contains ', other)
@@ -485,9 +482,6 @@ class ArrayExpression(BaseExpression):
 
     def array_contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(other, ' in ', self)
-
-    def contains(self, other: ExpressionType) -> 'BooleanExpression':
-        return self.array_contains(other)
 
     @staticmethod
     def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
@@ -709,9 +703,6 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
     def __len__(self) -> NumberExpression:
         raise ValueError("Column type unknown, instead use 'string_size' or 'array_length'")
-
-    def contains(self, other: ExpressionType) -> 'BooleanExpression':
-        raise ValueError("Column type unknown, instead use 'string_contains' or 'array_contains'")
 
     def get_kusto_type(self) -> KustoType:
         raise ValueError("Column type unknown")

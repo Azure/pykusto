@@ -9,11 +9,11 @@ class TestExpressions(TestBase):
     def test_contains(self):
         self.assertEqual(
             ' | where foo contains "bar"',
-            Query().where(col.foo.string_contains('bar')).render(),
+            Query().where(col.foo.contains('bar')).render(),
         )
         self.assertEqual(
             ' | where foo contains_cs "bar"',
-            Query().where(col.foo.string_contains('bar', True)).render(),
+            Query().where(col.foo.contains('bar', True)).render(),
         )
 
     def test_not_contains(self):
@@ -65,7 +65,7 @@ class TestExpressions(TestBase):
     def test_mapping_access_yields_any_expression(self):
         self.assertEqual(
             ' | where (dict["key"]) contains "substr"',
-            Query().where(col.dict['key'].string_contains("substr")).render(),
+            Query().where(col.dict['key'].contains("substr")).render(),
         )
 
     def test_dynamic(self):

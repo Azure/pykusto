@@ -52,10 +52,10 @@ DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in KustoType}
 
 def get_base_types(obj: Any) -> Set[KustoType]:
     """
-    For a given object, return the associated basic type, which is a member of `KustoTypes`
+    For a given object, return the associated basic type, which is a member of :class:`KustoType`
 
     :param obj: The given object for which the type is resolved
-    :return: A type which is a member of `KustoTypes`
+    :return: A type which is a member of `KustoType`
     """
     for kusto_type in KustoType:
         if kusto_type.is_type_of(obj):
@@ -72,7 +72,7 @@ def get_base_types(obj: Any) -> Set[KustoType]:
 
 class TypeRegistrar:
     """
-    A factory for annotations that are used to create a mapping between Kusto types and python types and functions.
+    A factory for annotations that are used to create a mapping between Kusto types and python types / functions.
     Each annotation must be called with a Kusto type as a parameter. The `for_obj` and `for_type` methods
     can then be used to retrieve the python type or function corresponding to a given Kusto type.
     """

@@ -30,14 +30,6 @@ class Retriever:
     def _new_item(self, name: str) -> Any:
         raise NotImplementedError()
 
-    def _get_item(self, name: str) -> Any:
-        if self._items is None:
-            return self._new_item(name)
-        resolved_item = self._items.get(name)
-        if resolved_item is None:
-            return self._new_item(name)
-        return resolved_item
-
     def __getattr__(self, name: str) -> Any:
         """
         Convenience function for retrieving an item using dot notation.

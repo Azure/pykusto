@@ -218,6 +218,16 @@ class TestTable(TestBase):
         self.assertEqual(AnyTypeColumn, type(table['baz']))
         self.assertEqual(AnyTypeColumn, type(db['other_table']['foo']))
 
+    def test_table_retrieve_error(self):
+        mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])]))
+        db = PyKustoClient(mock_kusto_client)['test_db']
+        db.refresh()
+        db.wait_for_items()  # Avoid race condition
+        self.assertRaises(
+            AttributeError("PyKustoClient(test_cluster.kusto.windows.net).Database(test_db) has no attribute 'test_table_1'"),
+            lambda: db.test_table_1
+        )
+
     def test_two_tables_retrieve(self):
         mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([
             ('test_table_1', [('foo', KustoType.STRING), ('bar', KustoType.INT)]),

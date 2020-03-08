@@ -40,12 +40,11 @@ class Retriever:
         :param name: Name of item retrieve
         :return: The retrieved item
         """
-        if self._items is None:
-            raise AttributeError()
-        resolved_item = self._items.get(name)
-        if resolved_item is None:
-            raise AttributeError()
-        return resolved_item
+        if self._items is not None:
+            resolved_item = self._items.get(name)
+            if resolved_item is not None:
+                return resolved_item
+        raise AttributeError(f"{self} has no attribute '{name}'")
 
     def __getitem__(self, name: str) -> Any:
         """

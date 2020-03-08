@@ -63,6 +63,7 @@ class PyKustoClient(ItemFetcher):
         return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
+        # Retrieves database names, table names, column names and types for all databases. A database name is required by the "execute" method, but is ignored for this query
         res: KustoResponseDataSet = self.execute('', KQL('.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000'))
         database_to_table_to_columns = defaultdict(lambda: defaultdict(list))
         for database_name, table_name, column_name, column_type in res.primary_results[0].rows:
@@ -120,6 +121,7 @@ class Database(ItemFetcher):
         return Table(self, tables, fetch_by_default=self._fetch_by_default)
 
     def _internal_get_items(self) -> Dict[str, 'Table']:
+        # Retrieves table names, column names and types for this database only (the database name is added in the "execute" method)
         res: KustoResponseDataSet = self.execute(KQL('.show database schema | project TableName, ColumnName, ColumnType | limit 10000'))
         table_to_columns = defaultdict(list)
         for table_name, column_name, column_type in res.primary_results[0].rows:
@@ -198,6 +200,7 @@ class Table(ItemFetcher):
 
     def _internal_get_items(self) -> Dict[str, Any]:
         # TODO: Handle unions
+        # Retrieves column names and types for this table only
         res: KustoResponseDataSet = self.execute(KQL('.show table {} | project AttributeName, AttributeType | limit 10000'.format(self.get_table())))
         return {
             column_name: typed_column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)

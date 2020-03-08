@@ -13,9 +13,10 @@ class ItemFetcher:
     Abstract class that caches a collection of items, fetching them in certain scenarios.
     """
     _fetch_by_default: bool
-    _items: Union[None, Dict[str, Any]]
-    _future: Union[None, Future]
-    _lock: Lock
+    __items: Union[None, Dict[str, Any]]
+    __future: Union[None, Future]
+    __item_write_lock: Lock
+    __item_fetch_lock: Lock
 
     def __new__(cls, *args, **kwargs):
         if cls is 'ItemFetcher':
@@ -28,12 +29,16 @@ class ItemFetcher:
         :param fetch_by_default: When true, items will be fetched in the constructor, but only if they were not supplied as a parameter. Subclasses are encouraged to pass
                                     on the value of "fetch_by_default" to child ItemFetchers.
         """
-        self._lock = Lock()
-        self._future = None
         self._fetch_by_default = fetch_by_default
-        self._items = items
+        self.__items = items
+        self.__future = None
+        self.__item_write_lock = Lock()
+        self.__item_fetch_lock = Lock()
         if items is None and fetch_by_default:
             self.refresh()
+
+    def get_item_names(self):
+        return tuple(self.__items.keys())
 
     def _new_item(self, name: str) -> Any:
         raise NotImplementedError()
@@ -59,43 +64,51 @@ class ItemFetcher:
         :param name: Name of item to return
         :return: The item with the given name
         """
-        return self._get_item(name, lambda: self._new_item(name))
+        return self._get_item(name, lambda: self.__generate_and_save_new_item(name))
+
+    def __generate_and_save_new_item(self, name):
+        item = self._new_item(name)
+        with self.__item_write_lock:
+            if self.__items is None:
+                self.__items = {}
+            self.__items[name] = item
+        return item
 
     def _get_item(self, name: str, fallback: Callable) -> Any:
-        if self._items is not None:
-            resolved_item = self._items.get(name)
+        if self.__items is not None:
+            resolved_item = self.__items.get(name)
             if resolved_item is not None:
                 return resolved_item
         return fallback()
 
     def __dir__(self) -> Iterable[str]:
-        return sorted(chain(super().__dir__(), tuple() if self._items is None else self._items.keys()))
+        return sorted(chain(super().__dir__(), tuple() if self.__items is None else self.__items.keys()))
 
     def refresh(self):
         """
         Fetches all items in a separate thread, making them available after the tread finishes executing. The 'wait_for_items' method can be used to wait for that to happen.
         The specific logic for fetching is defined in concrete subclasses.
         """
-        self._future = POOL.submit(self._get_items)
-        self._future.add_done_callback(self._set_items)
+        self.__future = POOL.submit(self._get_items)
+        self.__future.add_done_callback(self._set_items)
 
     def wait_for_items(self):
         """
         If item fetching is currently in progress, wait until it is done and return, otherwise return immediately.
         If several fetching threads are in progress, wait for the most recent one.
         """
-        if self._future is not None:
-            wait((self._future,))
+        if self.__future is not None:
+            wait((self.__future,))
 
     def _set_items(self, future: Future):
-        with self._lock:
-            self._items = future.result()
+        with self.__item_write_lock:
+            self.__items = future.result()
 
     def _internal_get_items(self) -> Dict[str, Any]:
         raise NotImplementedError()
 
     def _get_items(self) -> Dict[str, Any]:
-        with self._lock:
+        with self.__item_write_lock:
             return self._internal_get_items()
 
 

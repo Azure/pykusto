@@ -53,7 +53,7 @@ class PyKustoClient(ItemFetcher):
         return self._client.execute(database, query, properties)
 
     def show_databases(self) -> Tuple[str, ...]:
-        return tuple(self._items.keys())
+        return self.get_item_names()
 
     def get_cluster_name(self) -> str:
         return self._cluster_name
@@ -114,7 +114,7 @@ class Database(ItemFetcher):
         return self.client.execute(self.name, query, properties)
 
     def show_tables(self) -> Tuple[str, ...]:
-        return tuple(self._items.keys())
+        return self.get_item_names()
 
     def get_tables(self, *tables: str):
         return Table(self, tables, fetch_by_default=self._fetch_by_default)
@@ -192,6 +192,9 @@ class Table(ItemFetcher):
 
     def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
         return self.database.execute(rendered_query)
+
+    def show_columns(self):
+        return self.get_item_names()
 
     def _internal_get_items(self) -> Dict[str, Any]:
         # TODO: Handle unions

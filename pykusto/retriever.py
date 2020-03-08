@@ -1,7 +1,7 @@
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from itertools import chain
 from threading import Lock
-from typing import Union, Dict, Any, Iterable
+from typing import Union, Dict, Any, Iterable, Callable
 
 # Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
 # Also, this makes it easy to use more than one thread, if the need ever arises.
@@ -40,11 +40,7 @@ class Retriever:
         :param name: Name of item retrieve
         :return: The retrieved item
         """
-        if self._items is not None:
-            resolved_item = self._items.get(name)
-            if resolved_item is not None:
-                return resolved_item
-        raise AttributeError(f"{self} has no attribute '{name}'")
+        return self._get_item(name, lambda: _raise(AttributeError(f"{self} has no attribute '{name}'")))
 
     def __getitem__(self, name: str) -> Any:
         """
@@ -54,12 +50,14 @@ class Retriever:
         :param name: Name of item retrieve
         :return: The retrieved item
         """
-        if self._items is None:
-            return self._new_item(name)
-        resolved_item = self._items.get(name)
-        if resolved_item is None:
-            return self._new_item(name)
-        return resolved_item
+        return self._get_item(name, lambda: self._new_item(name))
+
+    def _get_item(self, name: str, fallback: Callable) -> Any:
+        if self._items is not None:
+            resolved_item = self._items.get(name)
+            if resolved_item is not None:
+                return resolved_item
+        return fallback()
 
     def __dir__(self) -> Iterable[str]:
         return sorted(chain(super().__dir__(), tuple() if self._items is None else self._items.keys()))
@@ -83,3 +81,7 @@ class Retriever:
     def _get_items(self) -> Dict[str, Any]:
         with self._lock:
             return self._internal_get_items()
+
+
+def _raise(e: BaseException):
+    raise e

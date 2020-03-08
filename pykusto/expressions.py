@@ -116,6 +116,9 @@ class BaseExpression:
         return AssignmentToSingleColumn(column, self)
 
     def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
+        """
+        This method exists for the sole purpose of providing an informative error message.
+        """
         raise ValueError("Only arrays can be assigned to multiple columns")
 
     def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentBase':

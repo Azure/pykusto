@@ -163,6 +163,12 @@ class TestQuery(TestBase):
             Query().extend(col.foo.assign_to(col.foo1, col.foo2), shoo=col.bar * 4).render(),
         )
 
+    def test_extend_assign_non_array_to_multiple_columns(self):
+        self.assertRaises(
+            ValueError("Only arrays can be assigned to multiple columns"),
+            lambda: Query().extend(f.strcat("hello", "world").assign_to(col.foo1, col.foo2)).render(),
+        )
+
     def test_extend_generate_column_name(self):
         self.assertEqual(
             " | extend v1 + v2, foo = bar * 4",

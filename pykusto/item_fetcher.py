@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from itertools import chain
 from threading import Lock
@@ -8,7 +9,7 @@ from typing import Union, Dict, Any, Iterable, Callable
 POOL = ThreadPoolExecutor(max_workers=1)
 
 
-class ItemFetcher:
+class ItemFetcher(metaclass=ABCMeta):
     """
     Abstract class that caches a collection of items, fetching them in certain scenarios.
     """
@@ -17,11 +18,6 @@ class ItemFetcher:
     __future: Union[None, Future]
     __item_write_lock: Lock
     __item_fetch_lock: Lock
-
-    def __new__(cls, *args, **kwargs):
-        if cls is 'ItemFetcher':
-            raise TypeError("ItemFetcher is abstract")
-        return object.__new__(cls)
 
     def __init__(self, items: Union[None, Dict[str, Any]], fetch_by_default: bool) -> None:
         """
@@ -40,6 +36,7 @@ class ItemFetcher:
     def get_item_names(self):
         return tuple(self.__items.keys())
 
+    @abstractmethod
     def _new_item(self, name: str) -> Any:
         raise NotImplementedError()
 
@@ -104,6 +101,7 @@ class ItemFetcher:
         with self.__item_write_lock:
             self.__items = future.result()
 
+    @abstractmethod
     def _internal_get_items(self) -> Dict[str, Any]:
         raise NotImplementedError()
 

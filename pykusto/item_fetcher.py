@@ -106,7 +106,7 @@ class ItemFetcher(metaclass=ABCMeta):
         raise NotImplementedError()
 
     def _get_items(self) -> Dict[str, Any]:
-        with self.__item_write_lock:
+        with self.__item_fetch_lock:
             return self._internal_get_items()
 
 

@@ -5,8 +5,9 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType, BaseColumn
+    ArrayExpression, ColumnToType, BaseColumn, AnyExpression
 from pykusto.kql_converters import KQL
+from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, get_base_types, KustoType
 
 
@@ -271,11 +272,17 @@ def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionTyp
     common_types = other_types & return_types
     if len(common_types) == 0:
         # If there is not at least one common type, then certainly the arguments are not of the same type
-        raise TypeError("The second and third arguments must be of the same type, but they are: {} and {}".format(
-            ", ".join(t.primary_name for t in return_types),
-            ", ".join(t.primary_name for t in other_types)
-        ))
-    return plain_expression.registry[next(iter(common_types))](
+        logger.warn(
+            "The second and third arguments must be of the same type, but they are: {} and {}. "
+            "If this is a mistake, please report it at https://github.com/Azure/pykusto/issues".format(
+                ", ".join(sorted(t.primary_name for t in return_types)),
+                ", ".join(sorted(t.primary_name for t in other_types))
+            )
+        )
+        expression_type = AnyExpression
+    else:
+        expression_type = plain_expression.registry[next(iter(common_types))]
+    return expression_type(
         KQL('iff({}, {}, {})'.format(to_kql(predicate), to_kql(if_true), to_kql(if_false)))
     )
 
@@ -682,6 +689,7 @@ def toguid(): raise NotImplemented  # TODO
 def tohex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
     return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(to_kql(expr1), to_kql(expr2))))
 
+
 def toint(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL("toint({})".format(to_kql(expr))))
 
@@ -707,6 +715,7 @@ def totimespan(): raise NotImplemented  # TODO
 
 def toupper(expr: StringType) -> StringExpression:
     return expr.upper()
+
 
 # def to_utf8(self): return
 #

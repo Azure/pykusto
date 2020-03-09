@@ -2,7 +2,7 @@ from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
-from pykusto.type_utils import TypeName
+from pykusto.type_utils import KustoType
 from test.test_base import TestBase
 from test.test_table import MockKustoClient
 from test.udf import func, STRINGIFIED
@@ -163,6 +163,12 @@ class TestQuery(TestBase):
             Query().extend(col.foo.assign_to(col.foo1, col.foo2), shoo=col.bar * 4).render(),
         )
 
+    def test_extend_assign_non_array_to_multiple_columns(self):
+        self.assertRaises(
+            ValueError("Only arrays can be assigned to multiple columns"),
+            lambda: Query().extend(f.strcat("hello", "world").assign_to(col.foo1, col.foo2)).render(),
+        )
+
     def test_extend_generate_column_name(self):
         self.assertEqual(
             " | extend v1 + v2, foo = bar * 4",
@@ -203,7 +209,7 @@ class TestQuery(TestBase):
     def test_mv_expand_to_type(self):
         self.assertEqual(
             " | mv-expand a to typeof(string), b to typeof(int), c",
-            Query().mv_expand(f.to_type(col.a, TypeName.STRING), f.to_type(col.b, TypeName.INT), col.c).render(),
+            Query().mv_expand(f.to_type(col.a, KustoType.STRING), f.to_type(col.b, KustoType.INT), col.c).render(),
         )
 
     def test_mv_expand_args(self):
@@ -312,13 +318,13 @@ class TestQuery(TestBase):
     def test_udf(self):
         self.assertEqual(
             " | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_udf(func, StateZone=TypeName.STRING).render(),
+            Query().evaluate_udf(func, StateZone=KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
         self.assertEqual(
             " | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_udf(func, extend=False, StateZone=TypeName.STRING).render(),
+            Query().evaluate_udf(func, extend=False, StateZone=KustoType.STRING).render(),
         )
 
     def test_bag_unpack(self):

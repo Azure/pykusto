@@ -1,13 +1,13 @@
 import json
 from typing import Union
 
-from pykusto.expressions import Column, NumberType, NumberExpression, TimespanType, \
+from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, TimespanType, \
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType
+    ArrayExpression, ColumnToType, BaseColumn
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, get_base_types, TypeName
+from pykusto.type_utils import plain_expression, get_base_types, KustoType
 
 
 # Scalar functions
@@ -26,7 +26,7 @@ def ago(expr: TimespanType) -> DatetimeExpression:
 
 
 def array_length(expr: ArrayType) -> NumberExpression:
-    return expr.array_length()
+    return ArrayExpression(expr).array_length()
 
 
 # def array_slice(): return
@@ -272,10 +272,10 @@ def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionTyp
     if len(common_types) == 0:
         # If there is not at least one common type, then certainly the arguments are not of the same type
         raise TypeError("The second and third arguments must be of the same type, but they are: {} and {}".format(
-            ", ".join(t.__name__ for t in return_types),
-            ", ".join(t.__name__ for t in other_types)
+            ", ".join(t.primary_name for t in return_types),
+            ", ".join(t.primary_name for t in other_types)
         ))
-    return plain_expression.for_type(next(iter(common_types)))(
+    return plain_expression.registry[next(iter(common_types))](
         KQL('iff({}, {}, {})'.format(to_kql(predicate), to_kql(if_true), to_kql(if_false)))
     )
 
@@ -567,7 +567,7 @@ def sign(expr: NumberType) -> NumberExpression:
 #
 #
 def split(string: StringType, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
-    return StringExpression(KQL(string)).split(delimiter, requested_index)
+    return StringExpression(to_kql(string)).split(delimiter, requested_index)
 
 
 def sqrt(expr: NumberType) -> NumberExpression:
@@ -621,7 +621,7 @@ def strcmp(expr1: StringType, expr2: StringType) -> NumberExpression:
 
 
 def string_size(expr: StringType) -> NumberExpression:
-    return NumberExpression(KQL('string_size({})'.format(to_kql(expr))))
+    return StringExpression(expr).string_size()
 
 
 def strlen(expr: StringType) -> NumberExpression:
@@ -772,7 +772,7 @@ def avgif(expr: ExpressionType, predicate: BooleanType) -> NumberAggregationExpr
 #     return
 
 
-def count(col: Column = None) -> NumberAggregationExpression:
+def count(col: AnyTypeColumn = None) -> NumberAggregationExpression:
     res = "count()" if col is None else "count({})".format(col.kql)
     return NumberAggregationExpression(KQL(res))
 
@@ -835,7 +835,7 @@ def percentile(expr: ExpressionType, per: NumberType) -> AggregationExpression:
 
 
 def percentiles(expr: ExpressionType, *pers: NumberType) -> AggregationExpression:
-    res = 'percentiles({}, {})'.format(expr,
+    res = 'percentiles({}, {})'.format(expr.kql,
                                        ', '.join([str(to_kql(per)) for per in pers]))
     return AggregationExpression(KQL(res))
 
@@ -881,5 +881,5 @@ def variancep(expr: ExpressionType) -> AggregationExpression:
 
 
 # Used for mv-expand
-def to_type(column: Column, type_name: TypeName) -> ColumnToType:
+def to_type(column: BaseColumn, type_name: KustoType) -> ColumnToType:
     return ColumnToType(column, type_name)

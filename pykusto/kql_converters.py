@@ -4,17 +4,17 @@ from itertools import chain
 from numbers import Number
 from typing import NewType, Mapping, Union, List, Tuple
 
-from pykusto.type_utils import kql_converter
+from pykusto.type_utils import kql_converter, KustoType
 
 KQL = NewType('KQL', str)
 
 
-@kql_converter(datetime)
+@kql_converter(KustoType.DATETIME)
 def datetime_to_kql(dt: datetime) -> KQL:
     return KQL(dt.strftime('datetime(%Y-%m-%d %H:%M:%S.%f)'))
 
 
-@kql_converter(timedelta)
+@kql_converter(KustoType.TIMESPAN)
 def timedelta_to_kql(td: timedelta) -> KQL:
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
@@ -27,7 +27,7 @@ def timedelta_to_kql(td: timedelta) -> KQL:
     ))
 
 
-@kql_converter(Mapping, List, Tuple)
+@kql_converter(KustoType.ARRAY, KustoType.MAPPING)
 def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     try:
         query = list(json.dumps(d))
@@ -69,21 +69,22 @@ def build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
     return to_kql(d)
 
 
-@kql_converter(bool)
+@kql_converter(KustoType.BOOL)
 def bool_to_kql(b: bool) -> KQL:
     return KQL('true') if b else KQL('false')
 
 
-@kql_converter(str)
+@kql_converter(KustoType.STRING)
 def str_to_kql(s: str) -> KQL:
     return KQL('"{}"'.format(s))
 
 
-@kql_converter(Number)
+@kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL)
 def number_to_kql(n: Number) -> KQL:
     return KQL(str(n))
 
 
-@kql_converter(type(None))
+# noinspection PyUnusedLocal
+@kql_converter(KustoType.NULL)
 def none_to_kql(n: type(None)) -> KQL:
     return KQL("")

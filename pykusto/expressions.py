@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
-from numbers import Number
 from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, KustoTypes, kql_converter, TypeName
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column
 
-ExpressionType = Union[KustoTypes, 'BaseExpression']
+ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
 BooleanType = Union[bool, 'BooleanExpression']
 NumberType = Union[int, float, 'NumberExpression']
@@ -36,6 +35,8 @@ def _subexpr_to_kql(obj: ExpressionType) -> KQL:
 class BaseExpression:
     kql: KQL
 
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one abstract method, which we don't have here.
+    # Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
         if cls is 'BaseExpression':
             raise TypeError("BaseExpression is abstract")
@@ -44,7 +45,8 @@ class BaseExpression:
     def __init__(self, kql: Union[KQL, 'BaseExpression']) -> None:
         if isinstance(kql, BaseExpression):
             self.kql = kql.kql
-        elif not isinstance(kql, str):
+            return
+        if not isinstance(kql, str):
             raise ValueError("Either expression or KQL required")
         self.kql = kql
 
@@ -75,7 +77,7 @@ class BaseExpression:
 
     @staticmethod
     def base_binary_op(
-            left: ExpressionType, operator: str, right: ExpressionType, result_type: Type[KustoTypes]
+            left: ExpressionType, operator: str, right: ExpressionType, result_type: Type[KustoType]
     ) -> 'BaseExpression':
         registrar = plain_expression
         if isinstance(left, AggregationExpression) or isinstance(right, AggregationExpression):
@@ -112,16 +114,25 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
+    def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentToSingleColumn':
+        return AssignmentToSingleColumn(column, self)
+
+    def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
+        """
+        This method exists for the sole purpose of providing an informative error message.
+        """
+        raise ValueError("Only arrays can be assigned to multiple columns")
+
+    def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentBase(None, self)
         if len(columns) == 1:
-            return AssignmentToSingleColumn(columns[0], self)
-        raise ValueError("Only arrays can be assigned to multiple columns")
+            return self.assign_to_single_column(columns[0])
+        return self.assign_to_multiple_columns(*columns)
 
 
-@plain_expression(bool)
+@plain_expression(KustoType.BOOL)
 class BooleanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
@@ -138,12 +149,12 @@ class BooleanExpression(BaseExpression):
         return BooleanExpression(KQL('not({})'.format(self.kql)))
 
 
-@plain_expression(Number)
+@plain_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
 class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, Number)
+        return BaseExpression.base_binary_op(left, operator, right, int)
 
     def __lt__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' < ', other)
@@ -225,16 +236,16 @@ class NumberExpression(BaseExpression):
         return BooleanExpression(KQL('isnan({})'.format(self.kql)))
 
     def log(self) -> 'NumberExpression':
-        return NumberExpression(KQL('log({})'.format(self)))
+        return NumberExpression(KQL('log({})'.format(self.kql)))
 
     def log10(self) -> 'NumberExpression':
-        return NumberExpression(KQL('log10({})'.format(self)))
+        return NumberExpression(KQL('log10({})'.format(self.kql)))
 
     def log2(self) -> 'NumberExpression':
-        return NumberExpression(KQL('log2({})'.format(self)))
+        return NumberExpression(KQL('log2({})'.format(self.kql)))
 
     def loggamma(self) -> 'NumberExpression':
-        return NumberExpression(KQL('loggamma({})'.format(self)))
+        return NumberExpression(KQL('loggamma({})'.format(self.kql)))
 
     def round(self, precision: NumberType = None) -> 'NumberExpression':
         return NumberExpression(KQL(
@@ -242,7 +253,7 @@ class NumberExpression(BaseExpression):
         ))
 
 
-@plain_expression(str)
+@plain_expression(KustoType.STRING)
 class StringExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'StringExpression':
@@ -269,9 +280,9 @@ class StringExpression(BaseExpression):
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
-            return ArrayExpression(KQL('split({}, {})'.format(to_kql(self.kql), to_kql(delimiter))))
+            return ArrayExpression(KQL('split({}, {})'.format(self.kql, to_kql(delimiter))))
         return ArrayExpression(KQL('split({}, {}, {})'.format(
-            to_kql(self.kql), to_kql(delimiter), to_kql(requested_index)
+            self.kql, to_kql(delimiter), to_kql(requested_index)
         )))
 
     def equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
@@ -311,7 +322,7 @@ class StringExpression(BaseExpression):
         return BooleanExpression(KQL('isutf8({})'.format(self.kql)))
 
 
-@plain_expression(datetime)
+@plain_expression(KustoType.DATETIME)
 class DatetimeExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'DatetimeExpression':
@@ -422,7 +433,7 @@ class DatetimeExpression(BaseExpression):
         ))
 
 
-@plain_expression(timedelta)
+@plain_expression(KustoType.TIMESPAN)
 class TimespanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'TimespanExpression':
@@ -458,7 +469,7 @@ class TimespanExpression(BaseExpression):
         )))
 
 
-@plain_expression(List, Tuple)
+@plain_expression(KustoType.ARRAY)
 class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
@@ -469,7 +480,7 @@ class ArrayExpression(BaseExpression):
     def array_length(self) -> NumberExpression:
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
-    def contains(self, other: ExpressionType) -> 'BooleanExpression':
+    def array_contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(other, ' in ', self)
 
     @staticmethod
@@ -478,16 +489,14 @@ class ArrayExpression(BaseExpression):
             ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
         )))
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
-        if len(columns) <= 1:
-            return super().assign_to(*columns)
+    def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentToMultipleColumns':
         return AssignmentToMultipleColumns(columns, self)
 
 
-@plain_expression(Mapping)
+@plain_expression(KustoType.MAPPING)
 class MappingExpression(BaseExpression):
     def __getitem__(self, index: StringType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
 
     def __getattr__(self, name: str) -> 'AnyExpression':
         return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
@@ -516,12 +525,15 @@ class AnyExpression(
 
 
 class AggregationExpression(BaseExpression):
+
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one abstract method, which we don't have here.
+    # Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
         if cls is 'AggregationExpression':
             raise TypeError("AggregationExpression is abstract")
         return object.__new__(cls)
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentFromAggregationToColumn':
+    def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentFromAggregationToColumn':
         if len(columns) == 0:
             # Unspecified column name
             return AssignmentFromAggregationToColumn(None, self)
@@ -533,37 +545,37 @@ class AggregationExpression(BaseExpression):
         return self.kql
 
 
-@aggregation_expression(bool)
+@aggregation_expression(KustoType.BOOL)
 class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
     pass
 
 
-@aggregation_expression(Number)
+@aggregation_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
 class NumberAggregationExpression(AggregationExpression, NumberExpression):
     pass
 
 
-@aggregation_expression(str)
+@aggregation_expression(KustoType.STRING)
 class StringAggregationExpression(AggregationExpression, StringExpression):
     pass
 
 
-@aggregation_expression(datetime)
+@aggregation_expression(KustoType.DATETIME)
 class DatetimeAggregationExpression(AggregationExpression, DatetimeExpression):
     pass
 
 
-@aggregation_expression(timedelta)
+@aggregation_expression(KustoType.TIMESPAN)
 class TimespanAggregationExpression(AggregationExpression, TimespanExpression):
     pass
 
 
-@aggregation_expression(List, Tuple)
+@aggregation_expression(KustoType.ARRAY)
 class ArrayAggregationExpression(AggregationExpression, ArrayExpression):
     pass
 
 
-@aggregation_expression(Mapping)
+@aggregation_expression(KustoType.MAPPING)
 class MappingAggregationExpression(AggregationExpression, MappingExpression):
     pass
 
@@ -583,7 +595,7 @@ class AssignmentBase:
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
     @staticmethod
-    def assign(expression: ExpressionType, *columns: 'Column') -> 'AssignmentBase':
+    def assign(expression: ExpressionType, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
         if len(columns) == 0:
             raise ValueError("Provide at least one column")
         if len(columns) == 1:
@@ -592,52 +604,116 @@ class AssignmentBase:
 
 
 class AssignmentToSingleColumn(AssignmentBase):
-    def __init__(self, column: 'Column', expression: ExpressionType) -> None:
+    def __init__(self, column: 'AnyTypeColumn', expression: ExpressionType) -> None:
         super().__init__(column.kql, expression)
 
 
 class AssignmentFromColumnToColumn(AssignmentToSingleColumn):
-    def __init__(self, target: 'Column', source: 'Column') -> None:
+    def __init__(self, target: 'AnyTypeColumn', source: 'BaseColumn') -> None:
         super().__init__(target, source)
 
 
 class AssignmentToMultipleColumns(AssignmentBase):
-    def __init__(self, columns: Union[List['Column'], Tuple['Column']], expression: ArrayType) -> None:
+    def __init__(self, columns: Union[List['AnyTypeColumn'], Tuple['AnyTypeColumn']], expression: ArrayType) -> None:
         super().__init__(KQL('({})'.format(', '.join(c.kql for c in columns))), expression)
 
 
 class AssignmentFromAggregationToColumn(AssignmentBase):
-    def __init__(self, column: Optional['Column'], aggregation: AggregationExpression) -> None:
+    def __init__(self, column: Optional['AnyTypeColumn'], aggregation: AggregationExpression) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
 
 
-class Column(AnyExpression):
+class BaseColumn(BaseExpression):
     _name: str
+
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one abstract method, which we don't have here.
+    # We can't define "get_kusto_type" as abstract because at least one concrete subclass (NumberColumn) does not override it.
+    # Overriding __new___ is the next best solution.
+    def __new__(cls, *args, **kwargs):
+        if cls is 'BaseColumn':
+            raise TypeError("BaseColumn is abstract")
+        return object.__new__(cls)
 
     def __init__(self, name: str) -> None:
         super().__init__(KQL("['{}']".format(name) if '.' in name else name))
         self._name = name
 
+    def get_name(self) -> str:
+        return self._name
+
     def as_subexpression(self) -> KQL:
         return self.kql
 
-    def __len__(self) -> NumberExpression:
-        raise NotImplementedError("Column type unknown, instead use 'string_size' or 'array_length'")
+    def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentFromColumnToColumn':
+        return AssignmentFromColumnToColumn(column, self)
 
-    def assign_to(self, *columns: 'Column') -> 'AssignmentBase':
-        if len(columns) == 0:
-            return super().assign_to()
-        if len(columns) == 1:
-            return AssignmentFromColumnToColumn(columns[0], self)
-        return ArrayExpression.assign_to(self, *columns)
+    def get_kusto_type(self) -> KustoType:
+        raise NotImplementedError("BaseColumn has no type")
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self._name})'
+
+
+@typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL)
+class NumberColumn(BaseColumn, NumberExpression):
+    pass
+
+
+@typed_column(KustoType.BOOL)
+class BooleanColumn(BaseColumn, BooleanExpression):
+    def get_kusto_type(self) -> KustoType:
+        return KustoType.BOOL
+
+
+@typed_column(KustoType.ARRAY)
+class ArrayColumn(BaseColumn, ArrayExpression):
+    def get_kusto_type(self) -> KustoType:
+        return KustoType.ARRAY
+
+
+@typed_column(KustoType.MAPPING)
+class MappingColumn(BaseColumn, MappingExpression):
+    def get_kusto_type(self) -> KustoType:
+        return KustoType.MAPPING
+
+
+class DynamicColumn(ArrayColumn, MappingColumn):
+    def get_kusto_type(self) -> KustoType:
+        raise ValueError("Column type unknown")
+
+
+@typed_column(KustoType.STRING)
+class StringColumn(BaseColumn, StringExpression):
+    def get_kusto_type(self) -> KustoType:
+        return KustoType.STRING
+
+
+@typed_column(KustoType.DATETIME)
+class DatetimeColumn(BaseColumn, DatetimeExpression):
+    def get_kusto_type(self) -> KustoType:
+        return KustoType.DATETIME
+
+
+@typed_column(KustoType.TIMESPAN)
+class TimespanColumn(BaseColumn, TimespanExpression):
+    def get_kusto_type(self) -> KustoType:
+        return KustoType.TIMESPAN
+
+
+class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
+    def __len__(self) -> NumberExpression:
+        raise ValueError("Column type unknown, instead use 'string_size' or 'array_length'")
+
+    def get_kusto_type(self) -> KustoType:
+        raise ValueError("Column type unknown")
 
 
 class ColumnGenerator:
-    def __getattr__(self, name: str) -> Column:
-        return Column(name)
+    def __getattr__(self, name: str) -> AnyTypeColumn:
+        return AnyTypeColumn(name)
 
-    def __getitem__(self, name: str) -> Column:
-        return Column(name)
+    def __getitem__(self, name: str) -> AnyTypeColumn:
+        return AnyTypeColumn(name)
 
 
 # Recommended usage: from pykusto.expressions import column_generator as col
@@ -646,8 +722,8 @@ column_generator = ColumnGenerator()
 
 
 class ColumnToType(BaseExpression):
-    def __init__(self, col: Column, type_name: TypeName) -> None:
-        super().__init__(KQL("{} to typeof({})".format(col.kql, type_name.value)))
+    def __init__(self, col: BaseColumn, kusto_type: KustoType) -> None:
+        super().__init__(KQL("{} to typeof({})".format(col.kql, kusto_type.primary_name)))
 
 
 def to_kql(obj: ExpressionType) -> KQL:

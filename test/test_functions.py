@@ -1,7 +1,9 @@
-import datetime
+import logging
+from datetime import datetime, timedelta
 
 from pykusto import functions as f
 from pykusto.expressions import column_generator as col
+from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase
 
@@ -18,7 +20,7 @@ class TestFunction(TestBase):
     def test_ago(self):
         self.assertEqual(
             " | where foo > (ago(time(4.0:0:0.0)))",
-            Query().where(col.foo > f.ago(datetime.timedelta(4))).render()
+            Query().where(col.foo > f.ago(timedelta(4))).render()
         )
         self.assertEqual(
             " | where foo > (ago(timespan))",
@@ -58,31 +60,31 @@ class TestFunction(TestBase):
     def test_endofday(self):
         self.assertEqual(
             " | where (endofday(foo)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofday(col.foo) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.endofday(col.foo) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofday(foo, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofday(col.foo, 2) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.endofday(col.foo, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_endofmonth(self):
         self.assertEqual(
             " | where (endofmonth(foo)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofmonth(col.foo) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.endofmonth(col.foo) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofmonth(foo, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofmonth(col.foo, 2) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.endofmonth(col.foo, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_endofweek(self):
         self.assertEqual(
             " | where (endofweek(foo)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofweek(col.foo) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.endofweek(col.foo) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofweek(foo, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofweek(col.foo, 2) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.endofweek(col.foo, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_exp(self):
@@ -106,7 +108,7 @@ class TestFunction(TestBase):
     def test_floor(self):
         self.assertEqual(
             " | where (floor(foo, time(0.12:0:0.0))) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.floor(col.foo, datetime.timedelta(0.5)) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.floor(col.foo, timedelta(0.5)) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (floor(foo, 0.1)) > 3",
@@ -240,22 +242,21 @@ class TestFunction(TestBase):
     def test_make_datetime(self):
         self.assertEqual(
             " | where (make_datetime(y, m, d, 0, 0, 0)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.make_datetime(col.y, col.m, col.d) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.make_datetime(col.y, col.m, col.d) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (make_datetime(y, m, d, h, 0, 0)) > datetime(2019-07-23 05:00:00.000000)",
-            Query().where(f.make_datetime(col.y, col.m, col.d, col.h) > datetime.datetime(2019, 7, 23, 5)).render()
+            Query().where(f.make_datetime(col.y, col.m, col.d, col.h) > datetime(2019, 7, 23, 5)).render()
         )
         self.assertEqual(
             " | where (make_datetime(y, m, d, h, min, 0)) > datetime(2019-07-23 05:29:00.000000)",
             Query().where(
-                f.make_datetime(col.y, col.m, col.d, col.h, col.min) > datetime.datetime(2019, 7, 23, 5, 29)).render()
+                f.make_datetime(col.y, col.m, col.d, col.h, col.min) > datetime(2019, 7, 23, 5, 29)).render()
         )
         self.assertEqual(
             " | where (make_datetime(y, m, d, h, min, sec)) > datetime(2019-07-23 05:29:15.000000)",
             Query().where(
-                f.make_datetime(col.y, col.m, col.d, col.h, col.min, col.sec) > datetime.datetime(2019, 7, 23, 5, 29,
-                                                                                                  15)).render()
+                f.make_datetime(col.y, col.m, col.d, col.h, col.min, col.sec) > datetime(2019, 7, 23, 5, 29, 15)).render()
         )
 
     def test_now(self):
@@ -265,7 +266,7 @@ class TestFunction(TestBase):
         )
         self.assertEqual(
             " | where foo < (now(time(-3.0:0:0.0)))",
-            Query().where(col.foo < f.now(datetime.timedelta(-3))).render()
+            Query().where(col.foo < f.now(timedelta(-3))).render()
         )
 
     def test_parse_json_to_string(self):
@@ -330,25 +331,25 @@ class TestFunction(TestBase):
     def test_startofday(self):
         self.assertEqual(
             " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.startofday(col.foo) > datetime.datetime(2019, 7, 23)).render()
+            Query().where(f.startofday(col.foo) > datetime(2019, 7, 23)).render()
         )
 
     def test_startofmonth(self):
         self.assertEqual(
             " | where (startofmonth(foo)) > datetime(2019-07-01 00:00:00.000000)",
-            Query().where(f.startofmonth(col.foo) > datetime.datetime(2019, 7, 1)).render()
+            Query().where(f.startofmonth(col.foo) > datetime(2019, 7, 1)).render()
         )
 
     def test_startofweek(self):
         self.assertEqual(
             " | where (startofweek(foo)) > datetime(2019-07-08 00:00:00.000000)",
-            Query().where(f.startofweek(col.foo) > datetime.datetime(2019, 7, 8)).render()
+            Query().where(f.startofweek(col.foo) > datetime(2019, 7, 8)).render()
         )
 
     def test_startofyear(self):
         self.assertEqual(
             " | where (startofyear(foo)) > datetime(2019-01-01 00:00:00.000000)",
-            Query().where(f.startofyear(col.foo) > datetime.datetime(2019, 1, 1)).render()
+            Query().where(f.startofyear(col.foo) > datetime(2019, 1, 1)).render()
         )
 
     def test_strcat(self):
@@ -451,10 +452,10 @@ class TestFunction(TestBase):
 
     # def test_todatetime(self):
     #     self.assertEqual(
-    #         Query().where(f.todatetime(col.foo) > datetime.datetime(2019, 7, 23)).render(),
+    #         Query().where(f.todatetime(col.foo) > datetime(2019, 7, 23)).render(),
     #         " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)")
     #     self.assertEqual(
-    #         Query().where(f.todatetime('') > datetime.datetime(2019, 7, 23)).render(),
+    #         Query().where(f.todatetime('') > datetime(2019, 7, 23)).render(),
     #         " | where (startofday(foo)) > datetime(2019-07-23 00:00:00.000000)")
     # def todatetime(expr: StringType) -> DatetimeExpression:
     #     return DatetimeExpression(KQL('todatetime({})'.format(_subexpr_to_kql(expr))))
@@ -470,7 +471,6 @@ class TestFunction(TestBase):
             " | where (todecimal(foo)) > 0.2",
             Query().where(f.todecimal(col.foo) > 0.2).render()
         )
-
 
     def test_toint(self):
         self.assertEqual(
@@ -502,13 +502,11 @@ class TestFunction(TestBase):
             Query().where(f.toupper(col.foo) == "FOO").render()
         )
 
-
     def test_tohex(self):
         self.assertEqual(
             ' | where (tohex(256)) == "100"',
             Query().where(f.tohex(256) == "100").render()
         )
-
 
     # ------------------------------------------------------
     # Aggregative Functions
@@ -555,7 +553,7 @@ class TestFunction(TestBase):
         )
         self.assertEqual(
             " | summarize avg(foo) by bin(bar, time(0.12:0:0.0))",
-            Query().summarize(f.avg(col.foo)).by(f.bin(col.bar, datetime.timedelta(0.5))).render()
+            Query().summarize(f.avg(col.foo)).by(f.bin(col.bar, timedelta(0.5))).render()
         )
 
     def test_bin_at(self):
@@ -566,14 +564,14 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize avg(foo) by bin_at(bar, time(0.12:0:0.0), time(0.2:24:0.0))",
             Query().summarize(f.avg(col.foo)).by(f.bin_at(col.bar,
-                                                          datetime.timedelta(0.5),
-                                                          datetime.timedelta(0.1))).render()
+                                                          timedelta(0.5),
+                                                          timedelta(0.1))).render()
         )
         self.assertEqual(
             " | summarize avg(foo) by bin_at(bar, time(0.12:0:0.0), datetime(2019-07-08 00:00:00.000000))",
             Query().summarize(f.avg(col.foo)).by(f.bin_at(col.bar,
-                                                          datetime.timedelta(0.5),
-                                                          datetime.datetime(2019, 7, 8))).render()
+                                                          timedelta(0.5),
+                                                          datetime(2019, 7, 8))).render()
         )
 
     def test_bin_auto(self):
@@ -719,40 +717,57 @@ class TestFunction(TestBase):
     def test_nesting(self):
         self.assertEqual(
             " | summarize active_days = dcount(bin(timestamp, time(1.0:0:0.0)))",
-            Query().summarize(active_days=f.dcount(f.bin(col.timestamp, datetime.timedelta(1)))).render()
+            Query().summarize(active_days=f.dcount(f.bin(col.timestamp, timedelta(1)))).render()
         )
 
     def test_iff(self):
         self.assertEqual(
             " | project foo = iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0))",
-            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3),
-                                      datetime.timedelta(4))).render()
+            Query().project(foo=f.iff(col.foo > f.ago(timedelta(2)), timedelta(3),
+                                      timedelta(4))).render()
         )
 
     def test_iff_expression_return_type(self):
         self.assertEqual(
             " | project foo = iff(foo > (ago(time(2.0:0:0.0))), array_length(bar), array_length(baz))",
-            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), f.array_length(col.bar),
+            Query().project(foo=f.iff(col.foo > f.ago(timedelta(2)), f.array_length(col.bar),
                                       f.array_length(col.baz))).render()
         )
 
     def test_iff_different_types(self):
-        self.assertRaises(
-            TypeError("The second and third arguments must be of the same type, but they are: timespan and string"),
-            lambda: Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3), "hello"))
-                .render()
+        with self.assertLogs(logger, logging.WARN) as cm:
+            self.assertEqual(
+                ' | project foo = iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), "hello")',
+                Query().project(foo=f.iff(col.foo > f.ago(timedelta(2)), timedelta(3), "hello")).render()
+            )
+        self.assertEqual(
+            ['WARNING:pykusto:The second and third arguments must be of the same type, but they are: timespan and string. '
+             'If this is a mistake, please report it at https://github.com/Azure/pykusto/issues'],
+            cm.output
+        )
+
+    def test_iff_different_types_substract(self):
+        with self.assertLogs(logger, logging.WARN) as cm:
+            self.assertEqual(
+                ' | project foo = iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), day1 - day2)',
+                Query().project(foo=f.iff(col.foo > f.ago(timedelta(2)), timedelta(3), col.day1 - col.day2)).render()
+            )
+        self.assertEqual(
+            ['WARNING:pykusto:The second and third arguments must be of the same type, but they are: timespan and int, long, real. '
+             'If this is a mistake, please report it at https://github.com/Azure/pykusto/issues'],
+            cm.output
         )
 
     def test_iff_related_types(self):
         self.assertEqual(
             " | project foo = iff(foo > (ago(time(2.0:0:0.0))), 2, array_length(bar))",
-            Query().project(foo=f.iff(col.foo > f.ago(datetime.timedelta(2)), 2, f.array_length(col.bar))).render()
+            Query().project(foo=f.iff(col.foo > f.ago(timedelta(2)), 2, f.array_length(col.bar))).render()
         )
 
     def test_iif(self):
         # iif is just an alias to iff
         self.assertEqual(
             " | project foo = iff(foo > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0))",
-            Query().project(foo=f.iif(col.foo > f.ago(datetime.timedelta(2)), datetime.timedelta(3),
-                                      datetime.timedelta(4))).render()
+            Query().project(foo=f.iif(col.foo > f.ago(timedelta(2)), timedelta(3),
+                                      timedelta(4))).render()
         )

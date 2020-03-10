@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run lint" type="ShConfigurationType">
     <option name="SCRIPT_PATH" value="$PROJECT_DIR$/venv/Scripts/flake8.exe" />
-    <option name="SCRIPT_OPTIONS" value=". --count --select=E9,F63,F7,F82 --show-source --statistics" />
+    <option name="SCRIPT_OPTIONS" value=". --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=build,venv" />
     <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="INTERPRETER_PATH" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />

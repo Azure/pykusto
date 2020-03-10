@@ -13,6 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     keywords="kusto client library query",
     install_requires=['azure-kusto-data==0.0.36'],
+    tests_require=['flake8'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

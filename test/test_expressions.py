@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query
@@ -50,6 +50,18 @@ class TestExpressions(TestBase):
             Query().extend(boolFoo=col.foo.to_bool()).render(),
         )
 
+    def test_to_int(self):
+        self.assertEqual(
+            ' | extend intFoo = toint(foo)',
+            Query().extend(intFoo=col.foo.to_int()).render(),
+        )
+
+    def test_to_long(self):
+        self.assertEqual(
+            ' | extend longFoo = tolong(foo)',
+            Query().extend(longFoo=col.foo.to_long()).render(),
+        )
+
     def test_and(self):
         self.assertEqual(
             ' | where foo and (bar contains "hello")',
@@ -98,12 +110,6 @@ class TestExpressions(TestBase):
             Query().extend(foo=abs(col.bar)).render(),
         )
 
-    def test_str_len(self):
-        self.assertEqual(
-            ' | extend foo = string_size(bar)',
-            Query().extend(foo=col.bar.string_size()).render(),
-        )
-
     def test_str_equals(self):
         self.assertEqual(
             ' | where foo =~ bar',
@@ -132,6 +138,12 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | where foo endswith "hello"',
             Query().where(col.foo.endswith("hello")).render(),
+        )
+
+    def test_lt_date(self):
+        self.assertEqual(
+            ' | where foo <= datetime(2000-01-01 00:00:00.000000)',
+            Query().where(col.foo <= datetime(2000, 1, 1)).render(),
         )
 
     def test_array_access_expression_index(self):

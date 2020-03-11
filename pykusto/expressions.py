@@ -260,9 +260,7 @@ class NumberExpression(BaseExpression):
 
 @plain_expression(KustoType.STRING)
 class StringExpression(BaseExpression):
-    def __len__(self) -> NumberExpression:
-        return self.string_size()
-
+    # We would like to allow using len(), but Python requires it to return an int, so we can't
     def string_size(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
 
@@ -456,9 +454,7 @@ class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
         return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
 
-    def __len__(self) -> NumberExpression:
-        return self.array_length()
-
+    # We would like to allow using len(), but Python requires it to return an int, so we can't
     def array_length(self) -> NumberExpression:
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
@@ -685,9 +681,6 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 
 
 class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
-    def __len__(self) -> NumberExpression:
-        raise ValueError("Column type unknown, instead use 'string_size' or 'array_length'")
-
     def get_kusto_type(self) -> KustoType:
         raise ValueError("Column type unknown")
 

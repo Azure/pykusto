@@ -3,7 +3,18 @@ import sys
 from typing import Callable
 from unittest import TestCase
 
+from pykusto.client import Table
+from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, MappingColumn, StringColumn, DatetimeColumn, TimespanColumn
 from pykusto.logger import logger
+
+# noinspection PyTypeChecker
+TEST_TABLE = Table(
+    None, "test_table",
+    (
+        NumberColumn('numberField'), BooleanColumn('booleanField'), ArrayColumn('arrayField'), MappingColumn('mappingField'), StringColumn('stringField'),
+        DatetimeColumn('datetimeField'), TimespanColumn('timespanField')
+    )
+)
 
 
 class TestBase(TestCase):

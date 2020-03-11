@@ -2,7 +2,7 @@ from datetime import timedelta, datetime
 
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query
-from test.test_base import TestBase
+from test.test_base import TestBase, TEST_TABLE as t
 
 
 class TestExpressions(TestBase):
@@ -142,8 +142,8 @@ class TestExpressions(TestBase):
 
     def test_le_date(self):
         self.assertEqual(
-            ' | where foo <= datetime(2000-01-01 00:00:00.000000)',
-            Query().where(col.foo <= datetime(2000, 1, 1)).render(),
+            'test_table | where datetimeField <= datetime(2000-01-01 00:00:00.000000)',
+            Query(t).where(t.datetimeField <= datetime(2000, 1, 1)).render(),
         )
 
     def test_lt_date(self):

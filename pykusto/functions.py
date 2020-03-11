@@ -5,7 +5,7 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType, BaseColumn, AnyExpression
+    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, get_base_types, KustoType
@@ -111,7 +111,7 @@ def case(predicate: BooleanType, val: ExpressionType, *args: Union[BooleanType, 
     res = 'case({}, {}, {})'.format(
         to_kql(predicate), to_kql(val), ', '.join([to_kql(arg) for arg in args])
     )
-    return AggregationExpression(KQL(res))
+    return AnyAggregationExpression(KQL(res))
 
 
 def ceiling(expr: NumberType) -> NumberExpression:
@@ -272,7 +272,7 @@ def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionTyp
     common_types = other_types & return_types
     if len(common_types) == 0:
         # If there is not at least one common type, then certainly the arguments are not of the same type
-        logger.warn(
+        logger.warning(
             "The second and third arguments must be of the same type, but they are: {} and {}. "
             "If this is a mistake, please report it at https://github.com/Azure/pykusto/issues".format(
                 ", ".join(sorted(t.primary_name for t in return_types)),
@@ -754,19 +754,20 @@ def zip(): raise NotImplemented  # TODO
 # aggregative functions
 # -----------------------------------------------------
 
-def any(*args: ExpressionType) -> AggregationExpression:
+# noinspection PyShadowingBuiltins
+def any(*args: ExpressionType) -> AnyAggregationExpression:
     res = 'any({})'.format(', '.join([arg.kql for arg in args]))
-    return AggregationExpression(KQL(res))
+    return AnyAggregationExpression(KQL(res))
 
 
-def arg_max(*args: ExpressionType) -> AggregationExpression:
+def arg_max(*args: ExpressionType) -> AnyAggregationExpression:
     res = 'arg_max({})'.format(', '.join([arg.kql for arg in args]))
-    return AggregationExpression(KQL(res))
+    return AnyAggregationExpression(KQL(res))
 
 
-def arg_min(*args: ExpressionType) -> AggregationExpression:
+def arg_min(*args: ExpressionType) -> AnyAggregationExpression:
     res = 'arg_min({})'.format(', '.join([arg.kql for arg in args]))
-    return AggregationExpression(KQL(res))
+    return AnyAggregationExpression(KQL(res))
 
 
 def avg(expr: ExpressionType) -> NumberAggregationExpression:
@@ -831,42 +832,42 @@ def make_set(expr: ExpressionType, max_size: NumberType = None) -> ArrayAggregat
 
 
 def max(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('max({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('max({})'.format(to_kql(expr))))
 
 
 def min(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('min({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('min({})'.format(to_kql(expr))))
 
 
 def percentile(expr: ExpressionType, per: NumberType) -> AggregationExpression:
     res = 'percentiles({}, {})'.format(expr, to_kql(per))
-    return AggregationExpression(KQL(res))
+    return AnyAggregationExpression(KQL(res))
 
 
 def percentiles(expr: ExpressionType, *pers: NumberType) -> AggregationExpression:
     res = 'percentiles({}, {})'.format(expr.kql,
                                        ', '.join([str(to_kql(per)) for per in pers]))
-    return AggregationExpression(KQL(res))
+    return AnyAggregationExpression(KQL(res))
 
 
 def stdev(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('stdev({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('stdev({})'.format(to_kql(expr))))
 
 
 def stdevif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
-    return AggregationExpression(KQL('stdevif({}, {})'.format(to_kql(expr), to_kql(predicate))))
+    return AnyAggregationExpression(KQL('stdevif({}, {})'.format(to_kql(expr), to_kql(predicate))))
 
 
 def stdevp(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('stdevp({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('stdevp({})'.format(to_kql(expr))))
 
 
 def sum(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('sum({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('sum({})'.format(to_kql(expr))))
 
 
 def sumif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
-    return AggregationExpression(KQL('sumif({}, {})'.format(to_kql(expr), to_kql(predicate))))
+    return AnyAggregationExpression(KQL('sumif({}, {})'.format(to_kql(expr), to_kql(predicate))))
 
 
 # def tdigest(self):
@@ -878,15 +879,15 @@ def sumif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression
 
 
 def variance(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('variance({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('variance({})'.format(to_kql(expr))))
 
 
 def varianceif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
-    return AggregationExpression(KQL('varianceif({}, {})'.format(to_kql(expr), to_kql(predicate))))
+    return AnyAggregationExpression(KQL('varianceif({}, {})'.format(to_kql(expr), to_kql(predicate))))
 
 
 def variancep(expr: ExpressionType) -> AggregationExpression:
-    return AggregationExpression(KQL('variancep({})'.format(to_kql(expr))))
+    return AnyAggregationExpression(KQL('variancep({})'.format(to_kql(expr))))
 
 
 # Used for mv-expand

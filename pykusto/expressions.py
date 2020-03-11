@@ -3,7 +3,8 @@ from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, \
+    typed_column
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -35,10 +36,10 @@ def _subexpr_to_kql(obj: ExpressionType) -> KQL:
 class BaseExpression:
     kql: KQL
 
-    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one abstract method, which we don't have here.
-    # Overriding __new___ is the next best solution.
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
+    # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is 'BaseExpression':
+        if cls is BaseExpression:
             raise TypeError("BaseExpression is abstract")
         return object.__new__(cls)
 
@@ -526,10 +527,10 @@ class AnyExpression(
 
 class AggregationExpression(BaseExpression):
 
-    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one abstract method, which we don't have here.
-    # Overriding __new___ is the next best solution.
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
+    # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is 'AggregationExpression':
+        if cls is AggregationExpression:
             raise TypeError("AggregationExpression is abstract")
         return object.__new__(cls)
 
@@ -572,6 +573,10 @@ class TimespanAggregationExpression(AggregationExpression, TimespanExpression):
 
 @aggregation_expression(KustoType.ARRAY)
 class ArrayAggregationExpression(AggregationExpression, ArrayExpression):
+    pass
+
+
+class AnyAggregationExpression(AggregationExpression, AnyExpression):
     pass
 
 
@@ -626,11 +631,11 @@ class AssignmentFromAggregationToColumn(AssignmentBase):
 class BaseColumn(BaseExpression):
     _name: str
 
-    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one abstract method, which we don't have here.
-    # We can't define "get_kusto_type" as abstract because at least one concrete subclass (NumberColumn) does not override it.
-    # Overriding __new___ is the next best solution.
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
+    # abstract method, which we don't have here. We can't define "get_kusto_type" as abstract because at least one
+    # concrete subclass (NumberColumn) does not override it. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is 'BaseColumn':
+        if cls is BaseColumn:
             raise TypeError("BaseColumn is abstract")
         return object.__new__(cls)
 

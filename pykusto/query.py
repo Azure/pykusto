@@ -109,7 +109,9 @@ class Query:
     def join(self, query: 'Query', kind: JoinKind = None) -> 'JoinQuery':
         return JoinQuery(self, query, kind)
 
-    def project(self, *args: Union[AnyTypeColumn, AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> 'ProjectQuery':
+    def project(
+            self, *args: Union[AnyTypeColumn, AssignmentBase, BaseExpression], **kwargs: ExpressionType
+    ) -> 'ProjectQuery':
         columns: List[AnyTypeColumn] = []
         assignments: List[AssignmentBase] = []
         for arg in args:
@@ -168,8 +170,10 @@ class Query:
             assignments.append(AssignmentFromAggregationToColumn(AnyTypeColumn(column_name), agg))
         return SummarizeQuery(self, assignments)
 
-    def mv_expand(self, *columns: Union[AnyTypeColumn, ColumnToType], bag_expansion: BagExpansion = None, with_item_index: AnyTypeColumn = None,
-                  limit: int = None) -> 'MvExpandQuery':
+    def mv_expand(
+            self, *columns: Union[AnyTypeColumn, ColumnToType], bag_expansion: BagExpansion = None,
+            with_item_index: AnyTypeColumn = None, limit: int = None
+    ) -> 'MvExpandQuery':
         if len(columns) == 0:
             raise ValueError("Please specify one or more columns for mv-expand")
         return MvExpandQuery(self, columns, bag_expansion, with_item_index, limit)
@@ -180,11 +184,16 @@ class Query:
     def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> 'EvaluateQuery':
         return EvaluateQuery(self, plugin_name, *args, distribution=distribution)
 
-    def evaluate_udf(self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: KustoType) -> 'EvaluateQuery':
+    def evaluate_udf(
+            self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: KustoType
+    ) -> 'EvaluateQuery':
         return EvaluateQuery(
             self, 'python',
-            BaseExpression(
-                KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(field_name + ':' + kusto_type.primary_name for field_name, kusto_type in type_specs.items())))),
+            AnyExpression(
+                KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(
+                    field_name + ':' + kusto_type.primary_name for field_name, kusto_type in type_specs.items()
+                )))
+            ),
             stringify_python_func(udf),
             distribution=distribution
         )
@@ -503,7 +512,10 @@ class MvExpandQuery(Query):
     _with_item_index: AnyTypeColumn
     _limit: int
 
-    def __init__(self, head: Query, columns: Tuple[Union[AnyTypeColumn, ColumnToType]], bag_expansion: BagExpansion, with_item_index: AnyTypeColumn, limit: int):
+    def __init__(
+            self, head: Query, columns: Tuple[Union[AnyTypeColumn, ColumnToType]], bag_expansion: BagExpansion,
+            with_item_index: AnyTypeColumn, limit: int
+    ):
         super(MvExpandQuery, self).__init__(head)
         self._columns = columns
         self._bag_expansion = bag_expansion

@@ -39,16 +39,14 @@ class BaseExpression:
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is BaseExpression:
-            raise TypeError("BaseExpression is abstract")
+        assert cls is not BaseExpression, "BaseExpression is abstract"
         return object.__new__(cls)
 
     def __init__(self, kql: Union[KQL, 'BaseExpression']) -> None:
         if isinstance(kql, BaseExpression):
             self.kql = kql.kql
             return
-        if not isinstance(kql, str):
-            raise ValueError("Either expression or KQL required")
+        assert isinstance(kql, str), "Either expression or KQL required"
         self.kql = kql
 
     def __repr__(self) -> str:
@@ -107,7 +105,7 @@ class BaseExpression:
         Deliberately not implemented, because "not in" inverses the result of this method, and there is no way to
         override it
         """
-        raise NotImplementedError("Instead use 'is_in' or 'contains'")
+        raise NotImplementedError("'in' not supported. Instead use '.is_in()'")
 
     def to_bool(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
@@ -266,9 +264,6 @@ class StringExpression(BaseExpression):
 
     def string_size(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
-
-    def is_empty(self) -> BooleanExpression:
-        return BooleanExpression(KQL('isempty({})'.format(self.kql)))
 
     def __add__(self, other: StringType) -> 'StringExpression':
         return StringExpression.binary_op(self, ' + ', other)
@@ -530,8 +525,7 @@ class AggregationExpression(BaseExpression):
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is AggregationExpression:
-            raise TypeError("AggregationExpression is abstract")
+        assert cls is not AggregationExpression, "AggregationExpression is abstract"
         return object.__new__(cls)
 
     def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentFromAggregationToColumn':
@@ -635,8 +629,7 @@ class BaseColumn(BaseExpression):
     # abstract method, which we don't have here. We can't define "get_kusto_type" as abstract because at least one
     # concrete subclass (NumberColumn) does not override it. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is BaseColumn:
-            raise TypeError("BaseColumn is abstract")
+        assert cls is not BaseColumn, "BaseColumn is abstract"
         return object.__new__(cls)
 
     def __init__(self, name: str) -> None:

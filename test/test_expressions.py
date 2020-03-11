@@ -32,6 +32,24 @@ class TestExpressions(TestBase):
             Query().where(col.arr[3] == 'bar').render(),
         )
 
+    def test_not_equals(self):
+        self.assertEqual(
+            ' | where foo != "bar"',
+            Query().where(col.foo != 'bar').render(),
+        )
+
+    def test_repr(self):
+        self.assertEqual(
+            'foo == "bar"',
+            repr(col.foo == 'bar')
+        )
+
+    def test_to_bool(self):
+        self.assertEqual(
+            ' | extend boolFoo = tobool(foo)',
+            Query().extend(boolFoo=col.foo.to_bool()).render(),
+        )
+
     def test_array_access_expression_index(self):
         self.assertEqual(
             ' | where (arr[(foo * 2)]) == "bar"',
@@ -116,6 +134,10 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | where foo in ("[", "[[", "]")',
             Query().where(col.foo.is_in(['[', "[[", "]"])).render()
+        )
+        self.assertRaises(
+            NotImplementedError("'in' not supported. Instead use '.is_in()'"),
+            lambda: Query().where(col.foo in col.bar).render()
         )
 
     def test_has(self):

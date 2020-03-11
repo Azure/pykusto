@@ -98,6 +98,42 @@ class TestExpressions(TestBase):
             Query().extend(foo=abs(col.bar)).render(),
         )
 
+    def test_str_len(self):
+        self.assertEqual(
+            ' | extend foo = string_size(bar)',
+            Query().extend(foo=col.bar.string_size()).render(),
+        )
+
+    def test_str_equals(self):
+        self.assertEqual(
+            ' | where foo =~ bar',
+            Query().where(col.foo.equals(col.bar)).render(),
+        )
+
+    def test_str_not_equals(self):
+        self.assertEqual(
+            ' | where foo !~ bar',
+            Query().where(col.foo.not_equals(col.bar)).render(),
+        )
+
+    def test_str_matches(self):
+        self.assertEqual(
+            ' | where foo matches regex "[a-z]+"',
+            Query().where(col.foo.matches("[a-z]+")).render(),
+        )
+
+    def test_str_starts_with(self):
+        self.assertEqual(
+            ' | where foo startswith "hello"',
+            Query().where(col.foo.startswith("hello")).render(),
+        )
+
+    def test_str_ends_with(self):
+        self.assertEqual(
+            ' | where foo endswith "hello"',
+            Query().where(col.foo.endswith("hello")).render(),
+        )
+
     def test_array_access_expression_index(self):
         self.assertEqual(
             ' | where (arr[(foo * 2)]) == "bar"',

@@ -113,6 +113,12 @@ class BaseExpression:
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
+    def to_int(self) -> 'NumberExpression':
+        return NumberExpression(KQL('toint({})'.format(self.kql)))
+
+    def to_long(self) -> 'NumberExpression':
+        return NumberExpression(KQL('tolong({})'.format(self.kql)))
+
     def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentToSingleColumn':
         return AssignmentToSingleColumn(column, self)
 
@@ -254,25 +260,11 @@ class NumberExpression(BaseExpression):
 
 @plain_expression(KustoType.STRING)
 class StringExpression(BaseExpression):
-    @staticmethod
-    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'StringExpression':
-        # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, str)
-
     def __len__(self) -> NumberExpression:
         return self.string_size()
 
     def string_size(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
-
-    def __add__(self, other: StringType) -> 'StringExpression':
-        return StringExpression.binary_op(self, ' + ', other)
-
-    @staticmethod
-    def concat(*strings: StringType) -> 'StringExpression':
-        return StringExpression(KQL('strcat({})'.format(', '.join('{}'.format(
-            _subexpr_to_kql(s)
-        ) for s in strings))))
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
@@ -301,12 +293,6 @@ class StringExpression(BaseExpression):
 
     def endswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' endswith_cs ' if case_sensitive else ' endswith ', other)
-
-    def to_int(self) -> NumberExpression:
-        return NumberExpression(KQL('toint({})'.format(self.kql)))
-
-    def to_long(self) -> NumberExpression:
-        return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def lower(self) -> 'StringExpression':
         return StringExpression(KQL('tolower({})'.format(self.kql)))

@@ -50,6 +50,54 @@ class TestExpressions(TestBase):
             Query().extend(boolFoo=col.foo.to_bool()).render(),
         )
 
+    def test_and(self):
+        self.assertEqual(
+            ' | where foo and (bar contains "hello")',
+            Query().where(col.foo & col.bar.contains("hello")).render(),
+        )
+
+    def test_or(self):
+        self.assertEqual(
+            ' | where foo or (bar contains "hello")',
+            Query().where(col.foo | col.bar.contains("hello")).render(),
+        )
+
+    def test_not(self):
+        self.assertEqual(
+            ' | where not(bar contains "hello")',
+            Query().where(~col.bar.contains("hello")).render(),
+        )
+
+    def test_ge(self):
+        self.assertEqual(
+            ' | where foo >= 10',
+            Query().where(col.foo >= 10).render(),
+        )
+
+    def test_div(self):
+        self.assertEqual(
+            ' | extend foo = bar / 2',
+            Query().extend(foo=col.bar / 2).render(),
+        )
+
+    def test_mod(self):
+        self.assertEqual(
+            ' | extend foo = bar % 2',
+            Query().extend(foo=col.bar % 2).render(),
+        )
+
+    def test_negation(self):
+        self.assertEqual(
+            ' | extend foo = -bar',
+            Query().extend(foo=-col.bar).render(),
+        )
+
+    def test_abs(self):
+        self.assertEqual(
+            ' | extend foo = abs(bar)',
+            Query().extend(foo=abs(col.bar)).render(),
+        )
+
     def test_array_access_expression_index(self):
         self.assertEqual(
             ' | where (arr[(foo * 2)]) == "bar"',

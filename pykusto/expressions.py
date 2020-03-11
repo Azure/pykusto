@@ -324,8 +324,8 @@ class DatetimeExpression(BaseExpression):
     def __add__(self, other: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression.binary_op(self, ' + ', other)
 
-    def __sub__(self, other: Any) -> BaseExpression:
-        raise NotImplementedError("Instead use 'date_diff' or 'subtract_timespan'")
+    def __sub__(self, other: Any) -> 'AnyExpression':
+        return AnyExpression(DatetimeExpression.base_op(self, ' - ', other))
 
     def date_diff(self, other: DatetimeType) -> 'TimespanExpression':
         return TimespanExpression.binary_op(self, ' - ', other)

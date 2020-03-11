@@ -140,10 +140,40 @@ class TestExpressions(TestBase):
             Query().where(col.foo.endswith("hello")).render(),
         )
 
-    def test_lt_date(self):
+    def test_le_date(self):
         self.assertEqual(
             ' | where foo <= datetime(2000-01-01 00:00:00.000000)',
             Query().where(col.foo <= datetime(2000, 1, 1)).render(),
+        )
+
+    def test_lt_date(self):
+        self.assertEqual(
+            ' | where foo < datetime(2000-01-01 00:00:00.000000)',
+            Query().where(col.foo < datetime(2000, 1, 1)).render(),
+        )
+
+    def test_ge_date(self):
+        self.assertEqual(
+            ' | where foo >= datetime(2000-01-01 00:00:00.000000)',
+            Query().where(col.foo >= datetime(2000, 1, 1)).render(),
+        )
+
+    def test_gt_date(self):
+        self.assertEqual(
+            ' | where foo > datetime(2000-01-01 00:00:00.000000)',
+            Query().where(col.foo > datetime(2000, 1, 1)).render(),
+        )
+
+    def test_add_timespan(self):
+        self.assertEqual(
+            ' | extend foo = bar + time(0.1:0:0.0)',
+            Query().extend(foo=col.bar + timedelta(hours=1)).render(),
+        )
+
+    def test_sub_timespan(self):
+        self.assertEqual(
+            ' | extend foo = bar - time(0.1:0:0.0)',
+            Query().extend(foo=col.bar - timedelta(hours=1)).render(),
         )
 
     def test_array_access_expression_index(self):

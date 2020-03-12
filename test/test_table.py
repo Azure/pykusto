@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
 
-from pykusto.client import PyKustoClient
+from pykusto.client import PyKustoClient, Database
 from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
 from pykusto.query import Query
 from pykusto.type_utils import KustoType
@@ -221,3 +221,17 @@ class TestTable(TestBase):
         self.assertEqual(NumberColumn, type(table.bar))
         self.assertEqual(AnyTypeColumn, type(table['baz']))
         self.assertEqual(AnyTypeColumn, type(client.test_db['other_table']['foo']))
+
+    def test_client_databases(self):
+        mock_kusto_client = MockKustoClient(databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])])]))
+        client = PyKustoClient(mock_kusto_client)
+        client.wait_for_items()
+        db = client.get_database('test_db')
+        self.assertIsInstance(db, Database)
+        self.assertEqual(db.name, 'test_db')
+        self.assertEqual(client.show_databases(), ('test_db',))
+
+    def test_client_for_cluster(self):
+        client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
+        self.assertIsInstance(client._client, KustoClient)
+        self.assertEqual(client._cluster_name, 'https://help.kusto.windows.net')

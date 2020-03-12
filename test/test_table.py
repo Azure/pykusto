@@ -185,7 +185,7 @@ class TestTable(TestBase):
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table['baz'], AnyTypeColumn)
-        self.assertEqual(AnyTypeColumn, type(db['other_table']['foo']))
+        self.assertIsInstance(db['other_table']['foo'], AnyTypeColumn)
 
     def test_table_retrieve_error(self):
         mock_kusto_client = MockKustoClient(tables_response=mock_tables_response([('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])]))
@@ -205,10 +205,10 @@ class TestTable(TestBase):
         db = PyKustoClient(mock_kusto_client)['test_db']
         db.refresh()
         db.wait_for_items()  # Avoid race condition
-        self.assertEqual(StringColumn, type(db.test_table_1.foo))
-        self.assertEqual(NumberColumn, type(db.test_table_1.bar))
-        self.assertEqual(BooleanColumn, type(db.test_table_2['baz']))
-        self.assertEqual(AnyTypeColumn, type(db['other_table']['foo']))
+        self.assertIsInstance(db.test_table_1.foo, StringColumn)
+        self.assertIsInstance(db.test_table_1.bar, NumberColumn)
+        self.assertIsInstance(db.test_table_2['baz'], BooleanColumn)
+        self.assertIsInstance(db['other_table']['foo'], AnyTypeColumn)
 
     def test_database_retrieve(self):
         mock_kusto_client = MockKustoClient(databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])])]))
@@ -218,7 +218,7 @@ class TestTable(TestBase):
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table['baz'], AnyTypeColumn)
-        self.assertEqual(AnyTypeColumn, type(client.test_db['other_table']['foo']))
+        self.assertIsInstance(client.test_db['other_table']['foo'], AnyTypeColumn)
 
     def test_empty_database(self):
         mock_kusto_client = MockKustoClient(databases_response=mock_databases_response([
@@ -235,10 +235,13 @@ class TestTable(TestBase):
         client.wait_for_items()
         db = client.get_database('test_db')
         self.assertIsInstance(db, Database)
-        self.assertEqual(db.name, 'test_db')
-        self.assertEqual(client.show_databases(), ('test_db',))
+        self.assertEqual('test_db', db.name)
+        self.assertEqual(('test_db',), client.show_databases())
+        self.assertEqual(('test_table',), client.test_db.show_tables())
+        self.assertEqual(('foo', 'bar'), client.test_db.test_table.show_columns())
+        self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(test_table)', repr(client.test_db.test_table))
 
     def test_client_for_cluster(self):
         client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
         self.assertIsInstance(client._client, KustoClient)
-        self.assertEqual(client._cluster_name, 'https://help.kusto.windows.net')
+        self.assertEqual('https://help.kusto.windows.net', client._cluster_name)

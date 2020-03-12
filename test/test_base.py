@@ -11,8 +11,8 @@ from pykusto.logger import logger
 TEST_TABLE = Table(
     None, "test_table",
     (
-        NumberColumn('numberField'), BooleanColumn('booleanField'), ArrayColumn('arrayField'), MappingColumn('mappingField'), StringColumn('stringField'),
-        DatetimeColumn('datetimeField'), TimespanColumn('timespanField')
+        NumberColumn('numField'), BooleanColumn('boolField'), ArrayColumn('arrayField'), MappingColumn('mapField'), StringColumn('stringField'), StringColumn('stringField2'),
+        DatetimeColumn('dateField'), TimespanColumn('timespanField')
     )
 )
 

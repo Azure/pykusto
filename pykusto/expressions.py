@@ -325,7 +325,7 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression.binary_op(self, ' + ', other)
 
     def __sub__(self, other: Any) -> 'AnyExpression':
-        return AnyExpression(DatetimeExpression.base_op(self, ' - ', other))
+        return AnyExpression(DatetimeExpression.binary_op(self, ' - ', other))
 
     def date_diff(self, other: DatetimeType) -> 'TimespanExpression':
         return TimespanExpression.binary_op(self, ' - ', other)
@@ -452,7 +452,7 @@ class TimespanExpression(BaseExpression):
 @plain_expression(KustoType.ARRAY)
 class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
 
     # We would like to allow using len(), but Python requires it to return an int, so we can't
     def array_length(self) -> NumberExpression:

@@ -537,6 +537,12 @@ class TestFunction(TestBase):
             Query().summarize(f.any(t.stringField).assign_to(col.foo)).render()
         )
 
+    def test_aggregation_by_assign_to(self):
+        self.assertEqual(
+            " | summarize any(stringField) by foo = boolField",
+            Query().summarize(f.any(t.stringField)).by(t.boolField.assign_to(col.foo)).render()
+        )
+
     def test_aggregation_assign_to_multiple(self):
         self.assertRaises(
             ValueError("Aggregations cannot be assigned to multiple columns"),

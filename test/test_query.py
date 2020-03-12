@@ -1,11 +1,12 @@
+import pandas as pd
+
 from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
 from pykusto.type_utils import KustoType
-from test.test_base import TestBase
+from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import test_table as t, mock_columns_response
-from test.test_table import MockKustoClient
 from test.udf import func, STRINGIFIED
 
 
@@ -336,4 +337,17 @@ class TestQuery(TestBase):
         self.assertEqual(
             'test_table | evaluate bag_unpack(mapField, "bar_")',
             Query(t).bag_unpack(t.mapField, 'bar_').render(),
+        )
+
+    def test_to_dataframe(self):
+        rows = (['foo', 10], ['bar', 20], ['baz', 30])
+        columns = ('stringField', 'numField')
+        client = PyKustoClient(MockKustoClient(
+            databases_response=mock_databases_response([('test_db', [('test_table', [('stringField', KustoType.STRING), ('numField', KustoType.INT)])])]),
+            main_response=mock_response(rows, columns),
+        ))
+        client.wait_for_items()
+        table = client.test_db.test_table
+        self.assertTrue(
+            pd.DataFrame(rows, columns=columns).equals(Query(table).take(10).to_dataframe())
         )

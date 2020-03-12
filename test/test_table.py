@@ -1,45 +1,13 @@
 from concurrent.futures import Future
-from typing import List, Tuple, Callable
 from unittest.mock import patch
-from urllib.parse import urljoin
 
-from azure.kusto.data.request import KustoClient, ClientRequestProperties
+from azure.kusto.data.request import KustoClient
 
 from pykusto.client import PyKustoClient, Database
 from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
 from pykusto.query import Query
 from pykusto.type_utils import KustoType
-from test.test_base import TestBase, mock_columns_response, mock_tables_response, mock_databases_response
-
-
-# noinspection PyMissingConstructor
-class MockKustoClient(KustoClient):
-    executions: List[Tuple[str, str, ClientRequestProperties]]
-    columns_response: Callable
-    tables_response: Callable
-    databases_response: Callable
-
-    def __init__(
-            self,
-            cluster="https://test_cluster.kusto.windows.net",
-            columns_response: Callable = mock_columns_response([]),
-            tables_response: Callable = mock_tables_response([]),
-            databases_response: Callable = mock_databases_response([]),
-    ):
-        self.executions = []
-        self._query_endpoint = urljoin(cluster, "/v2/rest/query")
-        self.columns_response = columns_response
-        self.tables_response = tables_response
-        self.databases_response = databases_response
-
-    def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
-        if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
-            return self.tables_response()
-        if rendered_query.startswith('.show table '):
-            return self.columns_response()
-        if rendered_query.startswith('.show databases schema '):
-            return self.databases_response()
-        self.executions.append((database, rendered_query, properties))
+from test.test_base import TestBase, mock_columns_response, mock_tables_response, mock_databases_response, MockKustoClient
 
 
 class TestTable(TestBase):

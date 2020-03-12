@@ -8,11 +8,12 @@ from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, Mappin
 from pykusto.logger import logger
 
 # noinspection PyTypeChecker
-TEST_TABLE = Table(
+test_table = Table(
     None, "test_table",
     (
-        NumberColumn('numField'), BooleanColumn('boolField'), ArrayColumn('arrayField'), MappingColumn('mapField'), StringColumn('stringField'), StringColumn('stringField2'),
-        DatetimeColumn('dateField'), TimespanColumn('timespanField')
+        NumberColumn('numField'), NumberColumn('numField2'), NumberColumn('numField3'), NumberColumn('numField4'), NumberColumn('numField5'), NumberColumn('numField6'),
+        BooleanColumn('boolField'), ArrayColumn('arrayField'), ArrayColumn('arrayField2'), MappingColumn('mapField'), StringColumn('stringField'), StringColumn('stringField2'),
+        DatetimeColumn('dateField'), DatetimeColumn('dateField2'), DatetimeColumn('dateField3'), TimespanColumn('timespanField')
     )
 )
 

@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 
 from pykusto.query import Query
-from test.test_base import TestBase, TEST_TABLE as t
+from test.test_base import TestBase, test_table as t
 
 
 class TestExpressions(TestBase):

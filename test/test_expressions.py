@@ -35,8 +35,8 @@ class TestExpressions(TestBase):
 
     def test_array_contains(self):
         self.assertEqual(
-            ' | where "bar" in arrayField',
-            Query().where(t.arrayField.array_contains('bar')).render(),
+            ' | where true in arrayField',
+            Query().where(t.arrayField.array_contains(True)).render(),
         )
 
     def test_not_equals(self):

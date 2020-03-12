@@ -395,7 +395,7 @@ def now(offset: TimespanType = None) -> StringExpression:
 
 def pack(**kwargs: ExpressionType) -> 'MappingExpression':
     return MappingExpression(KQL('pack({})'.format(
-        ', '.join('"{}", {}'.format(k, to_kql(v)) for k, v in kwargs)
+        ', '.join('"{}", {}'.format(k, to_kql(v)) for k, v in kwargs.items())
     )))
 
 
@@ -404,7 +404,7 @@ def pack_all(): raise NotImplemented  # TODO
 
 def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
     return ArrayExpression(KQL('pack_array({})'.format(
-        ', '.join('{}'.format(to_kql(e) for e in elements))
+        ', '.join(to_kql(e) for e in elements)
     )))
 
 
@@ -851,8 +851,7 @@ def percentile(expr: ExpressionType, per: NumberType) -> AggregationExpression:
 
 
 def percentiles(expr: ExpressionType, *pers: NumberType) -> AggregationExpression:
-    res = 'percentiles({}, {})'.format(expr.kql,
-                                       ', '.join([str(to_kql(per)) for per in pers]))
+    res = 'percentiles({}, {})'.format(expr.kql, ', '.join([str(to_kql(per)) for per in pers]))
     return AnyAggregationExpression(KQL(res))
 
 

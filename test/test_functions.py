@@ -373,6 +373,12 @@ class TestFunction(TestBase):
             Query().extend(f.strcat(t.stringField, '!')).render()
         )
 
+    def test_strcat_one_argument(self):
+        self.assertRaises(
+            ValueError("strcat requires at least two arguments"),
+            lambda: f.strcat(t.stringField)
+        )
+
     def test_strcat_delim(self):
         self.assertEqual(
             ' | extend strcat_delim("-", "hello", ",", stringField, "!")',
@@ -483,6 +489,12 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | where (tolong(stringField)) > 2222222222",
             Query().where(f.tolong(t.stringField) > 2222222222).render()
+        )
+
+    def test_todatetime(self):
+        self.assertEqual(
+            " | extend foo = todatetime(stringField)",
+            Query().extend(foo=f.todatetime(t.stringField)).render()
         )
 
     def test_tolower(self):
@@ -628,10 +640,20 @@ class TestFunction(TestBase):
             Query().summarize(f.dcount(t.numField, acc)).render()
         )
 
+    def test_dcountif(self):
+        self.assertEqual(
+            " | summarize dcountif(stringField, boolField, 0)",
+            Query().summarize(f.dcountif(t.stringField, t.boolField)).render()
+        )
+
     def test_make_bag(self):
         self.assertEqual(
             " | summarize make_bag(stringField)",
             Query().summarize(f.make_bag(t.stringField)).render()
+        )
+        self.assertEqual(
+            " | summarize make_bag(stringField, numField)",
+            Query().summarize(f.make_bag(t.stringField, t.numField)).render()
         )
 
     def test_make_list(self):
@@ -639,11 +661,19 @@ class TestFunction(TestBase):
             " | summarize make_list(stringField)",
             Query().summarize(f.make_list(t.stringField)).render()
         )
+        self.assertEqual(
+            " | summarize make_list(stringField, numField)",
+            Query().summarize(f.make_list(t.stringField, t.numField)).render()
+        )
 
     def test_make_set(self):
         self.assertEqual(
             " | summarize make_set(stringField)",
             Query().summarize(f.make_set(t.stringField)).render()
+        )
+        self.assertEqual(
+            " | summarize make_set(stringField, numField)",
+            Query().summarize(f.make_set(t.stringField, t.numField)).render()
         )
 
     def test_max(self):
@@ -661,7 +691,7 @@ class TestFunction(TestBase):
     def test_percentile(self):
         self.assertEqual(
             " | summarize percentiles(numField, 5)",
-            Query().summarize(f.percentiles(t.numField, 5)).render()
+            Query().summarize(f.percentile(t.numField, 5)).render()
         )
 
     def test_percentiles(self):
@@ -771,4 +801,16 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | project foo = iff(dateField > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), time(4.0:0:0.0))",
             Query().project(foo=f.iif(t.dateField > f.ago(timedelta(2)), timedelta(3), timedelta(4))).render()
+        )
+
+    def test_pack(self):
+        self.assertEqual(
+            ' | extend foo = pack("bar", numField, "baz", stringField)',
+            Query().extend(foo=f.pack(bar=t.numField, baz=t.stringField)).render()
+        )
+
+    def test_pack_array(self):
+        self.assertEqual(
+            ' | extend foo = pack_array(numField, stringField)',
+            Query().extend(foo=f.pack_array(t.numField, t.stringField)).render()
         )

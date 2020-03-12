@@ -1,5 +1,5 @@
 from concurrent.futures import Future
-from typing import List, Tuple, Callable, Any
+from typing import List, Tuple, Callable
 from unittest.mock import patch
 from urllib.parse import urljoin
 
@@ -9,36 +9,7 @@ from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
 from pykusto.query import Query
 from pykusto.type_utils import KustoType
-from test.test_base import TestBase
-
-
-def mock_response(rows: Tuple[Any, ...]):
-    return type(
-        'KustoResponseDataSet',
-        (object,),
-        {'primary_results': (type(
-            'KustoResultTable',
-            (object,),
-            {'rows': rows}
-        ),)}
-    )
-
-
-def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
-    return lambda: mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns))
-
-
-def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] = tuple()) -> Callable:
-    return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns))
-
-
-def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, KustoType]]]]]] = tuple()) -> Callable:
-    return lambda: mock_response(tuple(
-        (d_name, t_name, c_name, c_type.dot_net_name)
-        for d_name, tables in databases
-        for t_name, columns in tables
-        for c_name, c_type in columns
-    ))
+from test.test_base import TestBase, mock_columns_response, mock_tables_response, mock_databases_response
 
 
 # noinspection PyMissingConstructor

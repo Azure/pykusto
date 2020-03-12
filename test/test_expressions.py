@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 
+from pykusto.expressions import column_generator as col
 from pykusto.query import Query
 from test.test_base import TestBase, test_table as t
 
@@ -220,7 +221,7 @@ class TestExpressions(TestBase):
     def test_assign_to(self):
         self.assertEqual(
             " | extend numFieldNew = numField * 2",
-            Query().extend((t.numField * 2).assign_to(t['numFieldNew'])).render(),
+            Query().extend((t.numField * 2).assign_to(col.numFieldNew)).render(),
         )
         self.assertEqual(
             " | extend foo = numField * 2",
@@ -262,7 +263,7 @@ class TestExpressions(TestBase):
         )
         self.assertRaises(
             NotImplementedError("'in' not supported. Instead use '.is_in()'"),
-            lambda: Query().where(t.stringField in t.stringField2).render()
+            lambda: t.stringField in t.stringField2
         )
 
     def test_has(self):

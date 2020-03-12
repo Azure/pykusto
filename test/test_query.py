@@ -4,6 +4,7 @@ from pykusto.expressions import column_generator as col
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase
+from test.test_base import test_table as t, mock_columns_response
 from test.test_table import MockKustoClient
 from test.udf import func, STRINGIFIED
 
@@ -12,329 +13,327 @@ class TestQuery(TestBase):
     def test_sanity(self):
         # test concatenation #
         self.assertEqual(
-            " | where foo > 4 | take 5 | sort by bar asc nulls last",
-            Query().where(col.foo > 4).take(5).sort_by(col.bar, Order.ASC, Nulls.LAST).render(),
+            "test_table | where numField > 4 | take 5 | sort by stringField asc nulls last",
+            Query(t).where(t.numField > 4).take(5).sort_by(t.stringField, Order.ASC, Nulls.LAST).render(),
         )
 
     def test_add_queries(self):
-        query_a = Query().where(col.foo > 4)
-        query_b = Query().take(5)
-        query_c = Query().where(col.foo > 1).sort_by(col.bar, Order.ASC, Nulls.LAST)
+        query_a = Query(t).where(t.numField > 4)
+        query_b = Query(t).take(5)
+        query_c = Query(t).where(t.numField2 > 1).sort_by(t.stringField, Order.ASC, Nulls.LAST)
         query = query_a + query_b + query_c
 
         self.assertEqual(
-            " | where foo > 4 | take 5 | where foo > 1 | sort by bar asc nulls last",
+            "test_table | where numField > 4 | take 5 | where numField2 > 1 | sort by stringField asc nulls last",
             query.render(),
         )
 
         # make sure the originals didn't change
         self.assertEqual(
-            " | where foo > 4",
+            "test_table | where numField > 4",
             query_a.render(),
         )
         self.assertEqual(
-            " | take 5",
+            "test_table | take 5",
             query_b.render(),
         )
         self.assertEqual(
-            " | where foo > 1 | sort by bar asc nulls last",
+            "test_table | where numField2 > 1 | sort by stringField asc nulls last",
             query_c.render(),
         )
 
     def test_add_queries_with_table(self):
-        mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
-        query_a = Query(table).where(col.foo > 4)
-        query_b = Query().take(5).take(2).sort_by(col.bar, Order.ASC, Nulls.LAST)
+        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('numField', KustoType.INT)])))['test_db']['test_table']
+        query_a = Query(table).where(table.numField > 4)
+        query_b = Query(t).take(5).take(2).sort_by(t.stringField, Order.ASC, Nulls.LAST)
         query = query_a + query_b
         self.assertEqual(
-            "test_table | where foo > 4 | take 5 | take 2 | sort by bar asc nulls last",
+            "test_table | where numField > 4 | take 5 | take 2 | sort by stringField asc nulls last",
             query.render(),
         )
 
         # make sure the originals didn't change
         self.assertEqual(
-            "test_table | where foo > 4",
+            "test_table | where numField > 4",
             query_a.render(),
         )
         self.assertEqual(
-            " | take 5 | take 2 | sort by bar asc nulls last",
+            "test_table | take 5 | take 2 | sort by stringField asc nulls last",
             query_b.render(),
         )
 
     def test_where(self):
         self.assertEqual(
-            " | where foo > 4",
-            Query().where(col.foo > 4).render(),
+            "test_table | where numField > 4",
+            Query(t).where(t.numField > 4).render(),
         )
 
     def test_take(self):
         self.assertEqual(
-            " | take 3",
-            Query().take(3).render(),
+            "test_table | take 3",
+            Query(t).take(3).render(),
         )
 
     def test_sort(self):
         self.assertEqual(
-            " | sort by foo desc nulls first",
-            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).render(),
+            "test_table | sort by numField desc nulls first",
+            Query(t).sort_by(t.numField, order=Order.DESC, nulls=Nulls.FIRST).render(),
         )
 
     def test_order(self):
         self.assertEqual(
-            " | order by foo desc nulls first",
-            Query().order_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).render(),
+            "test_table | order by numField desc nulls first",
+            Query(t).order_by(t.numField, order=Order.DESC, nulls=Nulls.FIRST).render(),
         )
 
     def test_order_expression_in_arg(self):
         self.assertEqual(
-            " | order by strlen(foo) desc nulls first",
-            Query().order_by(f.strlen(col.foo), order=Order.DESC, nulls=Nulls.FIRST).render(),
+            "test_table | order by strlen(stringField) desc nulls first",
+            Query(t).order_by(f.strlen(t.stringField), order=Order.DESC, nulls=Nulls.FIRST).render(),
         )
 
     def test_sort_multiple_cols(self):
         self.assertEqual(
-            " | sort by foo desc nulls first, bar asc nulls last",
-            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).then_by(col.bar, Order.ASC,
-                                                                                  Nulls.LAST).render(),
+            "test_table | sort by stringField desc nulls first, numField asc nulls last",
+            Query(t).sort_by(t.stringField, order=Order.DESC, nulls=Nulls.FIRST).then_by(t.numField, Order.ASC, Nulls.LAST).render(),
         )
 
     def test_no_params_for_sort(self):
         self.assertEqual(
-            " | sort by foo, bar",
-            Query().sort_by(col.foo).then_by(col.bar).render(),
+            "test_table | sort by numField, stringField",
+            Query(t).sort_by(t.numField).then_by(t.stringField).render(),
         )
         self.assertEqual(
-            " | sort by foo desc nulls first, bar",
-            Query().sort_by(col.foo, order=Order.DESC, nulls=Nulls.FIRST).then_by(col.bar).render(),
+            "test_table | sort by numField desc nulls first, stringField",
+            Query(t).sort_by(t.numField, order=Order.DESC, nulls=Nulls.FIRST).then_by(t.stringField).render(),
         )
 
     def test_top(self):
         self.assertEqual(
-            " | top 3 by foo desc nulls first",
-            Query().top(3, col.foo, order=Order.DESC, nulls=Nulls.FIRST).render(),
+            "test_table | top 3 by numField desc nulls first",
+            Query(t).top(3, t.numField, order=Order.DESC, nulls=Nulls.FIRST).render(),
         )
 
     def test_join_with_table(self):
-        mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('tableStringField', KustoType.STRING), ('numField', KustoType.INT)])))['test_db'][
+            'test_table']
 
         self.assertEqual(
-            ' | where foo > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table")) on col0, $left.col1==$right.col2',
-            Query().where(col.foo > 4).take(5).join(
-                Query(table), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render(),
+            'test_table | where numField > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table")) '
+            'on numField, $left.stringField==$right.tableStringField',
+            Query(t).where(t.numField > 4).take(5).join(
+                Query(table), kind=JoinKind.INNER
+            ).on(t.numField).on(t.stringField, table.tableStringField).render(),
         )
 
     def test_join_with_table_and_query(self):
-        mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([
+            ('tableStringField', KustoType.STRING), ('numField', KustoType.INT)
+        ])))['test_db']['test_table']
 
         self.assertEqual(
-            ' | where foo > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table") | where bla == 2 | take 6) on col0, '
-            "$left.col1==$right.col2",
-            Query().where(col.foo > 4).take(5).join(
-                Query(table).where(col.bla == 2).take(6), kind=JoinKind.INNER).on(col.col0).on(col.col1,
-                                                                                               col.col2).render(),
+            'test_table | where numField > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("test_table") | where numField == 2 '
+            '| take 6) on numField, $left.stringField==$right.tableStringField',
+            Query(t).where(t.numField > 4).take(5).join(
+                Query(table).where(table.numField == 2).take(6), kind=JoinKind.INNER
+            ).on(t.numField).on(t.stringField, table.tableStringField).render(),
         )
 
     def test_join_no_joined_table(self):
         self.assertRaises(
             JoinException("The joined query must have a table"),
-            Query().where(col.foo > 4).take(5).join(
-                Query().take(2), kind=JoinKind.INNER).on(col.col0).on(col.col1, col.col2).render
+            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on(t.numField).on(t.stringField, t.stringField2).render()
         )
 
     def test_join_no_on(self):
         self.assertRaises(
             JoinException("A call to join() must be followed by a call to on()"),
-            Query().where(col.foo > 4).take(5).join(
-                Query().take(2), kind=JoinKind.INNER).render
+            Query(t).where(t.numField > 4).take(5).join(
+                Query(t).take(2), kind=JoinKind.INNER).render
         )
 
     def test_extend(self):
         self.assertEqual(
-            " | extend sum = v1 + v2, foo = bar * 4 | take 5",
-            Query().extend((col.v1 + col.v2).assign_to(col.sum), foo=col.bar * 4).take(5).render(),
+            "test_table | extend sumField = numField + numField2, foo = numField3 * 4 | take 5",
+            Query(t).extend((t.numField + t.numField2).assign_to(col.sumField), foo=t.numField3 * 4).take(5).render(),
         )
 
     def test_extend_assign_to_multiple_columns(self):
         self.assertEqual(
-            " | extend (foo1, foo2) = foo, shoo = bar * 4",
-            Query().extend(col.foo.assign_to(col.foo1, col.foo2), shoo=col.bar * 4).render(),
+            "test_table | extend (newField1, newField2) = arrayField, shoo = numField * 4",
+            Query(t).extend(t.arrayField.assign_to(col.newField1, col.newField2), shoo=t.numField * 4).render(),
         )
 
     def test_extend_assign_non_array_to_multiple_columns(self):
         self.assertRaises(
             ValueError("Only arrays can be assigned to multiple columns"),
-            lambda: Query().extend(f.strcat("hello", "world").assign_to(col.foo1, col.foo2)).render(),
+            lambda: t.stringField.assign_to(col.newField1, col.newField2),
         )
 
     def test_extend_generate_column_name(self):
         self.assertEqual(
-            " | extend v1 + v2, foo = bar * 4",
-            Query().extend(col.v1 + col.v2, foo=col.bar * 4).render(),
+            "test_table | extend numField + numField2, foo = numField3 * 4",
+            Query(t).extend(t.numField + t.numField2, foo=t.numField3 * 4).render(),
         )
 
     def test_extend_build_dynamic(self):
         self.assertEqual(
-            ' | extend foo = pack("Name", name, "Roles", pack_array(role1, role2))',
-            Query().extend(foo={'Name': col.name, 'Roles': [col.role1, col.role2]}).render(),
+            'test_table | extend foo = pack("Name", stringField, "Roles", pack_array(stringField2, stringField3))',
+            Query(t).extend(foo={'Name': t.stringField, 'Roles': [t.stringField2, t.stringField3]}).render(),
         )
 
     def test_summarize(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = count(bar)",
-            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).render(),
+            "test_table | summarize count(stringField), my_count = count(stringField2)",
+            Query(t).summarize(f.count(t.stringField), my_count=f.count(t.stringField2)).render(),
         )
 
     def test_summarize_by(self):
         self.assertEqual(
-            " | summarize count(foo), my_count = count(bar) by bla, bin(date, 1), time_range = bin(time, 10)",
-            Query().summarize(f.count(col.foo), my_count=f.count(col.bar)).by(col.bla, f.bin(col.date, 1),
-                                                                              time_range=f.bin(col.time, 10)).render(),
+            "test_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, 10)",
+            Query(t).summarize(f.count(t.stringField), my_count=f.count(t.stringField2)).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, 10)).render(),
         )
 
     def test_summarize_by_expression(self):
         self.assertEqual(
-            " | summarize count(foo) by tostring(asd)",
-            Query().summarize(f.count(col.foo)).by(f.tostring(col.asd)).render(),
+            "test_table | summarize count(stringField) by tostring(mapField)",
+            Query(t).summarize(f.count(t.stringField)).by(f.tostring(t.mapField)).render(),
         )
 
     def test_mv_expand(self):
         self.assertEqual(
-            " | mv-expand a, b, c",
-            Query().mv_expand(col.a, col.b, col.c).render(),
+            "test_table | mv-expand arrayField, arrayField2, arrayField3",
+            Query(t).mv_expand(t.arrayField, t.arrayField2, t.arrayField3).render(),
         )
 
     def test_mv_expand_to_type(self):
         self.assertEqual(
-            " | mv-expand a to typeof(string), b to typeof(int), c",
-            Query().mv_expand(f.to_type(col.a, KustoType.STRING), f.to_type(col.b, KustoType.INT), col.c).render(),
+            "test_table | mv-expand arrayField to typeof(string), arrayField2 to typeof(int), arrayField3",
+            Query(t).mv_expand(f.to_type(t.arrayField, KustoType.STRING), f.to_type(t.arrayField2, KustoType.INT), t.arrayField3).render(),
         )
 
     def test_mv_expand_args(self):
         self.assertEqual(
-            " | mv-expand bagexpansion=bag with_itemindex=foo a, b, c limit 4",
-            Query().mv_expand(col.a, col.b, col.c, bag_expansion=BagExpansion.BAG, with_item_index=col.foo,
-                              limit=4).render(),
+            "test_table | mv-expand bagexpansion=bag with_itemindex=foo arrayField, arrayField2, arrayField3 limit 4",
+            Query(t).mv_expand(t.arrayField, t.arrayField2, t.arrayField3, bag_expansion=BagExpansion.BAG, with_item_index=col.foo, limit=4).render(),
         )
 
     def test_mv_expand_no_args(self):
         self.assertRaises(
             ValueError("Please specify one or more columns for mv-expand"),
-            Query().mv_expand
+            Query(t).mv_expand
         )
 
     def test_limit(self):
         self.assertEqual(
-            " | limit 3",
-            Query().limit(3).render(),
+            "test_table | limit 3",
+            Query(t).limit(3).render(),
         )
 
     def test_sample(self):
         self.assertEqual(
-            " | sample 3",
-            Query().sample(3).render(),
+            "test_table | sample 3",
+            Query(t).sample(3).render(),
         )
 
     def test_count(self):
         self.assertEqual(
-            " | count",
-            Query().count().render(),
+            "test_table | count",
+            Query(t).count().render(),
         )
 
     def test_project(self):
         self.assertEqual(
-            " | project a, bc",
-            Query().project(col.a, col.bc).render(),
+            "test_table | project stringField, numField",
+            Query(t).project(t.stringField, t.numField).render(),
         )
 
     def test_project_with_expression(self):
         self.assertEqual(
-            " | project foo = bar * 4",
-            Query().project(foo=col.bar * 4).render(),
+            "test_table | project foo = numField * 4",
+            Query(t).project(foo=t.numField * 4).render(),
         )
 
     def test_project_assign_to_multiple_columns(self):
         self.assertEqual(
-            " | project (foo, bar) = arr",
-            Query().project(col.arr.assign_to(col.foo, col.bar)).render(),
+            "test_table | project (foo, bar) = arrayField",
+            Query(t).project(t.arrayField.assign_to(col.foo, col.bar)).render(),
         )
 
     def test_project_unspecified_column(self):
         self.assertEqual(
-            " | project foo + bar",
-            Query().project(col.foo + col.bar).render(),
+            "test_table | project numField + numField2",
+            Query(t).project(t.numField + t.numField2).render(),
         )
 
     def test_project_away(self):
         self.assertEqual(
-            " | project-away a, bc",
-            Query().project_away(col.a, col.bc).render(),
+            "test_table | project-away stringField, numField",
+            Query(t).project_away(t.stringField, t.numField).render(),
         )
 
     def test_project_away_wildcard(self):
         self.assertEqual(
-            " | project-away a, b*",
-            Query().project_away(col.a, "b*").render(),
+            "test_table | project-away stringField, b*",
+            Query(t).project_away(t.stringField, "b*").render(),
         )
 
     def test_project_rename(self):
         self.assertEqual(
-            " | project-rename a = b, c = d",
-            Query().project_rename(a=col.b, c=col.d).render(),
+            "test_table | project-rename a = stringField, c = numField",
+            Query(t).project_rename(a=t.stringField, c=t.numField).render(),
         )
 
     def test_custom(self):
         self.assertEqual(
-            " | some custom query",
-            Query().custom("some custom query").render(),
+            "test_table | some custom query",
+            Query(t).custom("some custom query").render(),
         )
 
     def test_distinct(self):
         self.assertEqual(
-            " | distinct a, b * 2",
-            Query().distinct(col.a, col.b * 2).render(),
+            "test_table | distinct stringField, numField * 2",
+            Query(t).distinct(t.stringField, t.numField * 2).render(),
         )
 
     def test_distinct_all(self):
         self.assertEqual(
-            " | distinct *",
-            Query().distinct_all().render(),
+            "test_table | distinct *",
+            Query(t).distinct_all().render(),
         )
 
     def test_evaluate(self):
         self.assertEqual(
-            " | evaluate some_plugin(foo, 3)",
-            Query().evaluate('some_plugin', col.foo, 3).render(),
+            "test_table | evaluate some_plugin(numField, 3)",
+            Query(t).evaluate('some_plugin', t.numField, 3).render(),
         )
 
     def test_evaluate_with_distribution(self):
         self.assertEqual(
-            " | evaluate hint.distribution=per_shard some_plugin(foo, 3)",
-            Query().evaluate('some_plugin', col.foo, 3, distribution=Distribution.PER_SHARD).render(),
+            "test_table | evaluate hint.distribution=per_shard some_plugin(numField, 3)",
+            Query(t).evaluate('some_plugin', t.numField, 3, distribution=Distribution.PER_SHARD).render(),
         )
 
     def test_udf(self):
         self.assertEqual(
-            " | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_udf(func, StateZone=KustoType.STRING).render(),
+            "test_table | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
+            Query(t).evaluate_udf(func, StateZone=KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
         self.assertEqual(
-            " | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
-            Query().evaluate_udf(func, extend=False, StateZone=KustoType.STRING).render(),
+            "test_table | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
+            Query(t).evaluate_udf(func, extend=False, StateZone=KustoType.STRING).render(),
         )
 
     def test_bag_unpack(self):
         self.assertEqual(
-            " | evaluate bag_unpack(foo)",
-            Query().bag_unpack(col.foo).render(),
+            "test_table | evaluate bag_unpack(mapField)",
+            Query(t).bag_unpack(t.mapField).render(),
         )
 
     def test_bag_unpack_with_prefix(self):
         self.assertEqual(
-            ' | evaluate bag_unpack(foo, "bar_")',
-            Query().bag_unpack(col.foo, 'bar_').render(),
+            'test_table | evaluate bag_unpack(mapField, "bar_")',
+            Query(t).bag_unpack(t.mapField, 'bar_').render(),
         )

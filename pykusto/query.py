@@ -285,10 +285,7 @@ class ProjectAwayQuery(Query):
         self._columns = columns
 
     def _compile(self) -> KQL:
-        def col_or_wildcard_to_string(col_or_wildcard):
-            return col_or_wildcard.kql if isinstance(col_or_wildcard, AnyTypeColumn) else col_or_wildcard
-
-        return KQL('project-away {}'.format(', '.join((col_or_wildcard_to_string(c) for c in self._columns))))
+        return KQL('project-away {}'.format(', '.join((str(c) for c in self._columns))))
 
 
 class DistinctQuery(Query):

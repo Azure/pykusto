@@ -1,19 +1,20 @@
 import logging
 import sys
-from typing import Callable
+from typing import Callable, Tuple, Any, List
 from unittest import TestCase
 
 from pykusto.client import Table
 from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, MappingColumn, StringColumn, DatetimeColumn, TimespanColumn
 from pykusto.logger import logger
+from pykusto.type_utils import KustoType
 
 # noinspection PyTypeChecker
 test_table = Table(
     None, "test_table",
     (
         NumberColumn('numField'), NumberColumn('numField2'), NumberColumn('numField3'), NumberColumn('numField4'), NumberColumn('numField5'), NumberColumn('numField6'),
-        BooleanColumn('boolField'), ArrayColumn('arrayField'), ArrayColumn('arrayField2'), MappingColumn('mapField'), StringColumn('stringField'), StringColumn('stringField2'),
-        DatetimeColumn('dateField'), DatetimeColumn('dateField2'), DatetimeColumn('dateField3'), TimespanColumn('timespanField')
+        BooleanColumn('boolField'), ArrayColumn('arrayField'), ArrayColumn('arrayField2'), ArrayColumn('arrayField3'), MappingColumn('mapField'), StringColumn('stringField'),
+        StringColumn('stringField2'), DatetimeColumn('dateField'), DatetimeColumn('dateField2'), DatetimeColumn('dateField3'), TimespanColumn('timespanField')
     )
 )
 
@@ -45,3 +46,32 @@ class TestBase(TestCase):
             expected_exception_message,
             str(cm.exception)
         )
+
+
+def mock_response(rows: Tuple[Any, ...]):
+    return type(
+        'KustoResponseDataSet',
+        (object,),
+        {'primary_results': (type(
+            'KustoResultTable',
+            (object,),
+            {'rows': rows}
+        ),)}
+    )
+
+
+def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns))
+
+
+def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns))
+
+
+def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, KustoType]]]]]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple(
+        (d_name, t_name, c_name, c_type.dot_net_name)
+        for d_name, tables in databases
+        for t_name, columns in tables
+        for c_name, c_type in columns
+    ))

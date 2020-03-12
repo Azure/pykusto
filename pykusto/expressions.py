@@ -633,6 +633,9 @@ class BaseColumn(BaseExpression):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._name})'
 
+    def __str__(self) -> str:
+        return self._name
+
 
 @typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL)
 class NumberColumn(BaseColumn, NumberExpression):

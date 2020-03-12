@@ -557,14 +557,6 @@ class AssignmentBase:
             return self._rvalue
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
-    @staticmethod
-    def assign(expression: ExpressionType, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
-        if len(columns) == 0:
-            raise ValueError("Provide at least one column")
-        if len(columns) == 1:
-            return AssignmentToSingleColumn(columns[0], expression)
-        return AssignmentToMultipleColumns(columns, expression)
-
 
 class AssignmentToSingleColumn(AssignmentBase):
     def __init__(self, column: 'AnyTypeColumn', expression: ExpressionType) -> None:

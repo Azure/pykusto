@@ -1,7 +1,8 @@
 from datetime import timedelta, datetime
 
-from pykusto.expressions import column_generator as col
+from pykusto.expressions import column_generator as col, AnyTypeColumn
 from pykusto.query import Query
+from pykusto.type_utils import KustoType
 from test.test_base import TestBase, test_table as t
 
 
@@ -45,6 +46,10 @@ class TestExpressions(TestBase):
         )
 
     def test_repr(self):
+        self.assertEqual(
+            'StringColumn(stringField)',
+            repr(t.stringField)
+        )
         self.assertEqual(
             'stringField == "bar"',
             repr(t.stringField == 'bar')
@@ -307,3 +312,22 @@ class TestExpressions(TestBase):
             ' | where stringField has "test"',
             Query().where(t.stringField.has("test")).render()
         )
+
+    def test_column_generator(self):
+        field1 = col.foo
+        field2 = col['foo.bar']
+        self.assertIsInstance(field1, AnyTypeColumn)
+        self.assertIsInstance(field2, AnyTypeColumn)
+        self.assertEqual('foo', field1.get_name())
+        self.assertEqual('foo.bar', field2.get_name())
+
+    def test_kusto_type(self):
+        self.assertEqual(KustoType.BOOL, t.boolField.get_kusto_type())
+        self.assertEqual(KustoType.ARRAY, t.arrayField.get_kusto_type())
+        self.assertEqual(KustoType.MAPPING, t.mapField.get_kusto_type())
+        self.assertEqual(KustoType.STRING, t.stringField.get_kusto_type())
+        self.assertEqual(KustoType.DATETIME, t.dateField.get_kusto_type())
+        self.assertEqual(KustoType.TIMESPAN, t.timespanField.get_kusto_type())
+        self.assertRaises(ValueError("Column type unknown"), t.dynamicField.get_kusto_type)
+        self.assertRaises(ValueError("Column type unknown"), col.anyTypeField.get_kusto_type)
+        self.assertRaises(NotImplementedError("BaseColumn has no type"), t.numField.get_kusto_type)

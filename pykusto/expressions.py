@@ -455,12 +455,6 @@ class ArrayExpression(BaseExpression):
     def array_contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(other, ' in ', self)
 
-    @staticmethod
-    def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
-        return ArrayExpression(KQL('pack_array({})'.format(
-            ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
-        )))
-
     def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentToMultipleColumns':
         return AssignmentToMultipleColumns(columns, self)
 
@@ -475,12 +469,6 @@ class MappingExpression(BaseExpression):
 
     def keys(self) -> ArrayExpression:
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
-
-    @staticmethod
-    def pack(**kwargs: ExpressionType) -> 'MappingExpression':
-        return MappingExpression(KQL('pack({})'.format(
-            ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
-        )))
 
 
 class DynamicExpression(ArrayExpression, MappingExpression):

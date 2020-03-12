@@ -5,7 +5,7 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression
+    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, get_base_types, KustoType
@@ -107,11 +107,11 @@ def bin_auto(expr: Union[NumberType, DatetimeType, TimespanType]) -> BaseExpress
 # def binary_xor(self): return
 
 
-def case(predicate: BooleanType, val: ExpressionType, *args: Union[BooleanType, ExpressionType]) -> BaseExpression:
+def case(predicate: BooleanType, val: ExpressionType, *args: Union[BooleanType, ExpressionType]) -> AnyExpression:
     res = 'case({}, {}, {})'.format(
         to_kql(predicate), to_kql(val), ', '.join([to_kql(arg) for arg in args])
     )
-    return AnyAggregationExpression(KQL(res))
+    return AnyExpression(KQL(res))
 
 
 def ceiling(expr: NumberType) -> NumberExpression:
@@ -393,13 +393,19 @@ def now(offset: TimespanType = None) -> StringExpression:
     return StringExpression(KQL('now()'))
 
 
-def pack(): raise NotImplemented  # TODO
+def pack(**kwargs: ExpressionType) -> 'MappingExpression':
+    return MappingExpression(KQL('pack({})'.format(
+        ', '.join('"{}", {}'.format(k, to_kql(v)) for k, v in kwargs)
+    )))
 
 
 def pack_all(): raise NotImplemented  # TODO
 
 
-def pack_array(): raise NotImplemented  # TODO
+def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
+    return ArrayExpression(KQL('pack_array({})'.format(
+        ', '.join('{}'.format(to_kql(e) for e in elements))
+    )))
 
 
 def pack_dictionary(): raise NotImplemented  # TODO

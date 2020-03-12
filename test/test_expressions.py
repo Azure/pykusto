@@ -32,6 +32,12 @@ class TestExpressions(TestBase):
             Query().where(t.arrayField[3] == 'bar').render(),
         )
 
+    def test_array_contains(self):
+        self.assertEqual(
+            ' | where "bar" in arrayField',
+            Query().where(t.arrayField.array_contains('bar')).render(),
+        )
+
     def test_not_equals(self):
         self.assertEqual(
             ' | where stringField != "bar"',
@@ -258,10 +264,16 @@ class TestExpressions(TestBase):
             Query().extend(foo=5, bar="bar", other_col=t.stringField).render(),
         )
 
+    def test_between_date(self):
+        self.assertEqual(
+            " | where dateField between (datetime(2020-01-01 00:00:00.000000) .. datetime(2020-01-31 00:00:00.000000))",
+            Query().where(t.dateField.between(datetime(2020, 1, 1), datetime(2020, 1, 31))).render(),
+        )
+
     def test_between_timespan(self):
         self.assertEqual(
-            " | where dateField between (time(0.0:0:0.0) .. time(0.3:0:0.0))",
-            Query().where(t.dateField.between(timedelta(0), timedelta(hours=3))).render(),
+            " | where timespanField between (time(0.0:0:0.0) .. time(0.3:0:0.0))",
+            Query().where(t.timespanField.between(timedelta(0), timedelta(hours=3))).render(),
         )
 
     def test_is_empty(self):

@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 from pykusto import functions as f
+from pykusto.expressions import column_generator as col
 from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase
@@ -91,6 +92,10 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | where (endofyear(dateField)) > datetime(2019-07-23 00:00:00.000000)",
             Query().where(f.endofyear(t.dateField) > datetime(2019, 7, 23)).render()
+        )
+        self.assertEqual(
+            " | where (endofyear(dateField, 2)) > datetime(2019-07-23 00:00:00.000000)",
+            Query().where(f.endofyear(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_exp(self):
@@ -514,6 +519,18 @@ class TestFunction(TestBase):
             Query().summarize(f.any(t.stringField, t.numField, t.boolField)).render()
         )
 
+    def test_aggregation_assign_to(self):
+        self.assertEqual(
+            " | summarize foo = any(stringField)",
+            Query().summarize(f.any(t.stringField).assign_to(col.foo)).render()
+        )
+
+    def test_aggregation_assign_to_multiple(self):
+        self.assertRaises(
+            ValueError("Aggregations cannot be assigned to multiple columns"),
+            lambda: f.any(t.stringField).assign_to(col.foo, col.bar)
+        )
+
     def test_arg_max(self):
         self.assertEqual(
             " | summarize arg_max(stringField, numField, boolField)",
@@ -551,6 +568,10 @@ class TestFunction(TestBase):
             " | summarize avg(numField2) by bin(dateField, time(0.12:0:0.0))",
             Query().summarize(f.avg(t.numField2)).by(f.bin(t.dateField, timedelta(0.5))).render()
         )
+        self.assertEqual(
+            " | summarize avg(numField2) by bin(timespanField, time(0.12:0:0.0))",
+            Query().summarize(f.avg(t.numField2)).by(f.bin(t.timespanField, timedelta(0.5))).render()
+        )
 
     def test_bin_at(self):
         self.assertEqual(
@@ -565,11 +586,19 @@ class TestFunction(TestBase):
             " | summarize avg(numField) by bin_at(dateField, time(0.12:0:0.0), datetime(2019-07-08 00:00:00.000000))",
             Query().summarize(f.avg(t.numField)).by(f.bin_at(t.dateField, timedelta(0.5), datetime(2019, 7, 8))).render()
         )
+        self.assertEqual(
+            " | summarize avg(numField) by bin_at(timespanField, 0.1, 1)",
+            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.timespanField, 0.1, 1)).render()
+        )
 
     def test_bin_auto(self):
         self.assertEqual(
             " | summarize avg(numField) by bin_auto(numField)",
             Query().summarize(f.avg(t.numField)).by(f.bin_auto(t.numField)).render()
+        )
+        self.assertEqual(
+            " | summarize avg(numField) by bin_auto(timespanField)",
+            Query().summarize(f.avg(t.numField)).by(f.bin_auto(t.timespanField)).render()
         )
 
     def test_count(self):

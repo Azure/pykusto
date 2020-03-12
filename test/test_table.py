@@ -239,6 +239,7 @@ class TestTable(TestBase):
         self.assertEqual(('test_db',), client.show_databases())
         self.assertEqual(('test_table',), client.test_db.show_tables())
         self.assertEqual(('foo', 'bar'), client.test_db.test_table.show_columns())
+        self.assertTrue({'foo', 'bar'} < set(dir(client.test_db.test_table)))
         self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(test_table)', repr(client.test_db.test_table))
 
     def test_client_for_cluster(self):

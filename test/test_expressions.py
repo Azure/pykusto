@@ -110,6 +110,12 @@ class TestExpressions(TestBase):
             Query().extend(foo=abs(t.numField)).render(),
         )
 
+    def test_between(self):
+        self.assertEqual(
+            ' | where numField between (numField2 .. 100)',
+            Query().where(t.numField.between(t.numField2, 100)).render(),
+        )
+
     def test_str_equals(self):
         self.assertEqual(
             ' | where stringField =~ stringField2',
@@ -164,16 +170,34 @@ class TestExpressions(TestBase):
             Query().where(t.dateField > datetime(2000, 1, 1)).render(),
         )
 
-    def test_add_timespan(self):
+    def test_add_timespan_to_date(self):
         self.assertEqual(
             ' | extend foo = dateField + time(0.1:0:0.0)',
             Query().extend(foo=t.dateField + timedelta(hours=1)).render(),
+        )
+
+    def test_add_timespan_to_timespan(self):
+        self.assertEqual(
+            ' | extend foo = timespanField + time(0.1:0:0.0)',
+            Query().extend(foo=t.timespanField + timedelta(hours=1)).render(),
+        )
+
+    def test_substract_timespan_from_timespan(self):
+        self.assertEqual(
+            ' | extend foo = timespanField - time(0.1:0:0.0)',
+            Query().extend(foo=t.timespanField - timedelta(hours=1)).render(),
         )
 
     def test_sub_timespan(self):
         self.assertEqual(
             ' | extend foo = dateField - time(0.1:0:0.0)',
             Query().extend(foo=t.dateField - timedelta(hours=1)).render(),
+        )
+
+    def test_bin_auto(self):
+        self.assertEqual(
+            ' | extend foo = bin_auto(dateField)',
+            Query().extend(foo=t.dateField.bin_auto()).render(),
         )
 
     def test_array_access_expression_index(self):

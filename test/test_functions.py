@@ -87,6 +87,12 @@ class TestFunction(TestBase):
             Query().where(f.endofweek(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
+    def test_endofyear(self):
+        self.assertEqual(
+            " | where (endofyear(dateField)) > datetime(2019-07-23 00:00:00.000000)",
+            Query().where(f.endofyear(t.dateField) > datetime(2019, 7, 23)).render()
+        )
+
     def test_exp(self):
         self.assertEqual(
             " | where (exp(numField)) > 4",

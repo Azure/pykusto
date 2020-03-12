@@ -327,12 +327,6 @@ class DatetimeExpression(BaseExpression):
     def __sub__(self, other: Any) -> 'AnyExpression':
         return AnyExpression(DatetimeExpression.binary_op(self, ' - ', other))
 
-    def date_diff(self, other: DatetimeType) -> 'TimespanExpression':
-        return TimespanExpression.binary_op(self, ' - ', other)
-
-    def subtract_timespan(self, other: TimespanType) -> 'DatetimeExpression':
-        return DatetimeExpression.binary_op(self, ' - ', other)
-
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
         return BooleanExpression(KQL('{} between ({} .. {})'.format(
             self.kql, _subexpr_to_kql(lower), _subexpr_to_kql(upper)
@@ -349,7 +343,7 @@ class DatetimeExpression(BaseExpression):
             self.kql, _subexpr_to_kql(round_to), to_kql(fixed_point)
         )))
 
-    def bin_auto(self) -> 'BaseExpression':
+    def bin_auto(self) -> 'DatetimeExpression':
         return DatetimeExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def endofday(self, offset: NumberType = None) -> 'DatetimeExpression':

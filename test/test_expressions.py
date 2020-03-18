@@ -205,6 +205,12 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.dateField - timedelta(hours=1)).render(),
         )
 
+    def test_sub_datetime(self):
+        self.assertEqual(
+            ' | extend foo = dateField - datetime(2020-01-01 00:00:00.000000)',
+            Query().extend(foo=t.dateField - datetime(2020, 1, 1)).render(),
+        )
+
     def test_bin_auto(self):
         self.assertEqual(
             ' | extend foo = bin_auto(dateField)',

@@ -39,16 +39,14 @@ class BaseExpression:
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is BaseExpression:
-            raise TypeError("BaseExpression is abstract")
+        assert cls is not BaseExpression, "BaseExpression is abstract"
         return object.__new__(cls)
 
     def __init__(self, kql: Union[KQL, 'BaseExpression']) -> None:
         if isinstance(kql, BaseExpression):
             self.kql = kql.kql
             return
-        if not isinstance(kql, str):
-            raise ValueError("Either expression or KQL required")
+        assert isinstance(kql, str), "Either expression or KQL required"
         self.kql = kql
 
     def __repr__(self) -> str:
@@ -107,13 +105,19 @@ class BaseExpression:
         Deliberately not implemented, because "not in" inverses the result of this method, and there is no way to
         override it
         """
-        raise NotImplementedError("Instead use 'is_in' or 'contains'")
+        raise NotImplementedError("'in' not supported. Instead use '.is_in()'")
 
     def to_bool(self) -> 'BooleanExpression':
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
 
     def to_string(self) -> 'StringExpression':
         return StringExpression(KQL('tostring({})'.format(self.kql)))
+
+    def to_int(self) -> 'NumberExpression':
+        return NumberExpression(KQL('toint({})'.format(self.kql)))
+
+    def to_long(self) -> 'NumberExpression':
+        return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentToSingleColumn':
         return AssignmentToSingleColumn(column, self)
@@ -256,28 +260,9 @@ class NumberExpression(BaseExpression):
 
 @plain_expression(KustoType.STRING)
 class StringExpression(BaseExpression):
-    @staticmethod
-    def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'StringExpression':
-        # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, str)
-
-    def __len__(self) -> NumberExpression:
-        return self.string_size()
-
+    # We would like to allow using len(), but Python requires it to return an int, so we can't
     def string_size(self) -> NumberExpression:
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
-
-    def is_empty(self) -> BooleanExpression:
-        return BooleanExpression(KQL('isempty({})'.format(self.kql)))
-
-    def __add__(self, other: StringType) -> 'StringExpression':
-        return StringExpression.binary_op(self, ' + ', other)
-
-    @staticmethod
-    def concat(*strings: StringType) -> 'StringExpression':
-        return StringExpression(KQL('strcat({})'.format(', '.join('{}'.format(
-            _subexpr_to_kql(s)
-        ) for s in strings))))
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
         if requested_index is None:
@@ -306,12 +291,6 @@ class StringExpression(BaseExpression):
 
     def endswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' endswith_cs ' if case_sensitive else ' endswith ', other)
-
-    def to_int(self) -> NumberExpression:
-        return NumberExpression(KQL('toint({})'.format(self.kql)))
-
-    def to_long(self) -> NumberExpression:
-        return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def lower(self) -> 'StringExpression':
         return StringExpression(KQL('tolower({})'.format(self.kql)))
@@ -345,14 +324,13 @@ class DatetimeExpression(BaseExpression):
     def __add__(self, other: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression.binary_op(self, ' + ', other)
 
-    def __sub__(self, other: Any) -> BaseExpression:
-        raise NotImplementedError("Instead use 'date_diff' or 'subtract_timespan'")
-
-    def date_diff(self, other: DatetimeType) -> 'TimespanExpression':
-        return TimespanExpression.binary_op(self, ' - ', other)
-
-    def subtract_timespan(self, other: TimespanType) -> 'DatetimeExpression':
-        return DatetimeExpression.binary_op(self, ' - ', other)
+    def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
+        if isinstance(other, (datetime, DatetimeExpression)):
+            return_type = TimespanExpression
+        else:
+            assert isinstance(other, (timedelta, TimespanExpression)), "Invalid type subtracted from datetime"
+            return_type = DatetimeExpression
+        return return_type(DatetimeExpression.binary_op(self, ' - ', other))
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
         return BooleanExpression(KQL('{} between ({} .. {})'.format(
@@ -370,7 +348,7 @@ class DatetimeExpression(BaseExpression):
             self.kql, _subexpr_to_kql(round_to), to_kql(fixed_point)
         )))
 
-    def bin_auto(self) -> 'BaseExpression':
+    def bin_auto(self) -> 'DatetimeExpression':
         return DatetimeExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def endofday(self, offset: NumberType = None) -> 'DatetimeExpression':
@@ -473,22 +451,14 @@ class TimespanExpression(BaseExpression):
 @plain_expression(KustoType.ARRAY)
 class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+        return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
 
-    def __len__(self) -> NumberExpression:
-        return self.array_length()
-
+    # We would like to allow using len(), but Python requires it to return an int, so we can't
     def array_length(self) -> NumberExpression:
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
     def array_contains(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(other, ' in ', self)
-
-    @staticmethod
-    def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
-        return ArrayExpression(KQL('pack_array({})'.format(
-            ', '.join('{}'.format(_subexpr_to_kql(e) for e in elements))
-        )))
 
     def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentToMultipleColumns':
         return AssignmentToMultipleColumns(columns, self)
@@ -504,12 +474,6 @@ class MappingExpression(BaseExpression):
 
     def keys(self) -> ArrayExpression:
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
-
-    @staticmethod
-    def pack(**kwargs: ExpressionType) -> 'MappingExpression':
-        return MappingExpression(KQL('pack({})'.format(
-            ', '.join('"{}", {}'.format(k, _subexpr_to_kql(v)) for k, v in kwargs)
-        )))
 
 
 class DynamicExpression(ArrayExpression, MappingExpression):
@@ -530,8 +494,7 @@ class AggregationExpression(BaseExpression):
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is AggregationExpression:
-            raise TypeError("AggregationExpression is abstract")
+        assert cls is not AggregationExpression, "AggregationExpression is abstract"
         return object.__new__(cls)
 
     def assign_to(self, *columns: 'AnyTypeColumn') -> 'AssignmentFromAggregationToColumn':
@@ -599,14 +562,6 @@ class AssignmentBase:
             return self._rvalue
         return KQL('{} = {}'.format(self._lvalue, self._rvalue))
 
-    @staticmethod
-    def assign(expression: ExpressionType, *columns: 'AnyTypeColumn') -> 'AssignmentBase':
-        if len(columns) == 0:
-            raise ValueError("Provide at least one column")
-        if len(columns) == 1:
-            return AssignmentToSingleColumn(columns[0], expression)
-        return AssignmentToMultipleColumns(columns, expression)
-
 
 class AssignmentToSingleColumn(AssignmentBase):
     def __init__(self, column: 'AnyTypeColumn', expression: ExpressionType) -> None:
@@ -635,8 +590,7 @@ class BaseColumn(BaseExpression):
     # abstract method, which we don't have here. We can't define "get_kusto_type" as abstract because at least one
     # concrete subclass (NumberColumn) does not override it. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs):
-        if cls is BaseColumn:
-            raise TypeError("BaseColumn is abstract")
+        assert cls is not BaseColumn, "BaseColumn is abstract"
         return object.__new__(cls)
 
     def __init__(self, name: str) -> None:
@@ -657,6 +611,9 @@ class BaseColumn(BaseExpression):
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._name})'
+
+    def __str__(self) -> str:
+        return self._name
 
 
 @typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL)
@@ -706,9 +663,6 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 
 
 class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
-    def __len__(self) -> NumberExpression:
-        raise ValueError("Column type unknown, instead use 'string_size' or 'array_length'")
-
     def get_kusto_type(self) -> KustoType:
         raise ValueError("Column type unknown")
 

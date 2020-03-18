@@ -74,7 +74,7 @@ class PyKustoClient(ItemFetcher):
         database_to_table_to_columns = defaultdict(lambda: defaultdict(list))
         for database_name, table_name, column_name, column_type in res.primary_results[0].rows:
             if is_empty(database_name) or is_empty(table_name) or is_empty(column_name):
-                continue
+                continue  # pragma: no cover (https://github.com/nedbat/coveragepy/issues/198)
             database_to_table_to_columns[database_name][table_name].append(
                 typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name)
             )
@@ -150,7 +150,7 @@ class Database(ItemFetcher):
         table_to_columns = defaultdict(list)
         for table_name, column_name, column_type in res.primary_results[0].rows:
             if is_empty(table_name) or is_empty(column_name):
-                continue
+                continue  # pragma: no cover (https://github.com/nedbat/coveragepy/issues/198)
             table_to_columns[table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
         # Table instances are provided with all column data, preventing them from generating more queries. However the
         # "fetch_by_default" behavior is

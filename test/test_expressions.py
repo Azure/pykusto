@@ -1,125 +1,339 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
-from pykusto.expressions import column_generator as col
+from pykusto.expressions import column_generator as col, AnyTypeColumn
 from pykusto.query import Query
-from test.test_base import TestBase
+from pykusto.type_utils import KustoType
+from test.test_base import TestBase, test_table as t
 
 
 class TestExpressions(TestBase):
     def test_contains(self):
         self.assertEqual(
-            ' | where foo contains "bar"',
-            Query().where(col.foo.contains('bar')).render(),
+            ' | where stringField contains "bar"',
+            Query().where(t.stringField.contains('bar')).render(),
         )
         self.assertEqual(
-            ' | where foo contains_cs "bar"',
-            Query().where(col.foo.contains('bar', True)).render(),
+            ' | where stringField contains_cs "bar"',
+            Query().where(t.stringField.contains('bar', True)).render(),
         )
 
     def test_not_contains(self):
         self.assertEqual(
-            ' | where foo !contains "bar"',
-            Query().where(col.foo.not_contains('bar')).render(),
+            ' | where stringField !contains "bar"',
+            Query().where(t.stringField.not_contains('bar')).render(),
         )
         self.assertEqual(
-            ' | where foo !contains_cs "bar"',
-            Query().where(col.foo.not_contains('bar', True)).render(),
+            ' | where stringField !contains_cs "bar"',
+            Query().where(t.stringField.not_contains('bar', True)).render(),
         )
 
     def test_array_access(self):
         self.assertEqual(
-            ' | where (arr[3]) == "bar"',
-            Query().where(col.arr[3] == 'bar').render(),
+            ' | where (arrayField[3]) == "bar"',
+            Query().where(t.arrayField[3] == 'bar').render(),
+        )
+
+    def test_array_contains(self):
+        self.assertEqual(
+            ' | where true in arrayField',
+            Query().where(t.arrayField.array_contains(True)).render(),
+        )
+
+    def test_not_equals(self):
+        self.assertEqual(
+            ' | where stringField != "bar"',
+            Query().where(t.stringField != 'bar').render(),
+        )
+
+    def test_repr(self):
+        self.assertEqual(
+            'StringColumn(stringField)',
+            repr(t.stringField)
+        )
+        self.assertEqual(
+            'stringField == "bar"',
+            repr(t.stringField == 'bar')
+        )
+
+    def test_to_bool(self):
+        self.assertEqual(
+            ' | extend boolFoo = tobool(stringField)',
+            Query().extend(boolFoo=t.stringField.to_bool()).render(),
+        )
+
+    def test_to_int(self):
+        self.assertEqual(
+            ' | extend intFoo = toint(stringField)',
+            Query().extend(intFoo=t.stringField.to_int()).render(),
+        )
+
+    def test_to_long(self):
+        self.assertEqual(
+            ' | extend longFoo = tolong(stringField)',
+            Query().extend(longFoo=t.stringField.to_long()).render(),
+        )
+
+    def test_and(self):
+        self.assertEqual(
+            ' | where boolField and (stringField contains "hello")',
+            Query().where(t.boolField & t.stringField.contains("hello")).render(),
+        )
+
+    def test_or(self):
+        self.assertEqual(
+            ' | where boolField or (stringField contains "hello")',
+            Query().where(t.boolField | t.stringField.contains("hello")).render(),
+        )
+
+    def test_not(self):
+        self.assertEqual(
+            ' | where not(stringField contains "hello")',
+            Query().where(~t.stringField.contains("hello")).render(),
+        )
+
+    def test_ge(self):
+        self.assertEqual(
+            ' | where numField >= 10',
+            Query().where(t.numField >= 10).render(),
+        )
+
+    def test_div(self):
+        self.assertEqual(
+            ' | extend foo = numField / 2',
+            Query().extend(foo=t.numField / 2).render(),
+        )
+
+    def test_mod(self):
+        self.assertEqual(
+            ' | extend foo = numField % 2',
+            Query().extend(foo=t.numField % 2).render(),
+        )
+
+    def test_negation(self):
+        self.assertEqual(
+            ' | extend foo = -numField',
+            Query().extend(foo=-t.numField).render(),
+        )
+
+    def test_abs(self):
+        self.assertEqual(
+            ' | extend foo = abs(numField)',
+            Query().extend(foo=abs(t.numField)).render(),
+        )
+
+    def test_between(self):
+        self.assertEqual(
+            ' | where numField between (numField2 .. 100)',
+            Query().where(t.numField.between(t.numField2, 100)).render(),
+        )
+
+    def test_str_equals(self):
+        self.assertEqual(
+            ' | where stringField =~ stringField2',
+            Query().where(t.stringField.equals(t.stringField2)).render(),
+        )
+
+    def test_str_not_equals(self):
+        self.assertEqual(
+            ' | where stringField !~ stringField2',
+            Query().where(t.stringField.not_equals(t.stringField2)).render(),
+        )
+
+    def test_str_matches(self):
+        self.assertEqual(
+            ' | where stringField matches regex "[a-z]+"',
+            Query().where(t.stringField.matches("[a-z]+")).render(),
+        )
+
+    def test_str_starts_with(self):
+        self.assertEqual(
+            ' | where stringField startswith "hello"',
+            Query().where(t.stringField.startswith("hello")).render(),
+        )
+
+    def test_str_ends_with(self):
+        self.assertEqual(
+            ' | where stringField endswith "hello"',
+            Query().where(t.stringField.endswith("hello")).render(),
+        )
+
+    def test_le_date(self):
+        self.assertEqual(
+            'test_table | where dateField <= datetime(2000-01-01 00:00:00.000000)',
+            Query(t).where(t.dateField <= datetime(2000, 1, 1)).render(),
+        )
+
+    def test_lt_date(self):
+        self.assertEqual(
+            ' | where dateField < datetime(2000-01-01 00:00:00.000000)',
+            Query().where(t.dateField < datetime(2000, 1, 1)).render(),
+        )
+
+    def test_ge_date(self):
+        self.assertEqual(
+            ' | where dateField >= datetime(2000-01-01 00:00:00.000000)',
+            Query().where(t.dateField >= datetime(2000, 1, 1)).render(),
+        )
+
+    def test_gt_date(self):
+        self.assertEqual(
+            ' | where dateField > datetime(2000-01-01 00:00:00.000000)',
+            Query().where(t.dateField > datetime(2000, 1, 1)).render(),
+        )
+
+    def test_add_timespan_to_date(self):
+        self.assertEqual(
+            ' | extend foo = dateField + time(0.1:0:0.0)',
+            Query().extend(foo=t.dateField + timedelta(hours=1)).render(),
+        )
+
+    def test_add_timespan_to_timespan(self):
+        self.assertEqual(
+            ' | extend foo = timespanField + time(0.1:0:0.0)',
+            Query().extend(foo=t.timespanField + timedelta(hours=1)).render(),
+        )
+
+    def test_substract_timespan_from_timespan(self):
+        self.assertEqual(
+            ' | extend foo = timespanField - time(0.1:0:0.0)',
+            Query().extend(foo=t.timespanField - timedelta(hours=1)).render(),
+        )
+
+    def test_sub_timespan(self):
+        self.assertEqual(
+            ' | extend foo = dateField - time(0.1:0:0.0)',
+            Query().extend(foo=t.dateField - timedelta(hours=1)).render(),
+        )
+
+    def test_sub_datetime(self):
+        self.assertEqual(
+            ' | extend foo = dateField - datetime(2020-01-01 00:00:00.000000)',
+            Query().extend(foo=t.dateField - datetime(2020, 1, 1)).render(),
+        )
+
+    def test_bin_auto(self):
+        self.assertEqual(
+            ' | extend foo = bin_auto(dateField)',
+            Query().extend(foo=t.dateField.bin_auto()).render(),
         )
 
     def test_array_access_expression_index(self):
         self.assertEqual(
-            ' | where (arr[(foo * 2)]) == "bar"',
-            Query().where(col.arr[col.foo * 2] == 'bar').render(),
+            ' | where (arrayField[numField * 2]) == "bar"',
+            Query().where(t.arrayField[t.numField * 2] == 'bar').render(),
         )
 
     def test_array_access_yields_any_expression(self):
         self.assertEqual(
-            ' | where (cos(arr[3])) < 1',
-            Query().where(col.arr[3].cos() < 1).render(),
+            ' | where (cos(arrayField[3])) < 1',
+            Query().where(t.arrayField[3].cos() < 1).render(),
         )
 
     def test_mapping_access(self):
         self.assertEqual(
-            ' | where (dict["key"]) == "bar"',
-            Query().where(col.dict['key'] == 'bar').render(),
+            ' | where (mapField["key"]) == "bar"',
+            Query().where(t.mapField['key'] == 'bar').render(),
         )
 
     def test_mapping_access_attribute(self):
         self.assertEqual(
-            ' | where (dict.key) == "bar"',
-            Query().where(col.dict.key == 'bar').render(),
+            ' | where (mapField.key) == "bar"',
+            Query().where(t.mapField.key == 'bar').render(),
         )
 
     def test_mapping_access_expression_index(self):
         self.assertEqual(
-            ' | where (dict[foo]) == "bar"',
-            Query().where(col.dict[col.foo] == 'bar').render(),
+            ' | where (mapField[stringField]) == "bar"',
+            Query().where(t.mapField[t.stringField] == 'bar').render(),
         )
 
     def test_mapping_access_yields_any_expression(self):
         self.assertEqual(
-            ' | where (dict["key"]) contains "substr"',
-            Query().where(col.dict['key'].contains("substr")).render(),
+            ' | where (mapField["key"]) contains "substr"',
+            Query().where(t.mapField['key'].contains("substr")).render(),
         )
 
     def test_dynamic(self):
         self.assertEqual(
-            ' | where (dict["foo"][0].bar[1][2][(tolower(bar))]) > time(1.0:0:0.0)',
-            Query().where(col.dict['foo'][0].bar[1][2][col.bar.lower()] > timedelta(1)).render(),
+            ' | where (mapField["foo"][0].bar[1][2][(tolower(stringField))]) > time(1.0:0:0.0)',
+            Query().where(t.mapField['foo'][0].bar[1][2][t.stringField.lower()] > timedelta(1)).render(),
         )
 
     def test_assign_to(self):
         self.assertEqual(
-            " | extend bar = foo * 2",
-            Query().extend((col.foo * 2).assign_to(col.bar)).render(),
+            " | extend numFieldNew = numField * 2",
+            Query().extend((t.numField * 2).assign_to(col.numFieldNew)).render(),
         )
         self.assertEqual(
-            " | extend foo = shoo * 2",
-            Query().extend(foo=(col.shoo * 2)).render(),
+            " | extend foo = numField * 2",
+            Query().extend(foo=(t.numField * 2)).render(),
         )
 
     def test_extend_const(self):
         self.assertEqual(
-            ' | extend foo = 5, bar = "bar", other_col = other',
-            Query().extend(foo=5, bar="bar", other_col=col.other).render(),
+            ' | extend foo = 5, bar = "bar", other_col = stringField',
+            Query().extend(foo=5, bar="bar", other_col=t.stringField).render(),
+        )
+
+    def test_between_date(self):
+        self.assertEqual(
+            " | where dateField between (datetime(2020-01-01 00:00:00.000000) .. datetime(2020-01-31 00:00:00.000000))",
+            Query().where(t.dateField.between(datetime(2020, 1, 1), datetime(2020, 1, 31))).render(),
         )
 
     def test_between_timespan(self):
         self.assertEqual(
-            " | where foo between (time(0.0:0:0.0) .. time(0.3:0:0.0))",
-            Query().where(col.foo.between(timedelta(0), timedelta(hours=3))).render(),
+            " | where timespanField between (time(0.0:0:0.0) .. time(0.3:0:0.0))",
+            Query().where(t.timespanField.between(timedelta(0), timedelta(hours=3))).render(),
         )
 
     def test_is_empty(self):
         self.assertEqual(
-            'isempty(foo)',
-            col.foo.is_empty().kql,
+            'isempty(stringField)',
+            t.stringField.is_empty().kql,
         )
 
-    def test_column_generator(self):
+    def test_column_with_dot(self):
         self.assertEqual(
             " | project ['foo.bar']",
-            Query().project(col['foo.bar']).render(),
+            Query().project(t['foo.bar']).render(),
         )
 
     def test_is_in(self):
         self.assertEqual(
-            ' | where foo in ("A", "B", "C")',
-            Query().where(col.foo.is_in(["A", "B", "C"])).render()
+            ' | where stringField in ("A", "B", "C")',
+            Query().where(t.stringField.is_in(["A", "B", "C"])).render()
         )
         self.assertEqual(
-            ' | where foo in ("[", "[[", "]")',
-            Query().where(col.foo.is_in(['[', "[[", "]"])).render()
+            ' | where stringField in ("[", "[[", "]")',
+            Query().where(t.stringField.is_in(['[', "[[", "]"])).render()
+        )
+        self.assertRaises(
+            NotImplementedError("'in' not supported. Instead use '.is_in()'"),
+            lambda: t.stringField in t.stringField2
         )
 
     def test_has(self):
         self.assertEqual(
-            ' | where foo has "test"',
-            Query().where(col.foo.has("test")).render()
+            ' | where stringField has "test"',
+            Query().where(t.stringField.has("test")).render()
         )
+
+    def test_column_generator(self):
+        field1 = col.foo
+        field2 = col['foo.bar']
+        self.assertIsInstance(field1, AnyTypeColumn)
+        self.assertIsInstance(field2, AnyTypeColumn)
+        self.assertEqual('foo', field1.get_name())
+        self.assertEqual('foo.bar', field2.get_name())
+
+    def test_kusto_type(self):
+        self.assertEqual(KustoType.BOOL, t.boolField.get_kusto_type())
+        self.assertEqual(KustoType.ARRAY, t.arrayField.get_kusto_type())
+        self.assertEqual(KustoType.MAPPING, t.mapField.get_kusto_type())
+        self.assertEqual(KustoType.STRING, t.stringField.get_kusto_type())
+        self.assertEqual(KustoType.DATETIME, t.dateField.get_kusto_type())
+        self.assertEqual(KustoType.TIMESPAN, t.timespanField.get_kusto_type())
+        self.assertRaises(ValueError("Column type unknown"), t.dynamicField.get_kusto_type)
+        self.assertRaises(ValueError("Column type unknown"), col.anyTypeField.get_kusto_type)
+        self.assertRaises(NotImplementedError("BaseColumn has no type"), t.numField.get_kusto_type)

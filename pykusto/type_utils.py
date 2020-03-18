@@ -65,8 +65,7 @@ def get_base_types(obj: Any) -> Set[KustoType]:
     # recorded the field _base_types
     obj_type = type(obj)
     base_types = getattr(obj_type, '_base_types', None)
-    if base_types is None:
-        raise TypeError("get_base_types called for unsupported type: {}".format(obj_type.__name__))
+    assert base_types is not None, "get_base_types called for unsupported type: {}".format(obj_type.__name__)
     return base_types
 
 

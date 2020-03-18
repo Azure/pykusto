@@ -119,10 +119,9 @@ class Query:
                 columns.append(arg)
             elif isinstance(arg, AssignmentBase):
                 assignments.append(arg)
-            elif isinstance(arg, BaseExpression):
-                assignments.append(arg.assign_to())
             else:
-                raise ValueError("Invalid assignment: " + arg.to_kql())
+                assert isinstance(arg, BaseExpression), "Invalid assignment"
+                assignments.append(arg.assign_to())
         for column_name, expression in kwargs.items():
             assignments.append(AssignmentToSingleColumn(AnyTypeColumn(column_name), expression))
         return ProjectQuery(self, columns, assignments)
@@ -162,10 +161,9 @@ class Query:
         for arg in args:
             if isinstance(arg, AggregationExpression):
                 assignments.append(arg.assign_to())
-            elif isinstance(arg, AssignmentFromAggregationToColumn):
-                assignments.append(arg)
             else:
-                raise ValueError("Invalid assignment: " + str(arg))
+                assert isinstance(arg, AssignmentFromAggregationToColumn), "Invalid assignment"
+                assignments.append(arg)
         for column_name, agg in kwargs.items():
             assignments.append(AssignmentFromAggregationToColumn(AnyTypeColumn(column_name), agg))
         return SummarizeQuery(self, assignments)
@@ -205,7 +203,7 @@ class Query:
 
     @abstractmethod
     def _compile(self) -> KQL:
-        pass
+        raise NotImplementedError()  # pragma: no cover
 
     def _compile_all(self, use_full_table_name) -> KQL:
         if self._head is None:
@@ -285,10 +283,7 @@ class ProjectAwayQuery(Query):
         self._columns = columns
 
     def _compile(self) -> KQL:
-        def col_or_wildcard_to_string(col_or_wildcard):
-            return col_or_wildcard.kql if isinstance(col_or_wildcard, AnyTypeColumn) else col_or_wildcard
-
-        return KQL('project-away {}'.format(', '.join((col_or_wildcard_to_string(c) for c in self._columns))))
+        return KQL('project-away {}'.format(', '.join((str(c) for c in self._columns))))
 
 
 class DistinctQuery(Query):
@@ -488,10 +483,9 @@ class SummarizeQuery(Query):
         for arg in args:
             if isinstance(arg, AnyTypeColumn) or isinstance(arg, BaseExpression):
                 self._by_columns.append(arg)
-            elif isinstance(arg, AssignmentToSingleColumn):
-                self._by_assignments.append(arg)
             else:
-                raise ValueError("Invalid assignment: " + arg.to_kql())
+                assert isinstance(arg, AssignmentToSingleColumn), "Invalid assignment"
+                self._by_assignments.append(arg)
         for column_name, group_exp in kwargs.items():
             self._by_assignments.append(AssignmentToSingleColumn(AnyTypeColumn(column_name), group_exp))
         return self

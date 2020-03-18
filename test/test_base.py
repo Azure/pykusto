@@ -92,7 +92,7 @@ def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tupl
     )
 
 
-class QueryExecution:
+class RecordedQuery:
     database: str
     query: str
     properties: ClientRequestProperties
@@ -105,19 +105,20 @@ class QueryExecution:
     def __repr__(self) -> str:
         return json.dumps({'database': self.database, 'query': self.query, 'properties': self.properties})
 
-    def __eq__(self, o: 'QueryExecution') -> bool:
-        if not isinstance(o, QueryExecution):
+    def __eq__(self, o: 'RecordedQuery') -> bool:
+        if not isinstance(o, RecordedQuery):
             return False
         return self.database == o.database and self.query == o.query and self.properties == o.properties
 
 
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
-    executions: List[QueryExecution]
+    recorded_queries: List[RecordedQuery]
     columns_response: Callable
     tables_response: Callable
     databases_response: Callable
     main_response: Callable
+    record_metadata: bool
 
     def __init__(
             self,
@@ -126,20 +127,27 @@ class MockKustoClient(KustoClient):
             tables_response: Callable = mock_tables_response([]),
             databases_response: Callable = mock_databases_response([]),
             main_response: Callable = mock_response(tuple()),
+            record_metadata: bool = False
     ):
-        self.executions = []
+        self.recorded_queries = []
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
         self.columns_response = columns_response
         self.tables_response = tables_response
         self.databases_response = databases_response
         self.main_response = main_response
+        self.record_metadata = record_metadata
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
+        metadata_query = True
         if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
-            return self.tables_response()
-        if rendered_query.startswith('.show table '):
-            return self.columns_response()
-        if rendered_query.startswith('.show databases schema '):
-            return self.databases_response()
-        self.executions.append(QueryExecution(database, rendered_query, properties))
-        return self.main_response()
+            response = self.tables_response()
+        elif rendered_query.startswith('.show table '):
+            response = self.columns_response()
+        elif rendered_query.startswith('.show databases schema '):
+            response = self.databases_response()
+        else:
+            metadata_query = False
+            response = self.main_response()
+        if self.record_metadata or not metadata_query:
+            self.recorded_queries.append(RecordedQuery(database, rendered_query, properties))
+        return response

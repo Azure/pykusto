@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 from typing import Callable, Tuple, Any, List
@@ -91,9 +92,28 @@ def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tupl
     )
 
 
+class QueryExecution:
+    database: str
+    query: str
+    properties: ClientRequestProperties
+
+    def __init__(self, database: str, query: str, properties: ClientRequestProperties = None):
+        self.database = database
+        self.query = query
+        self.properties = properties
+
+    def __repr__(self) -> str:
+        return json.dumps({'database': self.database, 'query': self.query, 'properties': self.properties})
+
+    def __eq__(self, o: 'QueryExecution') -> bool:
+        if not isinstance(o, QueryExecution):
+            return False
+        return self.database == o.database and self.query == o.query and self.properties == o.properties
+
+
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
-    executions: List[Tuple[str, str, ClientRequestProperties]]
+    executions: List[QueryExecution]
     columns_response: Callable
     tables_response: Callable
     databases_response: Callable
@@ -121,5 +141,5 @@ class MockKustoClient(KustoClient):
             return self.columns_response()
         if rendered_query.startswith('.show databases schema '):
             return self.databases_response()
-        self.executions.append((database, rendered_query, properties))
+        self.executions.append(QueryExecution(database, rendered_query, properties))
         return self.main_response()

@@ -7,7 +7,8 @@ from pykusto.client import PyKustoClient, Database
 from pykusto.expressions import column_generator as col, StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
 from pykusto.query import Query
 from pykusto.type_utils import KustoType
-from test.test_base import TestBase, mock_columns_response, mock_tables_response, mock_databases_response, MockKustoClient
+from test.test_base import TestBase, mock_columns_response, mock_tables_response, mock_databases_response, \
+    MockKustoClient, QueryExecution
 
 
 class TestTable(TestBase):
@@ -16,7 +17,7 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
         Query(table).take(5).execute()
         self.assertEqual(
-            [('test_db', 'test_table | take 5', None)],
+            [QueryExecution('test_db', 'test_table | take 5')],
             mock_kusto_client.executions
         )
 
@@ -41,7 +42,7 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
         Query().take(5).execute(table)
         self.assertEqual(
-            [('test_db', 'test_table | take 5', None)],
+            [QueryExecution('test_db', 'test_table | take 5')],
             mock_kusto_client.executions,
         )
 
@@ -50,7 +51,7 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db'].get_tables('test_table1', 'test_table2')
         Query(table).take(5).execute()
         self.assertEqual(
-            [('test_db', 'union test_table1, test_table2 | take 5', None)],
+            [QueryExecution('test_db', 'union test_table1, test_table2 | take 5')],
             mock_kusto_client.executions,
         )
 
@@ -59,7 +60,7 @@ class TestTable(TestBase):
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table_*']
         Query(table).take(5).execute()
         self.assertEqual(
-            [('test_db', 'union test_table_* | take 5', None)],
+            [QueryExecution('test_db', 'union test_table_* | take 5')],
             mock_kusto_client.executions,
         )
 
@@ -73,7 +74,7 @@ class TestTable(TestBase):
             table.database.client._client,
         )
         self.assertEqual(
-            [('test_db', 'test_table | take 5', None)],
+            [QueryExecution('test_db', 'test_table | take 5')],
             mock_kusto_client.executions,
         )
 
@@ -84,7 +85,7 @@ class TestTable(TestBase):
         table2 = PyKustoClient(client2)['test_db_2']['test_table_2']
         Query(table1).take(5).join(Query(table2).take(6)).on(col.foo).execute()
         self.assertEqual(
-            [('test_db_1', 'test_table_1 | take 5 | join  (cluster("two.kusto.windows.net").database("test_db_2").table("test_table_2") | take 6) on foo', None)],
+            [QueryExecution('test_db_1', 'test_table_1 | take 5 | join  (cluster("two.kusto.windows.net").database("test_db_2").table("test_table_2") | take 6) on foo')],
             client1.executions,
         )
 
@@ -95,7 +96,7 @@ class TestTable(TestBase):
         table2 = PyKustoClient(client2)['test_db_2'].get_tables('test_table_2_*')
         Query(table1).take(5).join(Query(table2).take(6)).on(col.foo).execute()
         self.assertEqual(
-            [('test_db_1', 'test_table_1 | take 5 | join  (union cluster("two.kusto.windows.net").database("test_db_2").table("test_table_2_*") | take 6) on foo', None)],
+            [QueryExecution('test_db_1', 'test_table_1 | take 5 | join  (union cluster("two.kusto.windows.net").database("test_db_2").table("test_table_2_*") | take 6) on foo')],
             client1.executions,
         )
 
@@ -106,11 +107,10 @@ class TestTable(TestBase):
         table2 = PyKustoClient(client2)['test_db_2'].get_tables('test_table_2_*', 'test_table_3_*')
         Query(table1).take(5).join(Query(table2).take(6)).on(col.foo).execute()
         self.assertEqual(
-            [(
+            [QueryExecution(
                 'test_db_1',
                 'test_table_1 | take 5 | join  (union cluster("two.kusto.windows.net").database("test_db_2").table("test_table_2_*"), '
                 'cluster("two.kusto.windows.net").database("test_db_2").table("test_table_3_*") | take 6) on foo',
-                None
             )],
             client1.executions,
         )

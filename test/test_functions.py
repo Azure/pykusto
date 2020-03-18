@@ -784,18 +784,6 @@ class TestFunction(TestBase):
             cm.output
         )
 
-    def test_iff_different_types_substract(self):
-        with self.assertLogs(logger, logging.WARN) as cm:
-            self.assertEqual(
-                ' | project foo = iff(dateField > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), dateField2 - dateField3)',
-                Query().project(foo=f.iff(t.dateField > f.ago(timedelta(2)), timedelta(3), t.dateField2 - t.dateField3)).render()
-            )
-        self.assertEqual(
-            ['WARNING:pykusto:The second and third arguments must be of the same type, but they are: timespan and int, long, real. '
-             'If this is a mistake, please report it at https://github.com/Azure/pykusto/issues'],
-            cm.output
-        )
-
     def test_iff_related_types(self):
         self.assertEqual(
             " | project foo = iff(dateField > (ago(time(2.0:0:0.0))), 2, array_length(arrayField))",

@@ -324,8 +324,13 @@ class DatetimeExpression(BaseExpression):
     def __add__(self, other: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression.binary_op(self, ' + ', other)
 
-    def __sub__(self, other: Any) -> 'AnyExpression':
-        return AnyExpression(DatetimeExpression.binary_op(self, ' - ', other))
+    def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
+        if isinstance(other, (datetime, DatetimeExpression)):
+            return_type = TimespanExpression
+        else:
+            assert isinstance(other, (timedelta, TimespanExpression)), "Invalid type subtracted from datetime"
+            return_type = DatetimeExpression
+        return return_type(DatetimeExpression.binary_op(self, ' - ', other))
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
         return BooleanExpression(KQL('{} between ({} .. {})'.format(

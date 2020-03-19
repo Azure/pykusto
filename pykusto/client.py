@@ -1,15 +1,43 @@
 from collections import defaultdict
-from typing import Union, List, Tuple, Dict, Any
+from typing import Union, List, Tuple, Dict, Any, Generator
 from urllib.parse import urlparse
 
 # noinspection PyProtectedMember
+from azure.kusto.data._models import KustoResultRow
+# noinspection PyProtectedMember
 from azure.kusto.data._response import KustoResponseDataSet
+from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.item_fetcher import ItemFetcher
 from pykusto.kql_converters import KQL
 from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
+
+
+class KustoResponse:
+    _response: KustoResponseDataSet
+
+    def __init__(self, response: KustoResponseDataSet):
+        self._response = response
+
+    def get_rows(self) -> List[KustoResultRow]:
+        return self._response.primary_results[0].rows
+
+    @staticmethod
+    def is_row_valid(row: KustoResultRow) -> bool:
+        for field in row:
+            if field is None or (isinstance(field, str) and len(field.strip()) == 0):
+                return False
+        return True
+
+    def get_valid_rows(self) -> Generator[KustoResultRow, None, None]:
+        for row in self.get_rows():
+            if self.is_row_valid(row):
+                yield row
+
+    def to_dataframe(self):
+        return dataframe_from_result_table(self._response.primary_results[0])
 
 
 class PyKustoClient(ItemFetcher):
@@ -52,8 +80,8 @@ class PyKustoClient(ItemFetcher):
     def get_database(self, name: str) -> 'Database':
         return self[name]
 
-    def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
-        return self._client.execute(database, query, properties)
+    def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
+        return KustoResponse(self._client.execute(database, query, properties))
 
     def show_databases(self) -> Tuple[str, ...]:
         return self.get_item_names()
@@ -68,13 +96,11 @@ class PyKustoClient(ItemFetcher):
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required
         # by the "execute" method, but is ignored for this query
-        res: KustoResponseDataSet = self.execute(
+        res: KustoResponse = self.execute(
             '', KQL('.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000')
         )
         database_to_table_to_columns = defaultdict(lambda: defaultdict(list))
-        for database_name, table_name, column_name, column_type in res.primary_results[0].rows:
-            if is_empty(database_name) or is_empty(table_name) or is_empty(column_name):
-                continue  # pragma: no cover (https://github.com/nedbat/coveragepy/issues/198)
+        for database_name, table_name, column_name, column_type in res.get_valid_rows():
             database_to_table_to_columns[database_name][table_name].append(
                 typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name)
             )
@@ -132,7 +158,7 @@ class Database(ItemFetcher):
         # Kusto table
         return Table(self, name, fetch_by_default=False)
 
-    def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
+    def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
         return self.client.execute(self.name, query, properties)
 
     def show_tables(self) -> Tuple[str, ...]:
@@ -144,13 +170,11 @@ class Database(ItemFetcher):
     def _internal_get_items(self) -> Dict[str, 'Table']:
         # Retrieves table names, column names and types for this database only (the database name is added in the
         # "execute" method)
-        res: KustoResponseDataSet = self.execute(
+        res: KustoResponse = self.execute(
             KQL('.show database schema | project TableName, ColumnName, ColumnType | limit 10000')
         )
         table_to_columns = defaultdict(list)
-        for table_name, column_name, column_type in res.primary_results[0].rows:
-            if is_empty(table_name) or is_empty(column_name):
-                continue  # pragma: no cover (https://github.com/nedbat/coveragepy/issues/198)
+        for table_name, column_name, column_type in res.get_valid_rows():
             table_to_columns[table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
         # Table instances are provided with all column data, preventing them from generating more queries. However the
         # "fetch_by_default" behavior is
@@ -225,8 +249,8 @@ class Table(ItemFetcher):
         return KQL(
             table_format_str.format(self.database.client.get_cluster_name(), self.database.name, table))
 
-    def execute(self, rendered_query: KQL) -> KustoResponseDataSet:
-        return self.database.execute(rendered_query)
+    def execute(self, query: KQL) -> KustoResponse:
+        return self.database.execute(query)
 
     def show_columns(self):
         return self.get_item_names()
@@ -234,15 +258,10 @@ class Table(ItemFetcher):
     def _internal_get_items(self) -> Dict[str, Any]:
         # TODO: Handle unions
         # Retrieves column names and types for this table only
-        res: KustoResponseDataSet = self.execute(
+        res: KustoResponse = self.execute(
             KQL('.show table {} | project AttributeName, AttributeType | limit 10000'.format(self.get_table()))
         )
         return {
             column_name: typed_column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
-            for column_name, column_type in res.primary_results[0].rows
+            for column_name, column_type in res.get_valid_rows()
         }
-
-
-# There has to be code somewhere that already does this, but I didn't find it
-def is_empty(s: str) -> bool:
-    return s is None or len(s.strip()) == 0

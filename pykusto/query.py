@@ -5,11 +5,7 @@ from itertools import chain
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-# noinspection PyProtectedMember
-from azure.kusto.data._response import KustoResponseDataSet
-from azure.kusto.data.helpers import dataframe_from_result_table
-
-from pykusto.client import Table
+from pykusto.client import Table, KustoResponse
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
@@ -229,7 +225,7 @@ class Query:
         logger.debug("Complied query: " + result)
         return result
 
-    def execute(self, table: Table = None) -> KustoResponseDataSet:
+    def execute(self, table: Table = None) -> KustoResponse:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
@@ -244,8 +240,7 @@ class Query:
         return table.execute(rendered_query)
 
     def to_dataframe(self, table: Table = None):
-        res = self.execute(table)
-        return dataframe_from_result_table(res.primary_results[0])
+        return self.execute(table).to_dataframe()
 
 
 class ProjectQuery(Query):

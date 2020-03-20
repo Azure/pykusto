@@ -57,10 +57,7 @@ class PyKustoClient(ItemFetcher):
         :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given,
             a KustoClient is generated with AAD device authentication
         """
-        self._set_client(client_or_cluster)
         super().__init__(None, fetch_by_default)
-
-    def _set_client(self, client_or_cluster):
         if isinstance(client_or_cluster, KustoClient):
             self._client = client_or_cluster
             # noinspection PyProtectedMember
@@ -68,6 +65,7 @@ class PyKustoClient(ItemFetcher):
         else:
             self._client = self._get_client_for_cluster(client_or_cluster)
             self._cluster_name = client_or_cluster
+        self._refresh_if_needed()
 
     def __repr__(self) -> str:
         return f'PyKustoClient({self._cluster_name})'
@@ -149,6 +147,7 @@ class Database(ItemFetcher):
         )
         self.client = client
         self.name = name
+        self._refresh_if_needed()
 
     def __repr__(self) -> str:
         return f'{self.client}.Database({self.name})'
@@ -212,6 +211,7 @@ class Table(ItemFetcher):
         )
         self.database = database
         self.tables = (tables,) if isinstance(tables, str) else tuple(tables)
+        self._refresh_if_needed()
 
     def __repr__(self) -> str:
         return f'{self.database}.Table({self.get_table()})'

@@ -30,7 +30,9 @@ class ItemFetcher(metaclass=ABCMeta):
         self.__future = None
         self.__item_write_lock = Lock()
         self.__item_fetch_lock = Lock()
-        if items is None and fetch_by_default:
+
+    def _refresh_if_needed(self):
+        if self.__items is None and self._fetch_by_default:
             self.refresh()
 
     def get_item_names(self):

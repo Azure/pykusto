@@ -383,7 +383,7 @@ class _OrderQueryBase(Query):
         return self
 
     @staticmethod
-    def _compile_order_spec(order_spec):
+    def _compile_order_spec(order_spec: OrderSpec) -> str:
         res = str(order_spec.col.kql)
         if order_spec.order is not None:
             res += " " + str(order_spec.order.value)

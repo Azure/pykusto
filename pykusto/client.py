@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Union, List, Tuple, Dict, Any, Generator
 from urllib.parse import urlparse
 
+import pandas as pd
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultRow
 # noinspection PyProtectedMember
@@ -36,7 +37,7 @@ class KustoResponse:
             if self.is_row_valid(row):
                 yield row
 
-    def to_dataframe(self):
+    def to_dataframe(self) -> pd.DataFrame:
         return dataframe_from_result_table(self._response.primary_results[0])
 
 
@@ -164,6 +165,10 @@ class Database(ItemFetcher):
         return self.get_item_names()
 
     def get_tables(self, *tables: str):
+        assert len(tables) > 0
+        if len(tables) == 1 and '*' not in tables[0]:
+            return self[tables[0]]
+
         return Table(self, tables, fetch_by_default=self._fetch_by_default)
 
     def _internal_get_items(self) -> Dict[str, 'Table']:
@@ -244,7 +249,7 @@ class Table(ItemFetcher):
         else:
             return KQL("union " + ", ".join(self._format_full_table_name(t) for t in self.tables))
 
-    def _format_full_table_name(self, table):
+    def _format_full_table_name(self, table: str) -> KQL:
         table_format_str = 'cluster("{}").database("{}").table("{}")'
         return KQL(
             table_format_str.format(self.database.client.get_cluster_name(), self.database.name, table))
@@ -252,7 +257,7 @@ class Table(ItemFetcher):
     def execute(self, query: KQL) -> KustoResponse:
         return self.database.execute(query)
 
-    def show_columns(self):
+    def show_columns(self) -> Tuple[str, ...]:
         return self.get_item_names()
 
     def _internal_get_items(self) -> Dict[str, Any]:

@@ -1,7 +1,36 @@
 <component name="ProjectDictionaryState">
   <dictionary name="pykusto">
     <words>
+      <w>acos</w>
+      <w>dataframe</w>
+      <w>endofday</w>
+      <w>endofmonth</w>
+      <w>endofweek</w>
+      <w>endofyear</w>
+      <w>getmonth</w>
+      <w>getyear</w>
+      <w>hourofday</w>
+      <w>isempty</w>
+      <w>isfinite</w>
+      <w>isinf</w>
+      <w>isnotempty</w>
+      <w>isnotnull</w>
+      <w>isutf</w>
       <w>kusto</w>
+      <w>loggamma</w>
+      <w>pykusto</w>
+      <w>startofday</w>
+      <w>startofmonth</w>
+      <w>startofweek</w>
+      <w>startofyear</w>
+      <w>strcat</w>
+      <w>subexpr</w>
+      <w>timespan</w>
+      <w>tobool</w>
+      <w>toint</w>
+      <w>tolong</w>
+      <w>tolower</w>
+      <w>toupper</w>
     </words>
   </dictionary>
 </component>

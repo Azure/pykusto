@@ -27,14 +27,14 @@ test_table = Table(
 
 class TestBase(TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         logging.basicConfig(
             stream=sys.stdout,
             level=logging.DEBUG,
             format='%(asctime)s %(levelname)5s %(message)s'
         )
 
-    def setUp(self):
+    def setUp(self) -> None:
         logger.info("Running test: " + self._testMethodName)
 
     def assertRaises(self, expected_exception: BaseException, test_callable: Callable, *args, **kwargs):

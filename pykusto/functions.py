@@ -369,10 +369,10 @@ def make_datetime(year: NumberType,
     return DatetimeExpression(KQL(res))
 
 
-def make_string(): raise NotImplemented  # TODO
+def make_string() -> StringExpression: raise NotImplemented  # TODO
 
 
-def make_timespan(): raise NotImplemented  # TODO
+def make_timespan() -> TimespanExpression: raise NotImplemented  # TODO
 
 
 # def max_of(self): return
@@ -381,10 +381,10 @@ def make_timespan(): raise NotImplemented  # TODO
 # def min_of(self): return
 
 
-def monthofyear(): raise NotImplemented  # TODO
+def monthofyear() -> NumberExpression: raise NotImplemented  # TODO
 
 
-def new_guid(): raise NotImplemented  # TODO
+def new_guid() -> AnyExpression: raise NotImplemented  # TODO
 
 
 def now(offset: TimespanType = None) -> StringExpression:
@@ -393,13 +393,13 @@ def now(offset: TimespanType = None) -> StringExpression:
     return StringExpression(KQL('now()'))
 
 
-def pack(**kwargs: ExpressionType) -> 'MappingExpression':
+def pack(**kwargs: ExpressionType) -> MappingExpression:
     return MappingExpression(KQL('pack({})'.format(
         ', '.join('"{}", {}'.format(k, to_kql(v)) for k, v in kwargs.items())
     )))
 
 
-def pack_all(): raise NotImplemented  # TODO
+def pack_all() -> MappingExpression: raise NotImplemented  # TODO
 
 
 def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
@@ -408,7 +408,7 @@ def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
     )))
 
 
-def pack_dictionary(): raise NotImplemented  # TODO
+def pack_dictionary() -> MappingExpression: raise NotImplemented  # TODO
 
 
 #
@@ -441,10 +441,10 @@ def parse_json(expr: Union[StringType, DynamicType]) -> DynamicExpression:
 # def parse_xml(self): return
 
 
-def percentile_tdigest(): raise NotImplemented  # TODO
+def percentile_tdigest() -> AnyExpression: raise NotImplemented  # TODO
 
 
-def percentrank_tdigest(): raise NotImplemented  # TODO
+def percentrank_tdigest() -> AnyExpression: raise NotImplemented  # TODO
 
 
 def pow(expr1: NumberType, expr2: NumberType) -> NumberExpression:
@@ -686,10 +686,10 @@ def todouble(expr: NumberType) -> NumberExpression:
     return NumberExpression(KQL("todouble({})".format(to_kql(expr))))
 
 
-def todynamic(): raise NotImplemented  # TODO
+def todynamic() -> DynamicExpression: raise NotImplemented  # TODO
 
 
-def toguid(): raise NotImplemented  # TODO
+def toguid() -> AnyExpression: raise NotImplemented  # TODO
 
 
 def tohex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
@@ -716,7 +716,7 @@ def tostring(expr: ExpressionType):
     return expr.to_string()
 
 
-def totimespan(): raise NotImplemented  # TODO
+def totimespan() -> TimespanExpression: raise NotImplemented  # TODO
 
 
 def toupper(expr: StringType) -> StringExpression:
@@ -732,7 +732,7 @@ def toupper(expr: StringType) -> StringExpression:
 # def treepath(self): return
 
 
-def trim(): raise NotImplemented  # TODO
+def trim() -> StringExpression: raise NotImplemented  # TODO
 
 
 # def trim_end(self): return
@@ -741,19 +741,19 @@ def trim(): raise NotImplemented  # TODO
 # def trim_start(self): return
 
 
-def url_decode(): raise NotImplemented  # TODO
+def url_decode() -> StringExpression: raise NotImplemented  # TODO
 
 
-def url_encode(): raise NotImplemented  # TODO
+def url_encode() -> StringExpression: raise NotImplemented  # TODO
 
 
-def weekofyear(): raise NotImplemented  # TODO
+def weekofyear() -> NumberExpression: raise NotImplemented  # TODO
 
 
 # def welch_test(self): return
 
 
-def zip(): raise NotImplemented  # TODO
+def zip() -> DynamicExpression: raise NotImplemented  # TODO
 
 
 # ----------------------------------------------------

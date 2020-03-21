@@ -8,6 +8,7 @@
       <w>endofweek</w>
       <w>endofyear</w>
       <w>getmonth</w>
+      <w>getschema</w>
       <w>getyear</w>
       <w>hourofday</w>
       <w>isempty</w>

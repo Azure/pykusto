@@ -208,7 +208,7 @@ class Query:
             else:
                 table = self._table
                 if use_full_table_name:
-                    return table.get_full_table()
+                    return table.to_query_format()
                 else:
                     return table.get_table()
         else:

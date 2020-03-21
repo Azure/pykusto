@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from itertools import chain
 from threading import Lock
-from typing import Union, Dict, Any, Iterable, Callable, Tuple
+from typing import Union, Dict, Any, Iterable, Callable, Generator
 
 # Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
 # Also, this makes it easy to use more than one thread, if the need ever arises.
@@ -31,14 +31,23 @@ class ItemFetcher(metaclass=ABCMeta):
         self.__item_write_lock = Lock()
         self.__item_fetch_lock = Lock()
 
+    def _items_fetched(self) -> bool:
+        return self.__items is not None
+
     def _refresh_if_needed(self) -> None:
         if self.__items is None and self._fetch_by_default:
             self.refresh()
 
-    def get_item_names(self) -> Tuple[str, ...]:
+    def _get_item_names(self) -> Generator[str, None, None]:
         if self.__items is None:
-            return tuple()
-        return tuple(self.__items.keys())
+            return
+        # No race condition because once fetched self.__items will never go back to being None
+        yield from self.__items.keys()
+
+    def _get_items(self) -> Generator[Any, None, None]:
+        if self.__items is None:
+            return
+        yield from self.__items.values()
 
     @abstractmethod
     def _new_item(self, name: str) -> Any:
@@ -90,7 +99,7 @@ class ItemFetcher(metaclass=ABCMeta):
         Fetches all items in a separate thread, making them available after the tread finishes executing. The 'wait_for_items' method can be used to wait for that to happen.
         The specific logic for fetching is defined in concrete subclasses.
         """
-        self.__future = POOL.submit(self._get_items)
+        self.__future = POOL.submit(self.__fetch_items)
         self.__future.add_done_callback(self._set_items)
 
     def wait_for_items(self) -> None:
@@ -109,7 +118,7 @@ class ItemFetcher(metaclass=ABCMeta):
     def _internal_get_items(self) -> Dict[str, Any]:
         raise NotImplementedError()  # pragma: no cover
 
-    def _get_items(self) -> Dict[str, Any]:
+    def __fetch_items(self) -> Dict[str, Any]:
         with self.__item_fetch_lock:
             return self._internal_get_items()
 

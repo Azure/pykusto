@@ -22,10 +22,10 @@ from pykusto.query import Query
 client = PyKustoClient('https://help.kusto.windows.net')
 
 # Show databases
-print(client.show_databases())
+print(tuple(client.get_databases_names()))
 
 # Show tables in 'Samples' database
-print(client.Samples.show_tables())
+print(tuple(client.Samples.get_table_names()))
 
 # Connect to 'StormEvents' table
 t = client.Samples.StormEvents

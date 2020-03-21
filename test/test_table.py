@@ -48,7 +48,7 @@ class TestTable(TestBase):
 
     def test_union_table(self):
         mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db'].get_tables('test_table1', 'test_table2')
+        table = PyKustoClient(mock_kusto_client)['test_db'].get_table('test_table1', 'test_table2')
         Query(table).take(5).execute()
         self.assertEqual(
             [RecordedQuery('test_db', 'union test_table1, test_table2 | take 5')],
@@ -71,7 +71,7 @@ class TestTable(TestBase):
             Query().take(5).execute(table)
         self.assertIs(
             mock_kusto_client,
-            table.database.client._client,
+            table.database.client._PyKustoClient__client,
         )
         self.assertEqual(
             [RecordedQuery('test_db', 'test_table | take 5')],
@@ -93,7 +93,7 @@ class TestTable(TestBase):
         client1 = MockKustoClient("https://one.kusto.windows.net")
         client2 = MockKustoClient("https://two.kusto.windows.net")
         table1 = PyKustoClient(client1)['test_db_1']['test_table_1']
-        table2 = PyKustoClient(client2)['test_db_2'].get_tables('test_table_2_*')
+        table2 = PyKustoClient(client2)['test_db_2'].get_table('test_table_2_*')
         Query(table1).take(5).join(Query(table2).take(6)).on(col.foo).execute()
         self.assertEqual(
             [RecordedQuery('test_db_1', 'test_table_1 | take 5 | join  (union cluster("two.kusto.windows.net").database("test_db_2").table("test_table_2_*") | take 6) on foo')],
@@ -104,7 +104,7 @@ class TestTable(TestBase):
         client1 = MockKustoClient("https://one.kusto.windows.net")
         client2 = MockKustoClient("https://two.kusto.windows.net")
         table1 = PyKustoClient(client1)['test_db_1']['test_table_1']
-        table2 = PyKustoClient(client2)['test_db_2'].get_tables('test_table_2_*', 'test_table_3_*')
+        table2 = PyKustoClient(client2)['test_db_2'].get_table('test_table_2_*', 'test_table_3_*')
         Query(table1).take(5).join(Query(table2).take(6)).on(col.foo).execute()
         self.assertEqual(
             [RecordedQuery(
@@ -259,14 +259,14 @@ class TestTable(TestBase):
         )
         db = client.get_database('test_db')
         self.assertIsInstance(db, Database)
-        self.assertEqual('test_db', db.name)
-        self.assertEqual(('test_db',), client.show_databases())
-        self.assertEqual(('test_table',), client.test_db.show_tables())
-        self.assertEqual(('foo', 'bar'), client.test_db.test_table.show_columns())
+        self.assertEqual('test_db', db.get_name())
+        self.assertEqual(('test_db',), tuple(client.get_databases_names()))
+        self.assertEqual(('test_table',), tuple(client.test_db.get_table_names()))
+        self.assertEqual(('foo', 'bar'), tuple(client.test_db.test_table.get_columns_names()))
         self.assertTrue({'foo', 'bar'} < set(dir(client.test_db.test_table)))
         self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(test_table)', repr(client.test_db.test_table))
 
     def test_client_for_cluster(self):
         client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
-        self.assertIsInstance(client._client, KustoClient)
-        self.assertEqual('https://help.kusto.windows.net', client._cluster_name)
+        self.assertIsInstance(client._PyKustoClient__client, KustoClient)
+        self.assertEqual('https://help.kusto.windows.net', client._PyKustoClient__cluster_name)

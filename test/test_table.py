@@ -71,7 +71,7 @@ class TestTable(TestBase):
             Query().take(5).execute(table)
         self.assertIs(
             mock_kusto_client,
-            table.database.client._PyKustoClient__client,
+            table._Table__database._Database__client._PyKustoClient__client,
         )
         self.assertEqual(
             [RecordedQuery('test_db', 'test_table | take 5')],

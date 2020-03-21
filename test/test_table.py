@@ -46,6 +46,15 @@ class TestTable(TestBase):
             mock_kusto_client.recorded_queries,
         )
 
+    def test_get_table(self):
+        mock_kusto_client = MockKustoClient()
+        table = PyKustoClient(mock_kusto_client)['test_db'].get_table('test_table')
+        Query(table).take(5).execute()
+        self.assertEqual(
+            [RecordedQuery('test_db', 'test_table | take 5')],
+            mock_kusto_client.recorded_queries,
+        )
+
     def test_union_table(self):
         mock_kusto_client = MockKustoClient()
         table = PyKustoClient(mock_kusto_client)['test_db'].get_table('test_table1', 'test_table2')
@@ -213,6 +222,28 @@ class TestTable(TestBase):
         self.assertIsInstance(db.test_table_2['baz'], BooleanColumn)
         self.assertIsInstance(db['other_table']['foo'], AnyTypeColumn)
 
+    def test_union_retrieve(self):
+        mock_kusto_client = MockKustoClient(
+            tables_response=mock_tables_response([
+                ('test_table_1', [('foo', KustoType.STRING), ('bar', KustoType.INT)]),
+                ('test_table_2', [('baz', KustoType.BOOL)])
+            ]),
+            record_metadata=True,
+        )
+        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
+        db.refresh()
+        db.wait_for_items()  # Avoid race condition
+        print("DEBUG: " + str(tuple(db.test_table_1.get_columns())))
+        print("DEBUG: " + str(tuple(db.test_table_2.get_columns())))
+        self.assertEqual(
+            [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
+            mock_kusto_client.recorded_queries,
+        )
+        table = db.get_table('test_table_1', 'test_table_2')
+        self.assertIsInstance(table.foo, StringColumn)
+        self.assertIsInstance(table.bar, NumberColumn)
+        self.assertIsInstance(table.baz, BooleanColumn)
+
     def test_database_retrieve(self):
         mock_kusto_client = MockKustoClient(
             databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])])]),
@@ -269,4 +300,4 @@ class TestTable(TestBase):
     def test_client_for_cluster(self):
         client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
         self.assertIsInstance(client._PyKustoClient__client, KustoClient)
-        self.assertEqual('https://help.kusto.windows.net', client._PyKustoClient__cluster_name)
+        self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())

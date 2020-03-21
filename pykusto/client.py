@@ -197,7 +197,7 @@ class Database(ItemFetcher):
         for table in resolved_tables:
             for column in table.get_columns():
                 existing_column = column_by_name.setdefault(column.get_name(), column)
-                if column.get_kusto_type() != existing_column.get_kusto_type():
+                if type(column) is not type(existing_column):
                     return None  # Fallback to Kusto query for column name conflict resolution
         return tuple(column_by_name.values())
 

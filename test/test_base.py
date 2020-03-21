@@ -92,6 +92,10 @@ def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tupl
     )
 
 
+def mock_getschema_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
+    return lambda: mock_response(tuple((c_name, c_type.dot_net_name) for c_name, c_type in columns), ('ColumnName', 'DataType'))
+
+
 class RecordedQuery:
     database: str
     query: str
@@ -117,6 +121,7 @@ class MockKustoClient(KustoClient):
     columns_response: Callable
     tables_response: Callable
     databases_response: Callable
+    getschema_response: Callable
     main_response: Callable
     record_metadata: bool
 
@@ -126,6 +131,7 @@ class MockKustoClient(KustoClient):
             columns_response: Callable = mock_columns_response([]),
             tables_response: Callable = mock_tables_response([]),
             databases_response: Callable = mock_databases_response([]),
+            getschema_response: Callable = mock_getschema_response([]),
             main_response: Callable = mock_response(tuple()),
             record_metadata: bool = False
     ):
@@ -134,6 +140,7 @@ class MockKustoClient(KustoClient):
         self.columns_response = columns_response
         self.tables_response = tables_response
         self.databases_response = databases_response
+        self.getschema_response = getschema_response
         self.main_response = main_response
         self.record_metadata = record_metadata
 
@@ -145,6 +152,8 @@ class MockKustoClient(KustoClient):
             response = self.columns_response()
         elif rendered_query.startswith('.show databases schema '):
             response = self.databases_response()
+        elif rendered_query.endswith(' | getschema | project ColumnName, DataType | limit 10000'):
+            response = self.getschema_response()
         else:
             metadata_query = False
             response = self.main_response()

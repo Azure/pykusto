@@ -176,7 +176,7 @@ class Database(ItemFetcher):
 
     def get_table(self, *tables: str) -> 'Table':
         assert len(tables) > 0
-        if len(tables) == 1 and '*' not in tables[0]:
+        if not Table.static_is_union(*tables):
             return self[tables[0]]
         columns: Optional[Tuple[BaseColumn, ...]] = None
         if self._items_fetched():
@@ -246,6 +246,7 @@ class Table(ItemFetcher):
         )
         self.__database = database
         self.__tables = (tables,) if isinstance(tables, str) else tuple(tables)
+        assert len(self.__tables) > 0
         self._refresh_if_needed()
 
     def __repr__(self) -> str:
@@ -266,25 +267,25 @@ class Table(ItemFetcher):
         """
         return self[name]
 
+    @staticmethod
+    def static_is_union(*table_names: str) -> bool:
+        return len(table_names) > 1 or '*' in table_names[0]
+
+    def is_union(self) -> bool:
+        return self.static_is_union(*self.__tables)
+
     def get_name(self) -> str:
-        assert len(self.__tables) == 1
+        assert not self.is_union()
         return self.__tables[0]
 
-    def get_table(self) -> KQL:
-        result = KQL(', '.join(self.__tables))
-        if '*' in result or ',' in result:
-            result = KQL('union ' + result)
-        return result
-
-    def to_query_format(self) -> KQL:
-        assert len(self.__tables) > 0
-        if len(self.__tables) == 1 and not any('*' in t for t in self.__tables):
-            return self._single_table_to_query_format(self.__tables[0])
+    def to_query_format(self, fully_qualified: bool = False) -> KQL:
+        if fully_qualified:
+            table_names = tuple(f'{self.__database.to_query_format()}.table("{table}")' for table in self.__tables)
         else:
-            return KQL("union " + ", ".join(self._single_table_to_query_format(t) for t in self.__tables))
-
-    def _single_table_to_query_format(self, table: str) -> KQL:
-        return KQL(f'{self.__database.to_query_format()}.table("{table}")')
+            table_names = self.__tables
+        if self.is_union():
+            return KQL('union ' + ', '.join(table_names))
+        return KQL(table_names[0])
 
     def execute(self, query: KQL) -> KustoResponse:
         return self.__database.execute(query)
@@ -296,7 +297,7 @@ class Table(ItemFetcher):
         yield from self._get_items()
 
     def _internal_get_items(self) -> Dict[str, BaseColumn]:
-        if len(self.__tables) == 1:
+        if not self.is_union():
             # Retrieves column names and types for this table only
             res: KustoResponse = self.execute(
                 KQL('.show table {} | project AttributeName, AttributeType | limit 10000'.format(self.get_name()))
@@ -307,7 +308,7 @@ class Table(ItemFetcher):
             }
         # Get Kusto to figure out the schema of the union, especially useful for column name conflict resolution
         res: KustoResponse = self.execute(
-            KQL('{} | getschema | project ColumnName, DataType | limit 10000'.format(self.get_table()))
+            KQL('{} | getschema | project ColumnName, DataType | limit 10000'.format(self.to_query_format()))
         )
         return {
             column_name: typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name)

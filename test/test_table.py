@@ -8,7 +8,7 @@ from pykusto.expressions import column_generator as col, StringColumn, NumberCol
 from pykusto.query import Query
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_columns_response, mock_tables_response, mock_databases_response, \
-    MockKustoClient, RecordedQuery
+    MockKustoClient, RecordedQuery, mock_getschema_response
 
 
 class TestTable(TestBase):
@@ -261,6 +261,35 @@ class TestTable(TestBase):
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table.baz, BooleanColumn)
+
+    def test_union_column_name_conflict(self):
+        mock_kusto_client = MockKustoClient(
+            tables_response=mock_tables_response([
+                ('test_table_1', [('foo', KustoType.STRING), ('bar', KustoType.INT)]),
+                ('test_table_2', [('foo', KustoType.BOOL)])
+            ]),
+            getschema_response=mock_getschema_response([
+                ('foo_string', KustoType.STRING), ('bar', KustoType.INT), ('foo_bool', KustoType.BOOL)
+            ]),
+            record_metadata=True,
+        )
+        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
+        db.refresh()
+        db.wait_for_items()  # Avoid race condition
+        table = db.get_table('test_table_*')
+        table.refresh()
+        table.wait_for_items()  # Avoid race condition
+        self.assertEqual(
+            [
+                RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000'),
+                RecordedQuery('test_db', 'union test_table_* | getschema | project ColumnName, DataType | limit 10000')
+            ],
+            mock_kusto_client.recorded_queries,
+        )
+
+        self.assertIsInstance(table.foo_string, StringColumn)
+        self.assertIsInstance(table.bar, NumberColumn)
+        self.assertIsInstance(table.foo_bool, BooleanColumn)
 
     def test_union_wildcard_one_table(self):
         mock_kusto_client = MockKustoClient(

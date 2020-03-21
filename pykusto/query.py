@@ -208,9 +208,9 @@ class Query:
             else:
                 table = self._table
                 if use_full_table_name:
-                    return table.to_query_format()
+                    return table.to_query_format(fully_qualified=True)
                 else:
-                    return table.get_table()
+                    return table.to_query_format()
         else:
             return KQL("{} | {}".format(self._head._compile_all(use_full_table_name), self._compile()))
 
@@ -229,7 +229,7 @@ class Query:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
-            rendered_query = table.get_table() + self.render()
+            rendered_query = table.to_query_format() + self.render()
         else:
             if table is not None:
                 raise RuntimeError("This table is already bound to a query")

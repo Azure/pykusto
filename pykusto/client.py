@@ -89,6 +89,9 @@ class PyKustoClient(ItemFetcher):
     def get_databases_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
 
+    def get_databases(self) -> Generator['Database', None, None]:
+        yield from self._get_items()
+
     def get_cluster_name(self) -> str:
         return self.__cluster_name
 

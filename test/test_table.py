@@ -344,6 +344,11 @@ class TestTable(TestBase):
         )
         self.assertIsInstance(client.test_db.test_table.foo, StringColumn)
 
+    def test_client_not_fetched(self):
+        client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
+        self.assertEqual(frozenset(), set(client.get_databases_names()))
+        self.assertEqual(frozenset(), set(client.get_databases()))
+
     def test_client_databases(self):
         mock_kusto_client = MockKustoClient(
             databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])])]),

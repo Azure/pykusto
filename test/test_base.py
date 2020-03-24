@@ -5,7 +5,10 @@ from typing import Callable, Tuple, Any, List
 from unittest import TestCase
 from urllib.parse import urljoin
 
+# noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
+# noinspection PyProtectedMember
+from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
 
 from pykusto.client import Table
@@ -61,27 +64,28 @@ class MockKustoResultTable(KustoResultTable):
         self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''}) for col in columns)
 
 
-def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()):
+# noinspection PyTypeChecker
+def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> KustoResponseDataSet:
     return type(
-        'KustoResponseDataSet',
-        (object,),
+        'MockKustoResponseDataSet',
+        (KustoResponseDataSet,),
         {'primary_results': (MockKustoResultTable(rows, columns),)}
     )
 
 
-def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
-    return lambda: mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns), ('ColumnName', 'ColumnType'))
+def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> KustoResponseDataSet:
+    return mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns), ('ColumnName', 'ColumnType'))
 
 
-def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] = tuple()) -> Callable:
-    return lambda: mock_response(
+def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] = tuple()) -> KustoResponseDataSet:
+    return mock_response(
         tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns),
         ('TableName', 'ColumnName', 'ColumnType')
     )
 
 
-def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, KustoType]]]]]] = tuple()) -> Callable:
-    return lambda: mock_response(
+def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, KustoType]]]]]] = tuple()) -> KustoResponseDataSet:
+    return mock_response(
         tuple(
             (d_name, t_name, c_name, c_type.dot_net_name)
             for d_name, tables in databases
@@ -92,8 +96,8 @@ def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tupl
     )
 
 
-def mock_getschema_response(columns: List[Tuple[str, KustoType]] = tuple()) -> Callable:
-    return lambda: mock_response(tuple((c_name, c_type.dot_net_name) for c_name, c_type in columns), ('ColumnName', 'DataType'))
+def mock_getschema_response(columns: List[Tuple[str, KustoType]] = tuple()) -> KustoResponseDataSet:
+    return mock_response(tuple((c_name, c_type.dot_net_name) for c_name, c_type in columns), ('ColumnName', 'DataType'))
 
 
 class RecordedQuery:
@@ -118,21 +122,23 @@ class RecordedQuery:
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
     recorded_queries: List[RecordedQuery]
-    columns_response: Callable
-    tables_response: Callable
-    databases_response: Callable
-    getschema_response: Callable
-    main_response: Callable
+    columns_response: KustoResponseDataSet
+    tables_response: KustoResponseDataSet
+    databases_response: KustoResponseDataSet
+    getschema_response: KustoResponseDataSet
+    main_response: KustoResponseDataSet
+    upon_execute: Callable
     record_metadata: bool
 
     def __init__(
             self,
             cluster="https://test_cluster.kusto.windows.net",
-            columns_response: Callable = mock_columns_response([]),
-            tables_response: Callable = mock_tables_response([]),
-            databases_response: Callable = mock_databases_response([]),
-            getschema_response: Callable = mock_getschema_response([]),
-            main_response: Callable = mock_response(tuple()),
+            columns_response: KustoResponseDataSet = mock_columns_response([]),
+            tables_response: KustoResponseDataSet = mock_tables_response([]),
+            databases_response: KustoResponseDataSet = mock_databases_response([]),
+            getschema_response: KustoResponseDataSet = mock_getschema_response([]),
+            main_response: KustoResponseDataSet = mock_response(tuple()),
+            upon_execute: Callable = None,
             record_metadata: bool = False
     ):
         self.recorded_queries = []
@@ -142,21 +148,24 @@ class MockKustoClient(KustoClient):
         self.databases_response = databases_response
         self.getschema_response = getschema_response
         self.main_response = main_response
+        self.upon_execute = upon_execute
         self.record_metadata = record_metadata
 
-    def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None):
+    def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
+        if self.upon_execute is not None:
+            self.upon_execute()
         metadata_query = True
         if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
-            response = self.tables_response()
+            response = self.tables_response
         elif rendered_query.startswith('.show table '):
-            response = self.columns_response()
+            response = self.columns_response
         elif rendered_query.startswith('.show databases schema '):
-            response = self.databases_response()
+            response = self.databases_response
         elif rendered_query.endswith(' | getschema | project ColumnName, DataType | limit 10000'):
-            response = self.getschema_response()
+            response = self.getschema_response
         else:
             metadata_query = False
-            response = self.main_response()
+            response = self.main_response
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(RecordedQuery(database, rendered_query, properties))
         return response

@@ -121,7 +121,6 @@ class TestClient(TestBase):
             client1.recorded_queries,
         )
 
-
     def test_client_for_cluster(self):
         client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
         self.assertIsInstance(client._PyKustoClient__client, KustoClient)

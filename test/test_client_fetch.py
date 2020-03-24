@@ -29,14 +29,28 @@ class TestClientFetch(TestBase):
 
     def test_column_fetch_slow(self):
         mock_response_future = Future()
+        mock_response_future.executed = False
+
+        def upon_execute():
+            result = mock_response_future.result()
+            mock_response_future.executed = True
+            return result
+
         try:
-            mock_kusto_client = MockKustoClient(columns_response=lambda: mock_response_future.result(), record_metadata=True)
-            table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
+            table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['test_table']
+            table.refresh()
             self.assertIsInstance(table['foo'], AnyTypeColumn)
             self.assertIsInstance(table['bar'], AnyTypeColumn)
             self.assertIsInstance(table['baz'], AnyTypeColumn)
+            # Make sure above lines were called while the fetch query was still waiting
+            assert not mock_response_future.executed
         finally:
-            mock_response_future.set_result(mock_columns_response([])())
+            mock_response_future.set_result(None)
+
+        # Make sure the fetch query was indeed called
+        table.wait_for_items()
+        assert mock_response_future.executed
 
     def test_table_fetch(self):
         mock_kusto_client = MockKustoClient(

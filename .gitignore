@@ -332,6 +332,7 @@ ASALocalRun/
 /.idea/workspace.xml
 /.idea/checkstyle-idea.xml
 /.idea/misc.xml
+/.idea/shelf/
 
 # Python venv and installation files
 /venv

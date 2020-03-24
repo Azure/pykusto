@@ -6,35 +6,23 @@ from pykusto.type_utils import KustoType
 from test.test_base import TestBase, MockKustoClient, mock_columns_response, RecordedQuery, mock_tables_response, mock_getschema_response, mock_databases_response
 
 
-class TestFetch(TestBase):
+class TestClientFetch(TestBase):
     def test_column_fetch(self):
         mock_kusto_client = MockKustoClient(
             columns_response=mock_columns_response([('foo', KustoType.STRING), ('bar', KustoType.INT)]),
             record_metadata=True,
         )
         table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['test_table']
-        table.refresh()
-        table.wait_for_items()  # Avoid race condition
+        table.blocking_refresh()
+        # Fetch query
         self.assertEqual(
             [RecordedQuery('test_db', '.show table test_table | project AttributeName, AttributeType | limit 10000')],
             mock_kusto_client.recorded_queries,
         )
+        # Dot notation
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
-        self.assertIsInstance(table['baz'], AnyTypeColumn)
-
-    def test_column_fetch_brackets(self):
-        mock_kusto_client = MockKustoClient(
-            columns_response=mock_columns_response([('foo', KustoType.STRING), ('bar', KustoType.INT)]),
-            record_metadata=True,
-        )
-        table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['test_table']
-        table.refresh()
-        table.wait_for_items()  # Avoid race condition
-        self.assertEqual(
-            [RecordedQuery('test_db', '.show table test_table | project AttributeName, AttributeType | limit 10000')],
-            mock_kusto_client.recorded_queries,
-        )
+        # Bracket notation
         self.assertIsInstance(table['foo'], StringColumn)
         self.assertIsInstance(table['bar'], NumberColumn)
         self.assertIsInstance(table['baz'], AnyTypeColumn)
@@ -56,30 +44,19 @@ class TestFetch(TestBase):
             record_metadata=True,
         )
         db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
+        db.blocking_refresh()
         self.assertEqual(
             [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
             mock_kusto_client.recorded_queries,
         )
         table = db.test_table
+        # Table columns
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table['baz'], AnyTypeColumn)
+        # Bracket notation
         self.assertIsInstance(db['other_table']['foo'], AnyTypeColumn)
-
-    def test_table_fetch_error(self):
-        mock_kusto_client = MockKustoClient(
-            tables_response=mock_tables_response([('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])]),
-            record_metadata=True,
-        )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
-        self.assertEqual(
-            [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
-            mock_kusto_client.recorded_queries,
-        )
+        # Dot notation error
         self.assertRaises(
             AttributeError("PyKustoClient(test_cluster.kusto.windows.net).Database(test_db) has no attribute 'test_table_1'"),
             lambda: db.test_table_1
@@ -94,52 +71,22 @@ class TestFetch(TestBase):
             record_metadata=True,
         )
         db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
+        db.blocking_refresh()
         self.assertEqual(
             [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
             mock_kusto_client.recorded_queries,
         )
+        # Table columns
         self.assertIsInstance(db.test_table_1.foo, StringColumn)
         self.assertIsInstance(db.test_table_1.bar, NumberColumn)
         self.assertIsInstance(db.test_table_2['baz'], BooleanColumn)
         self.assertIsInstance(db['other_table']['foo'], AnyTypeColumn)
-
-    def test_union_fetch(self):
-        mock_kusto_client = MockKustoClient(
-            tables_response=mock_tables_response([
-                ('test_table_1', [('foo', KustoType.STRING), ('bar', KustoType.INT)]),
-                ('test_table_2', [('baz', KustoType.BOOL)])
-            ]),
-            record_metadata=True,
-        )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
-        self.assertEqual(
-            [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
-            mock_kusto_client.recorded_queries,
-        )
+        # Union
         table = db.get_table('test_table_1', 'test_table_2')
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table.baz, BooleanColumn)
-
-    def test_union_wildcard_fetch(self):
-        mock_kusto_client = MockKustoClient(
-            tables_response=mock_tables_response([
-                ('test_table_1', [('foo', KustoType.STRING), ('bar', KustoType.INT)]),
-                ('test_table_2', [('baz', KustoType.BOOL)])
-            ]),
-            record_metadata=True,
-        )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
-        self.assertEqual(
-            [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
-            mock_kusto_client.recorded_queries,
-        )
+        # Wildcard
         table = db.get_table('test_table_*')
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
@@ -157,19 +104,18 @@ class TestFetch(TestBase):
             record_metadata=True,
         )
         db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
+        db.blocking_refresh()
         table = db.get_table('test_table_*')
-        table.refresh()
-        table.wait_for_items()  # Avoid race condition
+        table.blocking_refresh()  # To trigger name conflict resolution
         self.assertEqual(
             [
+                # First trying the usual fetch
                 RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000'),
+                # Fallback for name conflict resolution
                 RecordedQuery('test_db', 'union test_table_* | getschema | project ColumnName, DataType | limit 10000')
             ],
             mock_kusto_client.recorded_queries,
         )
-
         self.assertIsInstance(table.foo_string, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table.foo_bool, BooleanColumn)
@@ -183,8 +129,7 @@ class TestFetch(TestBase):
             record_metadata=True,
         )
         db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
-        db.refresh()
-        db.wait_for_items()  # Avoid race condition
+        db.blocking_refresh()
         self.assertEqual(
             [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
             mock_kusto_client.recorded_queries,

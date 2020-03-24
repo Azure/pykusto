@@ -110,6 +110,10 @@ class ItemFetcher(metaclass=ABCMeta):
         if self.__future is not None:
             wait((self.__future,))
 
+    def blocking_refresh(self) -> None:
+        self.refresh()
+        self.wait_for_items()
+
     def _set_items(self, future: Future):
         with self.__item_write_lock:
             self.__items = future.result()

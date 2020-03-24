@@ -8,7 +8,7 @@ from pykusto.query import Query
 from test.test_base import TestBase, MockKustoClient, RecordedQuery
 
 
-class TestTable(TestBase):
+class TestClient(TestBase):
     def test_single_table(self):
         mock_kusto_client = MockKustoClient()
         table = PyKustoClient(mock_kusto_client)['test_db']['test_table']

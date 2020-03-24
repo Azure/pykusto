@@ -1,4 +1,5 @@
 from concurrent.futures import Future
+from threading import Thread
 
 from pykusto.client import PyKustoClient, Database
 from pykusto.expressions import StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
@@ -32,10 +33,9 @@ class TestClientFetch(TestBase):
         mock_response_future = Future()
         mock_response_future.executed = False
 
-        def upon_execute():
-            result = mock_response_future.result()
+        def upon_execute(query):
+            mock_response_future.result()
             mock_response_future.executed = True
-            return result
 
         try:
             mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
@@ -47,53 +47,52 @@ class TestClientFetch(TestBase):
             # Make sure above lines were called while the fetch query was still waiting
             assert not mock_response_future.executed
         finally:
+            # Return the fetch
             mock_response_future.set_result(None)
 
-        # Make sure the fetch query was indeed called
         table.wait_for_items()
+        # Make sure the fetch query was indeed called
         assert mock_response_future.executed
 
     def test_query_before_fetch_returned(self):
         mock_response_future = Future()
+        mock_response_future.returned_queries = []
         mock_response_future.called = False
         mock_response_future.executed = False
 
-        def upon_execute():
-            if mock_response_future.called:
-                return None
-            mock_response_future.called = True
-            result = mock_response_future.result()
-            mock_response_future.executed = True
-            return result
+        def upon_execute(query):
+            if not mock_response_future.called:
+                mock_response_future.called = True
+                mock_response_future.result()
+                mock_response_future.executed = True
+            mock_response_future.returned_queries.append(query)
 
         try:
-            mock_kusto_client = MockKustoClient(
-                columns_response=mock_columns_response([('foo', KustoType.STRING), ('bar', KustoType.INT)]),
-                upon_execute=upon_execute, record_metadata=True
-            )
+            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
             table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['test_table']
             table.refresh()
-            Query(table).take(5).execute()
 
-            # Query should not have been executed yet since fetch did not return
-            self.assertSequenceEqual([], mock_kusto_client.recorded_queries)
+            # Executing a query in a separate thread, because it is supposed to block until the fetch returns
+            query_thread = Thread(target=Query(table).take(5).execute)
+            query_thread.start()
 
             # Make sure above lines were called while the fetch query was still waiting
             assert not mock_response_future.executed
         finally:
+            # Return the fetch
             mock_response_future.set_result(None)
 
-        # Make sure the fetch query was indeed called
         table.wait_for_items()
+        query_thread.join()
+        # Make sure the fetch query was indeed called
         assert mock_response_future.executed
-
-        # Now the query should be executed
+        # Before the fix the order of returned query was reveresed
         self.assertEqual(
             [
                 RecordedQuery('test_db', '.show table test_table | project AttributeName, AttributeType | limit 10000'),
                 RecordedQuery('test_db', 'test_table | take 5'),
             ],
-            mock_kusto_client.recorded_queries,
+            mock_response_future.returned_queries,
         )
 
     def test_table_fetch(self):
@@ -244,4 +243,3 @@ class TestClientFetch(TestBase):
         client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
         self.assertEqual(frozenset(), set(client.get_databases_names()))
         self.assertEqual(frozenset(), set(client.get_databases()))
-

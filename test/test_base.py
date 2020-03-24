@@ -152,8 +152,9 @@ class MockKustoClient(KustoClient):
         self.record_metadata = record_metadata
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
+        recorded_query = RecordedQuery(database, rendered_query, properties)
         if self.upon_execute is not None:
-            self.upon_execute()
+            self.upon_execute(recorded_query)
         metadata_query = True
         if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
             response = self.tables_response
@@ -167,5 +168,5 @@ class MockKustoClient(KustoClient):
             metadata_query = False
             response = self.main_response
         if self.record_metadata or not metadata_query:
-            self.recorded_queries.append(RecordedQuery(database, rendered_query, properties))
+            self.recorded_queries.append(recorded_query)
         return response

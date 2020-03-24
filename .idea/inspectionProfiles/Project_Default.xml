@@ -2,6 +2,12 @@
   <profile version="1.0">
     <option name="myName" value="Project Default" />
     <inspection_tool class="PyAbstractClassInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyMissingTypeHintsInspection" enabled="true" level="WARNING" enabled_by_default="false">
+      <scope name="Production files" level="WARNING" enabled="true">
+        <option name="m_onlyWhenTypesAreKnown" value="false" />
+      </scope>
+      <option name="m_onlyWhenTypesAreKnown" value="false" />
+    </inspection_tool>
     <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredPackages">
         <value>

@@ -38,7 +38,7 @@ class BaseExpression:
 
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. Overriding __new___ is the next best solution.
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> 'BaseExpression':
         assert cls is not BaseExpression, "BaseExpression is abstract"
         return object.__new__(cls)
 
@@ -493,7 +493,7 @@ class AggregationExpression(BaseExpression):
 
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. Overriding __new___ is the next best solution.
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> 'AggregationExpression':
         assert cls is not AggregationExpression, "AggregationExpression is abstract"
         return object.__new__(cls)
 
@@ -589,7 +589,7 @@ class BaseColumn(BaseExpression):
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
     # abstract method, which we don't have here. We can't define "get_kusto_type" as abstract because at least one
     # concrete subclass (NumberColumn) does not override it. Overriding __new___ is the next best solution.
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> 'BaseColumn':
         assert cls is not BaseColumn, "BaseColumn is abstract"
         return object.__new__(cls)
 

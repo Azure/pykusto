@@ -89,7 +89,7 @@ class TypeRegistrar:
         return self.name
 
     def __call__(self, *types: KustoType) -> Callable:
-        def inner(wrapped):
+        def inner(wrapped) -> Callable:
             for t in types:
                 previous = self.registry.setdefault(t, wrapped)
                 if previous is not wrapped:

@@ -5,11 +5,7 @@ from itertools import chain
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-# noinspection PyProtectedMember
-from azure.kusto.data._response import KustoResponseDataSet
-from azure.kusto.data.helpers import dataframe_from_result_table
-
-from pykusto.client import Table
+from pykusto.client import Table, KustoResponse
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
@@ -212,9 +208,9 @@ class Query:
             else:
                 table = self._table
                 if use_full_table_name:
-                    return table.get_full_table()
+                    return table.to_query_format(fully_qualified=True)
                 else:
-                    return table.get_table()
+                    return table.to_query_format()
         else:
             return KQL("{} | {}".format(self._head._compile_all(use_full_table_name), self._compile()))
 
@@ -229,11 +225,11 @@ class Query:
         logger.debug("Complied query: " + result)
         return result
 
-    def execute(self, table: Table = None) -> KustoResponseDataSet:
+    def execute(self, table: Table = None) -> KustoResponse:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
-            rendered_query = table.get_table() + self.render()
+            rendered_query = table.to_query_format() + self.render()
         else:
             if table is not None:
                 raise RuntimeError("This table is already bound to a query")
@@ -244,8 +240,7 @@ class Query:
         return table.execute(rendered_query)
 
     def to_dataframe(self, table: Table = None):
-        res = self.execute(table)
-        return dataframe_from_result_table(res.primary_results[0])
+        return self.execute(table).to_dataframe()
 
 
 class ProjectQuery(Query):
@@ -388,7 +383,7 @@ class _OrderQueryBase(Query):
         return self
 
     @staticmethod
-    def _compile_order_spec(order_spec):
+    def _compile_order_spec(order_spec: OrderSpec) -> str:
         res = str(order_spec.col.kql)
         if order_spec.order is not None:
             res += " " + str(order_spec.order.value)

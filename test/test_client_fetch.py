@@ -150,11 +150,21 @@ class TestClientFetch(TestBase):
             [RecordedQuery('', '.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000')],
             mock_kusto_client.recorded_queries,
         )
+        # Table columns
         table = client.test_db.test_table
         self.assertIsInstance(table.foo, StringColumn)
         self.assertIsInstance(table.bar, NumberColumn)
         self.assertIsInstance(table['baz'], AnyTypeColumn)
         self.assertIsInstance(client.test_db['other_table']['foo'], AnyTypeColumn)
+        # Various utility methods
+        db = client.get_database('test_db')
+        self.assertIsInstance(db, Database)
+        self.assertEqual('test_db', db.get_name())
+        self.assertEqual(('test_db',), tuple(client.get_databases_names()))
+        self.assertEqual(('test_table', 'other_table'), tuple(client.test_db.get_table_names()))
+        self.assertEqual(('foo', 'bar', 'baz'), tuple(client.test_db.test_table.get_columns_names()))
+        self.assertTrue({'foo', 'bar'} < set(dir(client.test_db.test_table)))
+        self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(test_table)', repr(client.test_db.test_table))
 
     def test_empty_database(self):
         mock_kusto_client = MockKustoClient(
@@ -177,22 +187,3 @@ class TestClientFetch(TestBase):
         self.assertEqual(frozenset(), set(client.get_databases_names()))
         self.assertEqual(frozenset(), set(client.get_databases()))
 
-    def test_client_databases(self):
-        mock_kusto_client = MockKustoClient(
-            databases_response=mock_databases_response([('test_db', [('test_table', [('foo', KustoType.STRING), ('bar', KustoType.INT)])])]),
-            record_metadata=True,
-        )
-        client = PyKustoClient(mock_kusto_client)
-        client.wait_for_items()
-        self.assertEqual(
-            [RecordedQuery('', '.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000')],
-            mock_kusto_client.recorded_queries,
-        )
-        db = client.get_database('test_db')
-        self.assertIsInstance(db, Database)
-        self.assertEqual('test_db', db.get_name())
-        self.assertEqual(('test_db',), tuple(client.get_databases_names()))
-        self.assertEqual(('test_table',), tuple(client.test_db.get_table_names()))
-        self.assertEqual(('foo', 'bar'), tuple(client.test_db.test_table.get_columns_names()))
-        self.assertTrue({'foo', 'bar'} < set(dir(client.test_db.test_table)))
-        self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(test_table)', repr(client.test_db.test_table))

@@ -90,6 +90,7 @@ class PyKustoClient(ItemFetcher):
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
         # The first execution usually triggers an authentication flow. We block all subsequent executions to prevent redundant authentications.
+        # Remove the below block once this is resolved: https://github.com/Azure/azure-kusto-python/issues/208
         with self.__first_execution_lock:
             if self.__first_execution:
                 self.__first_execution = False

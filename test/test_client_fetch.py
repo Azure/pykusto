@@ -1,7 +1,9 @@
 from concurrent.futures import Future
+from threading import Thread
 
 from pykusto.client import PyKustoClient, Database
 from pykusto.expressions import StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
+from pykusto.query import Query
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase, MockKustoClient, mock_columns_response, RecordedQuery, mock_tables_response, mock_getschema_response, mock_databases_response
 
@@ -29,14 +31,69 @@ class TestClientFetch(TestBase):
 
     def test_column_fetch_slow(self):
         mock_response_future = Future()
+        mock_response_future.executed = False
+
+        def upon_execute(query):
+            mock_response_future.result()
+            mock_response_future.executed = True
+
         try:
-            mock_kusto_client = MockKustoClient(columns_response=lambda: mock_response_future.result(), record_metadata=True)
-            table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
+            table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['test_table']
+            table.refresh()
             self.assertIsInstance(table['foo'], AnyTypeColumn)
             self.assertIsInstance(table['bar'], AnyTypeColumn)
             self.assertIsInstance(table['baz'], AnyTypeColumn)
+            # Make sure above lines were called while the fetch query was still waiting
+            assert not mock_response_future.executed
         finally:
-            mock_response_future.set_result(mock_columns_response([])())
+            # Return the fetch
+            mock_response_future.set_result(None)
+
+        table.wait_for_items()
+        # Make sure the fetch query was indeed called
+        assert mock_response_future.executed
+
+    def test_query_before_fetch_returned(self):
+        mock_response_future = Future()
+        mock_response_future.returned_queries = []
+        mock_response_future.called = False
+        mock_response_future.executed = False
+
+        def upon_execute(query):
+            if not mock_response_future.called:
+                mock_response_future.called = True
+                mock_response_future.result()
+                mock_response_future.executed = True
+            mock_response_future.returned_queries.append(query)
+
+        try:
+            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
+            table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['test_table']
+            table.refresh()
+
+            # Executing a query in a separate thread, because it is supposed to block until the fetch returns
+            query_thread = Thread(target=Query(table).take(5).execute)
+            query_thread.start()
+
+            # Make sure above lines were called while the fetch query was still waiting
+            assert not mock_response_future.executed
+        finally:
+            # Return the fetch
+            mock_response_future.set_result(None)
+
+        table.wait_for_items()
+        query_thread.join()
+        # Make sure the fetch query was indeed called
+        assert mock_response_future.executed
+        # Before the fix the order of returned query was reveresed
+        self.assertEqual(
+            [
+                RecordedQuery('test_db', '.show table test_table | project AttributeName, AttributeType | limit 10000'),
+                RecordedQuery('test_db', 'test_table | take 5'),
+            ],
+            mock_response_future.returned_queries,
+        )
 
     def test_table_fetch(self):
         mock_kusto_client = MockKustoClient(
@@ -186,4 +243,3 @@ class TestClientFetch(TestBase):
         client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
         self.assertEqual(frozenset(), set(client.get_databases_names()))
         self.assertEqual(frozenset(), set(client.get_databases()))
-

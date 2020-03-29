@@ -1,5 +1,6 @@
 from collections import defaultdict
 from fnmatch import fnmatch
+from threading import Lock
 from typing import Union, List, Tuple, Dict, Generator, Optional, Set
 from urllib.parse import urlparse
 
@@ -50,6 +51,8 @@ class PyKustoClient(ItemFetcher):
     """
     __client: KustoClient
     __cluster_name: str
+    __first_execution: bool
+    __first_execution_lock: Lock
 
     def __init__(self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True) -> None:
         """
@@ -60,6 +63,8 @@ class PyKustoClient(ItemFetcher):
             a KustoClient is generated with AAD device authentication
         """
         super().__init__(None, fetch_by_default)
+        self.__first_execution = True
+        self.__first_execution_lock = Lock()
         if isinstance(client_or_cluster, KustoClient):
             self.__client = client_or_cluster
             # noinspection PyProtectedMember
@@ -84,6 +89,15 @@ class PyKustoClient(ItemFetcher):
         return self[name]
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
+        # The first execution usually triggers an authentication flow. We block all subsequent executions to prevent redundant authentications.
+        # Remove the below block once this is resolved: https://github.com/Azure/azure-kusto-python/issues/208
+        with self.__first_execution_lock:
+            if self.__first_execution:
+                self.__first_execution = False
+                return self.__internal_execute(database, query, properties)
+        return self.__internal_execute(database, query, properties)
+
+    def __internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
         return KustoResponse(self.__client.execute(database, query, properties))
 
     def get_databases_names(self) -> Generator[str, None, None]:

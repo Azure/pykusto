@@ -64,6 +64,8 @@
       <w>stdevp</w>
       <w>strcat</w>
       <w>strcmp</w>
+      <w>stringification</w>
+      <w>stringified</w>
       <w>strlen</w>
       <w>strrep</w>
       <w>subexpr</w>

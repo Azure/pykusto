@@ -10,9 +10,8 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
     AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType
-from pykusto.kql_converters import KQL
 from pykusto.logger import logger
-from pykusto.type_utils import KustoType
+from pykusto.type_utils import KustoType, KQL
 from pykusto.udf import stringify_python_func
 
 

@@ -13,8 +13,7 @@ from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.item_fetcher import ItemFetcher
-from pykusto.kql_converters import KQL
-from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
+from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE, KQL
 
 
 class KustoResponse:

@@ -2,9 +2,11 @@
   <dictionary name="pykusto">
     <words>
       <w>acos</w>
+      <w>asctime</w>
       <w>asin</w>
       <w>atan</w>
       <w>avgif</w>
+      <w>bagexpansion</w>
       <w>buildschema</w>
       <w>countif</w>
       <w>countof</w>
@@ -19,34 +21,54 @@
       <w>endofweek</w>
       <w>endofyear</w>
       <w>extractjson</w>
+      <w>fullouter</w>
       <w>getmonth</w>
       <w>getschema</w>
       <w>getyear</w>
       <w>hourofday</w>
+      <w>ifexists</w>
       <w>indexof</w>
+      <w>innerunique</w>
       <w>isempty</w>
       <w>isfinite</w>
       <w>isinf</w>
       <w>isnotempty</w>
       <w>isnotnull</w>
       <w>isutf</w>
+      <w>itemindex</w>
       <w>kusto</w>
+      <w>leftanti</w>
+      <w>leftantisemi</w>
+      <w>leftouter</w>
+      <w>leftsemi</w>
+      <w>levelname</w>
       <w>loggamma</w>
       <w>maxif</w>
       <w>minif</w>
       <w>monthofyear</w>
+      <w>ncode</w>
+      <w>nexec</w>
       <w>percentrank</w>
       <w>pykusto</w>
+      <w>rightanti</w>
+      <w>rightantisemi</w>
+      <w>rightouter</w>
+      <w>rightsemi</w>
       <w>sqrt</w>
       <w>startofday</w>
       <w>startofmonth</w>
       <w>startofweek</w>
       <w>startofyear</w>
+      <w>stdev</w>
+      <w>stdevif</w>
+      <w>stdevp</w>
       <w>strcat</w>
       <w>strcmp</w>
       <w>strlen</w>
       <w>strrep</w>
       <w>subexpr</w>
+      <w>substr</w>
+      <w>sumif</w>
       <w>tdigest</w>
       <w>timespan</w>
       <w>toarray</w>
@@ -64,7 +86,10 @@
       <w>toreal</w>
       <w>totimespan</w>
       <w>toupper</w>
+      <w>treepath</w>
       <w>urlquery</w>
+      <w>varianceif</w>
+      <w>variancep</w>
       <w>weekofyear</w>
       <w>welch</w>
     </words>

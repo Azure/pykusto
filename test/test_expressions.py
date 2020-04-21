@@ -193,7 +193,7 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.timespanField + timedelta(hours=1)).render(),
         )
 
-    def test_substract_timespan_from_timespan(self):
+    def test_subtract_timespan_from_timespan(self):
         self.assertEqual(
             ' | extend foo = timespanField - time(0.1:0:0.0)',
             Query().extend(foo=t.timespanField - timedelta(hours=1)).render(),

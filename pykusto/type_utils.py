@@ -1,9 +1,13 @@
+import json
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Any, Set
+from itertools import chain
+from numbers import Number
+from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Any, Set, NewType
 
 # TODO: Unhandled data types: guid, decimal
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
+KQL = NewType('KQL', str)
 
 
 class KustoType(Enum):
@@ -76,7 +80,7 @@ class TypeRegistrar:
     can then be used to retrieve the python type or function corresponding to a given Kusto type.
     """
     name: str
-    registry: Dict[KustoType, Callable]
+    registry: Dict[KustoType, Callable[[Any], KQL]]
 
     def __init__(self, name: str) -> None:
         """
@@ -88,8 +92,8 @@ class TypeRegistrar:
     def __repr__(self) -> str:
         return self.name
 
-    def __call__(self, *types: KustoType) -> Callable:
-        def inner(wrapped) -> Callable:
+    def __call__(self, *types: KustoType) -> Callable[[Callable[[Any], KQL]], Callable[[Any], KQL]]:
+        def inner(wrapped: Callable[[Any], KQL]) -> Callable[[Any], KQL]:
             for t in types:
                 previous = self.registry.setdefault(t, wrapped)
                 if previous is not wrapped:
@@ -99,7 +103,7 @@ class TypeRegistrar:
 
         return inner
 
-    def for_obj(self, obj: PythonTypes) -> Callable:
+    def for_obj(self, obj: PythonTypes) -> KQL:
         """
         Given an object of Kusto type, retrieve the python type or function associated with the object's type, and call
         it with the given object as a parameter
@@ -112,7 +116,7 @@ class TypeRegistrar:
                 return registered_callable(obj)
         raise ValueError("{}: no registered callable for object {} of type {}".format(self, obj, type(obj).__name__))
 
-    def for_type(self, t: Type[PythonTypes]) -> Callable:
+    def for_type(self, t: Type[PythonTypes]) -> Callable[[Any], KQL]:
         """
         Given a Kusto type, retrieve the associated python type or function
 
@@ -129,3 +133,84 @@ kql_converter = TypeRegistrar("KQL Converter")
 typed_column = TypeRegistrar("Column")
 plain_expression = TypeRegistrar("Plain expression")
 aggregation_expression = TypeRegistrar("Aggregation expression")
+
+
+@kql_converter(KustoType.DATETIME)
+def datetime_to_kql(dt: datetime) -> KQL:
+    return KQL(dt.strftime('datetime(%Y-%m-%d %H:%M:%S.%f)'))
+
+
+@kql_converter(KustoType.TIMESPAN)
+def timedelta_to_kql(td: timedelta) -> KQL:
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return KQL('time({days}.{hours}:{minutes}:{seconds}.{microseconds})'.format(
+        days=td.days,
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds,
+        microseconds=td.microseconds,
+    ))
+
+
+@kql_converter(KustoType.ARRAY, KustoType.MAPPING)
+def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
+    try:
+        query = list(json.dumps(d))
+    except TypeError:
+        # Using exceptions as part of normal flow is not best practice, however in this case we have a good reason.
+        # The given object might contain a non-primitive object somewhere inside it, and the only way to find it is to go through the entire hierarchy, which is exactly
+        # what's being done in the process of json conversion.
+        # Also keep in mind that exception handling in Python has no performance overhead (unlike e.g. Java).
+        return build_dynamic(d)
+
+    # Convert square brackets to round brackets (Issue #11)
+    counter = 0
+    prev = ""
+    for i, c in enumerate(query):
+        if counter == 0:
+            if c == "[":
+                query[i] = "("
+            elif c == "]":
+                query[i] = ")"
+            elif c in ['"', '\''] and prev != "\\":
+                counter += 1
+        elif counter > 0:
+            if c in ['"', '\''] and prev != "\\":
+                counter -= 1
+        prev = query[i]
+    assert counter == 0
+    return KQL("".join(query))
+
+
+def build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
+    from pykusto.expressions import BaseExpression
+    if isinstance(d, BaseExpression):
+        return d.kql
+    if isinstance(d, Mapping):
+        return KQL('pack({})'.format(', '.join(map(build_dynamic, chain(*d.items())))))
+    if isinstance(d, (List, Tuple)):
+        return KQL('pack_array({})'.format(', '.join(map(build_dynamic, d))))
+    from pykusto.expressions import to_kql
+    return to_kql(d)
+
+
+@kql_converter(KustoType.BOOL)
+def bool_to_kql(b: bool) -> KQL:
+    return KQL('true') if b else KQL('false')
+
+
+@kql_converter(KustoType.STRING)
+def str_to_kql(s: str) -> KQL:
+    return KQL('"{}"'.format(s))
+
+
+@kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL)
+def number_to_kql(n: Number) -> KQL:
+    return KQL(str(n))
+
+
+# noinspection PyUnusedLocal
+@kql_converter(KustoType.NULL)
+def none_to_kql(n: None) -> KQL:
+    return KQL("")

@@ -6,9 +6,8 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
     ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
-from pykusto.kql_converters import KQL
 from pykusto.logger import logger
-from pykusto.type_utils import plain_expression, get_base_types, KustoType
+from pykusto.type_utils import plain_expression, get_base_types, KustoType, KQL
 
 
 class Functions:
@@ -180,20 +179,20 @@ class Functions:
     # def degrees(self): return
 
     @staticmethod
-    def endofday(expr: DatetimeExpression, offset: NumberType = None) -> DatetimeExpression:
-        return expr.endofday(offset)
+    def end_of_day(expr: DatetimeExpression, offset: NumberType = None) -> DatetimeExpression:
+        return expr.end_of_day(offset)
 
     @staticmethod
-    def endofmonth(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.endofmonth(offset)
+    def end_of_month(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.end_of_month(offset)
 
     @staticmethod
-    def endofweek(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.endofweek(offset)
+    def end_of_week(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.end_of_week(offset)
 
     @staticmethod
-    def endofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.endofyear(offset)
+    def end_of_year(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.end_of_year(offset)
 
     # def estimate_data_size(self): return
 
@@ -239,16 +238,16 @@ class Functions:
     # def gamma(self): return
 
     @staticmethod
-    def getmonth(expr: DatetimeType) -> NumberExpression:
-        return expr.getmonth()
+    def get_month(expr: DatetimeType) -> NumberExpression:
+        return expr.get_month()
 
     @staticmethod
-    def gettype(expr: ExpressionType) -> StringExpression:
-        return expr.gettype()
+    def get_type(expr: ExpressionType) -> StringExpression:
+        return expr.get_type()
 
     @staticmethod
-    def getyear(expr: DatetimeType) -> NumberExpression:
-        return expr.getyear()
+    def get_year(expr: DatetimeType) -> NumberExpression:
+        return expr.get_year()
 
     @staticmethod
     def hash(expr: ExpressionType) -> StringExpression:
@@ -259,8 +258,8 @@ class Functions:
         return expr.hash_sha256()
 
     @staticmethod
-    def hourofday(expr: DatetimeType) -> NumberExpression:
-        return expr.hourofday()
+    def hour_of_day(expr: DatetimeType) -> NumberExpression:
+        return expr.hour_of_day()
 
     @staticmethod
     def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
@@ -300,35 +299,35 @@ class Functions:
     # def isascii(self): return
 
     @staticmethod
-    def isempty(expr: ExpressionType) -> BooleanExpression:
+    def is_empty(expr: ExpressionType) -> BooleanExpression:
         return expr.is_empty()
 
     @staticmethod
-    def isfinite(expr: NumberType) -> BooleanExpression:
+    def is_finite(expr: NumberType) -> BooleanExpression:
         return expr.isfinite()
 
     @staticmethod
-    def isinf(expr: NumberType) -> BooleanExpression:
-        return expr.isinf()
+    def is_inf(expr: NumberType) -> BooleanExpression:
+        return expr.is_inf()
 
     @staticmethod
-    def isnan(expr: NumberExpression) -> BooleanExpression:
-        return expr.isnan()
+    def is_nan(expr: NumberExpression) -> BooleanExpression:
+        return expr.is_nan()
 
     @staticmethod
-    def isnotempty(expr: ExpressionType) -> BooleanExpression:
+    def is_not_empty(expr: ExpressionType) -> BooleanExpression:
         return expr.is_not_empty()
 
     @staticmethod
-    def isnotnull(expr: ExpressionType) -> BooleanExpression:
+    def is_not_null(expr: ExpressionType) -> BooleanExpression:
         return expr.is_not_null()
 
     @staticmethod
-    def isnull(expr: ExpressionType) -> BooleanExpression:
+    def is_null(expr: ExpressionType) -> BooleanExpression:
         return expr.is_null()
 
     @staticmethod
-    def isutf8(expr: StringType) -> BooleanExpression:
+    def is_utf8(expr: StringType) -> BooleanExpression:
         return expr.is_utf8()
 
     @staticmethod
@@ -344,8 +343,8 @@ class Functions:
         return expr.log2()
 
     @staticmethod
-    def loggamma(expr: NumberType) -> NumberExpression:
-        return expr.loggamma()
+    def log_gamma(expr: NumberType) -> NumberExpression:
+        return expr.log_gamma()
 
     @staticmethod
     def make_datetime(year: NumberType,
@@ -376,7 +375,7 @@ class Functions:
     # def min_of(self): return
 
     @staticmethod
-    def monthofyear() -> NumberExpression: raise NotImplemented  # TODO
+    def month_of_year() -> NumberExpression: raise NotImplemented  # TODO
 
     @staticmethod
     def new_guid() -> AnyExpression: raise NotImplemented  # TODO
@@ -576,20 +575,20 @@ class Functions:
         return NumberExpression(KQL('sqrt({})'.format(to_kql(expr))))
 
     @staticmethod
-    def startofday(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.startofday(offset)
+    def start_of_day(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.start_of_day(offset)
 
     @staticmethod
-    def startofmonth(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.startofmonth(offset)
+    def start_of_month(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.start_of_month(offset)
 
     @staticmethod
-    def startofweek(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.startofweek(offset)
+    def start_of_week(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.start_of_week(offset)
 
     @staticmethod
-    def startofyear(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
-        return expr.startofyear(offset)
+    def start_of_year(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
+        return expr.start_of_year(offset)
 
     @staticmethod
     def strcat(*strings: StringType) -> StringExpression:
@@ -654,60 +653,60 @@ class Functions:
     # def tdigest_merge(self): return
 
     @staticmethod
-    def tobool(expr: ExpressionType) -> BooleanExpression:
+    def to_bool(expr: ExpressionType) -> BooleanExpression:
         return BooleanExpression(KQL('tobool({})'.format(to_kql(expr))))
 
     @staticmethod
-    def toboolean(expr: ExpressionType) -> BooleanExpression:
+    def to_boolean(expr: ExpressionType) -> BooleanExpression:
         return BooleanExpression(KQL('toboolean({})'.format(to_kql(expr))))
 
     @staticmethod
-    def todatetime(expr: StringType) -> DatetimeExpression:
+    def to_datetime(expr: StringType) -> DatetimeExpression:
         return DatetimeExpression(KQL('todatetime({})'.format(to_kql(expr))))
 
     @staticmethod
-    def todecimal(expr: NumberType) -> NumberExpression:
+    def to_decimal(expr: NumberType) -> NumberExpression:
         return NumberExpression(KQL("todecimal({})".format(to_kql(expr))))
 
     @staticmethod
-    def todouble(expr: NumberType) -> NumberExpression:
+    def to_double(expr: NumberType) -> NumberExpression:
         return NumberExpression(KQL("todouble({})".format(to_kql(expr))))
 
     @staticmethod
-    def todynamic() -> DynamicExpression: raise NotImplemented  # TODO
+    def to_dynamic() -> DynamicExpression: raise NotImplemented  # TODO
 
     @staticmethod
-    def toguid() -> AnyExpression: raise NotImplemented  # TODO
+    def to_guid() -> AnyExpression: raise NotImplemented  # TODO
 
     @staticmethod
-    def tohex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
+    def to_hex(expr1: NumberType, expr2: NumberType = None) -> StringExpression:
         return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(to_kql(expr1), to_kql(expr2))))
 
     @staticmethod
-    def toint(expr: NumberType) -> NumberExpression:
+    def to_int(expr: NumberType) -> NumberExpression:
         return NumberExpression(KQL("toint({})".format(to_kql(expr))))
 
     @staticmethod
-    def tolong(expr: NumberType) -> NumberExpression:
+    def to_long(expr: NumberType) -> NumberExpression:
         return NumberExpression(KQL("tolong({})".format(to_kql(expr))))
 
     @staticmethod
-    def tolower(expr: StringType) -> StringExpression:
+    def to_lower(expr: StringType) -> StringExpression:
         return expr.lower()
 
     @staticmethod
-    def toreal(expr: NumberType) -> NumberExpression:
+    def to_real(expr: NumberType) -> NumberExpression:
         return NumberExpression(KQL("toreal({})".format(to_kql(expr))))
 
     @staticmethod
-    def tostring(expr: ExpressionType):
+    def to_string(expr: ExpressionType):
         return expr.to_string()
 
     @staticmethod
-    def totimespan() -> TimespanExpression: raise NotImplemented  # TODO
+    def to_timespan() -> TimespanExpression: raise NotImplemented  # TODO
 
     @staticmethod
-    def toupper(expr: StringType) -> StringExpression:
+    def to_upper(expr: StringType) -> StringExpression:
         return expr.upper()
 
     # def to_utf8(self): return
@@ -733,7 +732,7 @@ class Functions:
     def url_encode() -> StringExpression: raise NotImplemented  # TODO
 
     @staticmethod
-    def weekofyear() -> NumberExpression: raise NotImplemented  # TODO
+    def week_of_year() -> NumberExpression: raise NotImplemented  # TODO
 
     # def welch_test(self): return
 
@@ -764,7 +763,7 @@ class Functions:
         return NumberAggregationExpression(KQL('avg({})'.format(to_kql(expr))))
 
     @staticmethod
-    def avgif(expr: ExpressionType, predicate: BooleanType) -> NumberAggregationExpression:
+    def avg_if(expr: ExpressionType, predicate: BooleanType) -> NumberAggregationExpression:
         return NumberAggregationExpression(KQL('avgif({}, {})'.format(to_kql(expr), to_kql(predicate))))
 
     # def buildschema(self):
@@ -776,7 +775,7 @@ class Functions:
         return NumberAggregationExpression(KQL(res))
 
     @staticmethod
-    def countif(predicate: BooleanType) -> NumberAggregationExpression:
+    def count_if(predicate: BooleanType) -> NumberAggregationExpression:
         return NumberAggregationExpression(KQL('countif({})'.format(to_kql(predicate))))
 
     @staticmethod
@@ -786,7 +785,7 @@ class Functions:
         ))
 
     @staticmethod
-    def dcountif(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberAggregationExpression:
+    def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberAggregationExpression:
         return NumberAggregationExpression(KQL('dcountif({}, {}, {})'.format(
             to_kql(expr), to_kql(predicate), to_kql(accuracy)
         )))
@@ -860,7 +859,7 @@ class Functions:
         return AnyAggregationExpression(KQL('sum({})'.format(to_kql(expr))))
 
     @staticmethod
-    def sumif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
+    def sum_if(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
         return AnyAggregationExpression(KQL('sumif({}, {})'.format(to_kql(expr), to_kql(predicate))))
 
     # def tdigest(self):
@@ -875,7 +874,7 @@ class Functions:
         return AnyAggregationExpression(KQL('variance({})'.format(to_kql(expr))))
 
     @staticmethod
-    def varianceif(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
+    def variance_if(expr: ExpressionType, predicate: BooleanType) -> AggregationExpression:
         return AnyAggregationExpression(KQL('varianceif({}, {})'.format(to_kql(expr), to_kql(predicate))))
 
     @staticmethod

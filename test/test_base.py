@@ -126,7 +126,7 @@ class MockKustoClient(KustoClient):
     databases_response: KustoResponseDataSet
     getschema_response: KustoResponseDataSet
     main_response: KustoResponseDataSet
-    upon_execute: Callable
+    upon_execute: Callable[[RecordedQuery], None]
     record_metadata: bool
 
     def __init__(
@@ -137,7 +137,7 @@ class MockKustoClient(KustoClient):
             databases_response: KustoResponseDataSet = mock_databases_response([]),
             getschema_response: KustoResponseDataSet = mock_getschema_response([]),
             main_response: KustoResponseDataSet = mock_response(tuple()),
-            upon_execute: Callable = None,
+            upon_execute: Callable[[RecordedQuery], None] = None,
             record_metadata: bool = False
     ):
         self.recorded_queries = []

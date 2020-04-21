@@ -1,8 +1,8 @@
 import pandas as pd
 
-from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
+from pykusto.functions import Functions as f
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response

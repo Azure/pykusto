@@ -17,6 +17,8 @@ setup(
         'pandas>=0.24.1,<=1.0.3',  # azure-kusto-data requires 0.24.1
     ],
     tests_require=[
+        'pytest',
+        'pytest-cov',
         'flake8',
         'pandas>=0.25.0',  # Tests use DataFrame constructor options introduced in 0.25.0
     ],

@@ -1,15 +1,13 @@
 import logging
 from datetime import datetime, timedelta
 
-from pykusto import functions as f
 from pykusto.expressions import column_generator as col
+from pykusto.functions import Functions as f
 from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase
 from test.test_base import test_table as t
 
-
-# TODO dcount_hll
 
 class TestFunction(TestBase):
     def test_acos(self):
@@ -136,6 +134,7 @@ class TestFunction(TestBase):
             Query().where(f.format_datetime(t.dateField, 'yy-MM-dd [HH:mm:ss]') == '2019-07-23 00:00:00').render()
         )
 
+    # noinspection SpellCheckingInspection
     def test_format_timespan(self):
         self.assertEqual(
             ' | where (format_timespan(timespanField, "h:m:s.fffffff")) == "2:3:4.1234500"',
@@ -692,6 +691,18 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize min(numField)",
             Query().summarize(f.min(t.numField)).render()
+        )
+
+    def test_max_if(self):
+        self.assertEqual(
+            " | summarize maxif(numField, boolField)",
+            Query().summarize(f.max_if(t.numField, t.boolField)).render()
+        )
+
+    def test_min_if(self):
+        self.assertEqual(
+            " | summarize minif(numField, boolField)",
+            Query().summarize(f.min_if(t.numField, t.boolField)).render()
         )
 
     def test_percentile(self):

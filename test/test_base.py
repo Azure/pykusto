@@ -7,9 +7,8 @@ from urllib.parse import urljoin
 
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
-# noinspection PyProtectedMember
-from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
+from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.client import Table
 from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, MappingColumn, StringColumn, DatetimeColumn, TimespanColumn, DynamicColumn

@@ -207,6 +207,30 @@ class TestQuery(TestBase):
             Query(t).mv_expand(t.arrayField, t.arrayField2, t.arrayField3).render(),
         )
 
+    def test_mv_expand_assign(self):
+        self.assertEqual(
+            "test_table | mv-expand expanded_field = arrayField",
+            Query(t).mv_expand(expanded_field=t.arrayField).render(),
+        )
+
+    def test_mv_expand_assign_to(self):
+        self.assertEqual(
+            "test_table | mv-expand expanded_field = arrayField",
+            Query(t).mv_expand(t.arrayField.assign_to(col.expanded_field)).render(),
+        )
+
+    def test_mv_expand_assign_to_with_assign_other_params(self):
+        self.assertEqual(
+            "test_table | mv-expand bagexpansion=bag with_itemindex=foo expanded_field = arrayField, expanded_field2 = arrayField2 limit 4",
+            Query(t).mv_expand(t.arrayField.assign_to(col.expanded_field), expanded_field2=t.arrayField2, bag_expansion=BagExpansion.BAG, with_item_index=col.foo, limit=4).render(),
+        )
+
+    def test_mv_expand_assign_multiple(self):
+        self.assertEqual(
+            "test_table | mv-expand expanded_field = arrayField, expanded_field2 = arrayField2",
+            Query(t).mv_expand(expanded_field=t.arrayField, expanded_field2=t.arrayField2).render(),
+        )
+
     def test_mv_expand_to_type(self):
         self.assertEqual(
             "test_table | mv-expand arrayField to typeof(string), arrayField2 to typeof(int), arrayField3",

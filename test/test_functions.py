@@ -1,15 +1,13 @@
 import logging
 from datetime import datetime, timedelta
 
-from pykusto import functions as f
 from pykusto.expressions import column_generator as col
+from pykusto.functions import Functions as f
 from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase
 from test.test_base import test_table as t
 
-
-# TODO dcount_hll
 
 class TestFunction(TestBase):
     def test_acos(self):
@@ -61,41 +59,41 @@ class TestFunction(TestBase):
     def test_endofday(self):
         self.assertEqual(
             " | where (endofday(dateField)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofday(t.dateField) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_day(t.dateField) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofday(dateField, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofday(t.dateField, 2) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_day(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_endofmonth(self):
         self.assertEqual(
             " | where (endofmonth(dateField)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofmonth(t.dateField) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_month(t.dateField) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofmonth(dateField, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofmonth(t.dateField, 2) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_month(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_endofweek(self):
         self.assertEqual(
             " | where (endofweek(dateField)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofweek(t.dateField) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_week(t.dateField) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofweek(dateField, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofweek(t.dateField, 2) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_week(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_endofyear(self):
         self.assertEqual(
             " | where (endofyear(dateField)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofyear(t.dateField) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_year(t.dateField) > datetime(2019, 7, 23)).render()
         )
         self.assertEqual(
             " | where (endofyear(dateField, 2)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.endofyear(t.dateField, 2) > datetime(2019, 7, 23)).render()
+            Query().where(f.end_of_year(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
     def test_exp(self):
@@ -136,6 +134,7 @@ class TestFunction(TestBase):
             Query().where(f.format_datetime(t.dateField, 'yy-MM-dd [HH:mm:ss]') == '2019-07-23 00:00:00').render()
         )
 
+    # noinspection SpellCheckingInspection
     def test_format_timespan(self):
         self.assertEqual(
             ' | where (format_timespan(timespanField, "h:m:s.fffffff")) == "2:3:4.1234500"',
@@ -145,25 +144,25 @@ class TestFunction(TestBase):
     def test_getmonth(self):
         self.assertEqual(
             " | where (getmonth(dateField)) > 3",
-            Query().where(f.getmonth(t.dateField) > 3).render()
+            Query().where(f.get_month(t.dateField) > 3).render()
         )
 
     def test_gettype(self):
         self.assertEqual(
             ' | where (gettype(dateField)) == "datetime"',
-            Query().where(f.gettype(t.dateField) == 'datetime').render()
+            Query().where(f.get_type(t.dateField) == 'datetime').render()
         )
 
     def test_getyear(self):
         self.assertEqual(
             " | where (getyear(dateField)) > 2019",
-            Query().where(f.getyear(t.dateField) > 2019).render()
+            Query().where(f.get_year(t.dateField) > 2019).render()
         )
 
     def test_hourofday(self):
         self.assertEqual(
             " | where (hourofday(dateField)) == 3",
-            Query().where(f.hourofday(t.dateField) == 3).render()
+            Query().where(f.hour_of_day(t.dateField) == 3).render()
         )
 
     def test_hash(self):
@@ -181,49 +180,49 @@ class TestFunction(TestBase):
     def test_isempty(self):
         self.assertEqual(
             " | where isempty(stringField)",
-            Query().where(f.isempty(t.stringField)).render()
+            Query().where(f.is_empty(t.stringField)).render()
         )
 
     def test_isfinite(self):
         self.assertEqual(
             " | where isfinite(numField)",
-            Query().where(f.isfinite(t.numField)).render()
+            Query().where(f.is_finite(t.numField)).render()
         )
 
     def test_isinf(self):
         self.assertEqual(
             " | where isinf(numField)",
-            Query().where(f.isinf(t.numField)).render()
+            Query().where(f.is_inf(t.numField)).render()
         )
 
     def test_isnan(self):
         self.assertEqual(
             " | where isnan(numField)",
-            Query().where(f.isnan(t.numField)).render()
+            Query().where(f.is_nan(t.numField)).render()
         )
 
     def test_isnotempty(self):
         self.assertEqual(
             " | where isnotempty(stringField)",
-            Query().where(f.isnotempty(t.stringField)).render()
+            Query().where(f.is_not_empty(t.stringField)).render()
         )
 
     def test_isnotnull(self):
         self.assertEqual(
             " | where isnotnull(stringField)",
-            Query().where(f.isnotnull(t.stringField)).render()
+            Query().where(f.is_not_null(t.stringField)).render()
         )
 
     def test_isnull(self):
         self.assertEqual(
             " | where isnull(stringField)",
-            Query().where(f.isnull(t.stringField)).render()
+            Query().where(f.is_null(t.stringField)).render()
         )
 
     def test_isutf8(self):
         self.assertEqual(
             " | where isutf8(stringField)",
-            Query().where(f.isutf8(t.stringField)).render()
+            Query().where(f.is_utf8(t.stringField)).render()
         )
 
     def test_log(self):
@@ -247,7 +246,7 @@ class TestFunction(TestBase):
     def test_loggamma(self):
         self.assertEqual(
             " | where (loggamma(numField)) < 3",
-            Query().where(f.loggamma(t.numField) < 3).render()
+            Query().where(f.log_gamma(t.numField) < 3).render()
         )
 
     def test_make_datetime(self):
@@ -301,7 +300,7 @@ class TestFunction(TestBase):
     def test_parse_json_number_expression(self):
         self.assertEqual(
             ' | where (todouble(parse_json(stringField).bar)) > 4',
-            Query().where(f.todouble(f.parse_json(t.stringField).bar) > 4).render()
+            Query().where(f.to_double(f.parse_json(t.stringField).bar) > 4).render()
         )
 
     def test_parse_json_array(self):
@@ -342,25 +341,25 @@ class TestFunction(TestBase):
     def test_startofday(self):
         self.assertEqual(
             " | where (startofday(dateField)) > datetime(2019-07-23 00:00:00.000000)",
-            Query().where(f.startofday(t.dateField) > datetime(2019, 7, 23)).render()
+            Query().where(f.start_of_day(t.dateField) > datetime(2019, 7, 23)).render()
         )
 
     def test_startofmonth(self):
         self.assertEqual(
             " | where (startofmonth(dateField)) > datetime(2019-07-01 00:00:00.000000)",
-            Query().where(f.startofmonth(t.dateField) > datetime(2019, 7, 1)).render()
+            Query().where(f.start_of_month(t.dateField) > datetime(2019, 7, 1)).render()
         )
 
     def test_startofweek(self):
         self.assertEqual(
             " | where (startofweek(dateField)) > datetime(2019-07-08 00:00:00.000000)",
-            Query().where(f.startofweek(t.dateField) > datetime(2019, 7, 8)).render()
+            Query().where(f.start_of_week(t.dateField) > datetime(2019, 7, 8)).render()
         )
 
     def test_startofyear(self):
         self.assertEqual(
             " | where (startofyear(dateField)) > datetime(2019-01-01 00:00:00.000000)",
-            Query().where(f.startofyear(t.dateField) > datetime(2019, 1, 1)).render()
+            Query().where(f.start_of_year(t.dateField) > datetime(2019, 1, 1)).render()
         )
 
     def test_strcat(self):
@@ -419,8 +418,8 @@ class TestFunction(TestBase):
 
     def test_strrep(self):
         self.assertEqual(
-            ' | where (strrep(stringField, numField)) == "ABCABC"',
-            Query().where(f.strrep(t.stringField, t.numField) == 'ABCABC').render()
+            ' | where (strrep(stringField, numField)) == "ABC"',
+            Query().where(f.strrep(t.stringField, t.numField) == 'ABC').render()
         )
         self.assertEqual(
             ' | where (strrep(stringField, numField, ",")) == "ABC,ABC"',
@@ -433,8 +432,8 @@ class TestFunction(TestBase):
 
     def test_substring(self):
         self.assertEqual(
-            ' | where (substring(stringField, numField)) == "ABCABC"',
-            Query().where(f.substring(t.stringField, t.numField) == 'ABCABC').render()
+            ' | where (substring(stringField, numField)) == "ABC"',
+            Query().where(f.substring(t.stringField, t.numField) == 'ABC').render()
         )
         self.assertEqual(
             ' | where (substring(stringField, numField, 4)) == "ABC,ABC"',
@@ -458,71 +457,71 @@ class TestFunction(TestBase):
     def test_tobool(self):
         self.assertEqual(
             " | where tobool(stringField)",
-            Query().where(f.tobool(t.stringField)).render()
+            Query().where(f.to_bool(t.stringField)).render()
         )
 
     def test_toboolean(self):
         self.assertEqual(
             " | where toboolean(stringField)",
-            Query().where(f.toboolean(t.stringField)).render()
+            Query().where(f.to_boolean(t.stringField)).render()
         )
 
     def test_todouble(self):
         self.assertEqual(
             " | where (todouble(stringField)) > 0.2",
-            Query().where(f.todouble(t.stringField) > 0.2).render()
+            Query().where(f.to_double(t.stringField) > 0.2).render()
         )
         
     def test_todecimal(self):
         self.assertEqual(
             " | where (todecimal(stringField)) > 0.2",
-            Query().where(f.todecimal(t.stringField) > 0.2).render()
+            Query().where(f.to_decimal(t.stringField) > 0.2).render()
         )
 
     def test_toint(self):
         self.assertEqual(
             " | where (toint(stringField)) > 1",
-            Query().where(f.toint(t.stringField) > 1).render()
+            Query().where(f.to_int(t.stringField) > 1).render()
         )
 
     def test_tolong(self):
         self.assertEqual(
             " | where (tolong(stringField)) > 2222222222",
-            Query().where(f.tolong(t.stringField) > 2222222222).render()
+            Query().where(f.to_long(t.stringField) > 2222222222).render()
         )
 
     def test_todatetime(self):
         self.assertEqual(
             " | extend foo = todatetime(stringField)",
-            Query().extend(foo=f.todatetime(t.stringField)).render()
+            Query().extend(foo=f.to_datetime(t.stringField)).render()
         )
 
     def test_tolower(self):
         self.assertEqual(
             ' | where (tolower(stringField)) == "foo"',
-            Query().where(f.tolower(t.stringField) == "foo").render()
+            Query().where(f.to_lower(t.stringField) == "foo").render()
         )
 
     def test_toreal(self):
         self.assertEqual(
             " | where (toreal(stringField)) > 0.2",
-            Query().where(f.toreal(t.stringField) > 0.2).render()
+            Query().where(f.to_real(t.stringField) > 0.2).render()
         )
         
     def test_toupper(self):
         self.assertEqual(
             ' | where (toupper(stringField)) == "FOO"',
-            Query().where(f.toupper(t.stringField) == "FOO").render()
+            Query().where(f.to_upper(t.stringField) == "FOO").render()
         )
 
     def test_tohex(self):
         self.assertEqual(
             ' | where (tohex(256)) == "100"',
-            Query().where(f.tohex(256) == "100").render()
+            Query().where(f.to_hex(256) == "100").render()
         )
 
     # ------------------------------------------------------
-    # Aggregative Functions
+    # Aggregation Functions
     # ------------------------------------------------------
 
     def test_any(self):
@@ -574,7 +573,7 @@ class TestFunction(TestBase):
     def test_avgif(self):
         self.assertEqual(
             " | summarize avgif(numField, boolField)",
-            Query().summarize(f.avgif(t.numField, t.boolField)).render()
+            Query().summarize(f.avg_if(t.numField, t.boolField)).render()
         )
 
     def test_bin(self):
@@ -632,7 +631,7 @@ class TestFunction(TestBase):
     def test_countif(self):
         self.assertEqual(
             " | summarize countif(numField == 1)",
-            Query().summarize(f.countif(t.numField == 1)).render()
+            Query().summarize(f.count_if(t.numField == 1)).render()
         )
 
     def test_dcount(self):
@@ -649,7 +648,7 @@ class TestFunction(TestBase):
     def test_dcountif(self):
         self.assertEqual(
             " | summarize dcountif(stringField, boolField, 0)",
-            Query().summarize(f.dcountif(t.stringField, t.boolField)).render()
+            Query().summarize(f.dcount_if(t.stringField, t.boolField)).render()
         )
 
     def test_make_bag(self):
@@ -694,6 +693,18 @@ class TestFunction(TestBase):
             Query().summarize(f.min(t.numField)).render()
         )
 
+    def test_max_if(self):
+        self.assertEqual(
+            " | summarize maxif(numField, boolField)",
+            Query().summarize(f.max_if(t.numField, t.boolField)).render()
+        )
+
+    def test_min_if(self):
+        self.assertEqual(
+            " | summarize minif(numField, boolField)",
+            Query().summarize(f.min_if(t.numField, t.boolField)).render()
+        )
+
     def test_percentile(self):
         self.assertEqual(
             " | summarize percentiles(numField, 5)",
@@ -733,7 +744,7 @@ class TestFunction(TestBase):
     def test_sumif(self):
         self.assertEqual(
             " | summarize sumif(numField, boolField)",
-            Query().summarize(f.sumif(t.numField, t.boolField)).render()
+            Query().summarize(f.sum_if(t.numField, t.boolField)).render()
         )
 
     def test_variance(self):
@@ -745,7 +756,7 @@ class TestFunction(TestBase):
     def test_varianceif(self):
         self.assertEqual(
             " | summarize varianceif(numField, boolField)",
-            Query().summarize(f.varianceif(t.numField, t.boolField)).render()
+            Query().summarize(f.variance_if(t.numField, t.boolField)).render()
         )
 
     def test_variancep(self):

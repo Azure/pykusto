@@ -7,9 +7,8 @@ from urllib.parse import urljoin
 
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
-# noinspection PyProtectedMember
-from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.request import KustoClient, ClientRequestProperties
+from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.client import Table
 from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, MappingColumn, StringColumn, DatetimeColumn, TimespanColumn, DynamicColumn
@@ -127,7 +126,7 @@ class MockKustoClient(KustoClient):
     databases_response: KustoResponseDataSet
     getschema_response: KustoResponseDataSet
     main_response: KustoResponseDataSet
-    upon_execute: Callable
+    upon_execute: Callable[[RecordedQuery], None]
     record_metadata: bool
 
     def __init__(
@@ -138,7 +137,7 @@ class MockKustoClient(KustoClient):
             databases_response: KustoResponseDataSet = mock_databases_response([]),
             getschema_response: KustoResponseDataSet = mock_getschema_response([]),
             main_response: KustoResponseDataSet = mock_response(tuple()),
-            upon_execute: Callable = None,
+            upon_execute: Callable[[RecordedQuery], None] = None,
             record_metadata: bool = False
     ):
         self.recorded_queries = []

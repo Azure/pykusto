@@ -2,9 +2,8 @@ from datetime import datetime, timedelta
 from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
-from pykusto.kql_converters import KQL
 from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, \
-    typed_column
+    typed_column, KQL
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -55,7 +54,7 @@ class BaseExpression:
     def as_subexpression(self) -> KQL:
         return KQL('({})'.format(self.kql))
 
-    def gettype(self) -> 'StringExpression':
+    def get_type(self) -> 'StringExpression':
         return StringExpression(KQL('gettype({})'.format(self.kql)))
 
     def __hash__(self) -> 'StringExpression':
@@ -234,10 +233,10 @@ class NumberExpression(BaseExpression):
     def isfinite(self) -> BooleanExpression:
         return BooleanExpression(KQL('isfinite({})'.format(self.kql)))
 
-    def isinf(self) -> BooleanExpression:
+    def is_inf(self) -> BooleanExpression:
         return BooleanExpression(KQL('isinf({})'.format(self.kql)))
 
-    def isnan(self) -> BooleanExpression:
+    def is_nan(self) -> BooleanExpression:
         return BooleanExpression(KQL('isnan({})'.format(self.kql)))
 
     def log(self) -> 'NumberExpression':
@@ -249,7 +248,7 @@ class NumberExpression(BaseExpression):
     def log2(self) -> 'NumberExpression':
         return NumberExpression(KQL('log2({})'.format(self.kql)))
 
-    def loggamma(self) -> 'NumberExpression':
+    def log_gamma(self) -> 'NumberExpression':
         return NumberExpression(KQL('loggamma({})'.format(self.kql)))
 
     def round(self, precision: NumberType = None) -> 'NumberExpression':
@@ -351,28 +350,28 @@ class DatetimeExpression(BaseExpression):
     def bin_auto(self) -> 'DatetimeExpression':
         return DatetimeExpression(KQL('bin_auto({})'.format(self.kql)))
 
-    def endofday(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def end_of_day(self, offset: NumberType = None) -> 'DatetimeExpression':
         if offset is None:
             res = 'endofday({})'.format(self.kql)
         else:
             res = 'endofday({}, {})'.format(self.kql, _subexpr_to_kql(offset))
         return DatetimeExpression(KQL(res))
 
-    def endofmonth(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def end_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
         if offset is None:
             res = 'endofmonth({})'.format(self.kql)
         else:
             res = 'endofmonth({}, {})'.format(self.kql, _subexpr_to_kql(offset))
         return DatetimeExpression(KQL(res))
 
-    def endofweek(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def end_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
         if offset is None:
             res = 'endofweek({})'.format(self.kql)
         else:
             res = 'endofweek({}, {})'.format(self.kql, _subexpr_to_kql(offset))
         return DatetimeExpression(KQL(res))
 
-    def endofyear(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def end_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
         if offset is None:
             res = 'endofyear({})'.format(self.kql)
         else:
@@ -382,31 +381,31 @@ class DatetimeExpression(BaseExpression):
     def format_datetime(self, format_string: StringType) -> StringExpression:
         return StringExpression(KQL('format_datetime({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
 
-    def getmonth(self) -> NumberExpression:
+    def get_month(self) -> NumberExpression:
         return NumberExpression(KQL('getmonth({})'.format(self.kql)))
 
-    def getyear(self) -> NumberExpression:
+    def get_year(self) -> NumberExpression:
         return NumberExpression(KQL('getyear({})'.format(self.kql)))
 
-    def hourofday(self) -> NumberExpression:
+    def hour_of_day(self) -> NumberExpression:
         return NumberExpression(KQL('hourofday({})'.format(self.kql)))
 
-    def startofday(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def start_of_day(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
             ('startofday({})' if offset is None else 'startofday({}, {})').format(self.kql, to_kql(offset))
         ))
 
-    def startofmonth(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def start_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
             ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(self.kql, to_kql(offset))
         ))
 
-    def startofweek(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def start_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
             ('startofweek({})' if offset is None else 'startofweek({}, {})').format(self.kql, to_kql(offset))
         ))
 
-    def startofyear(self, offset: NumberType = None) -> 'DatetimeExpression':
+    def start_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
         return DatetimeExpression(KQL(
             ('startofyear({})' if offset is None else 'startofyear({}, {})').format(self.kql, to_kql(offset))
         ))

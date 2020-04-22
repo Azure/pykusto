@@ -1,8 +1,8 @@
 import pandas as pd
 
-from pykusto import functions as f
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
+from pykusto.functions import Functions as f
 from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
@@ -198,7 +198,7 @@ class TestQuery(TestBase):
     def test_summarize_by_expression(self):
         self.assertEqual(
             "test_table | summarize count(stringField) by tostring(mapField)",
-            Query(t).summarize(f.count(t.stringField)).by(f.tostring(t.mapField)).render(),
+            Query(t).summarize(f.count(t.stringField)).by(f.to_string(t.mapField)).render(),
         )
 
     def test_mv_expand(self):

@@ -1,5 +1,5 @@
 from pykusto.expressions import to_kql
-from pykusto.type_utils import TypeRegistrar, KustoType
+from pykusto.type_utils import TypeRegistrar, KustoType, KQL
 from test.test_base import TestBase
 
 
@@ -69,11 +69,11 @@ class TestUtils(TestBase):
         test_annotation = TypeRegistrar("Test annotation")
 
         @test_annotation(KustoType.STRING)
-        def str_annotated_1(s: str) -> str:
-            return "response to " + s
+        def str_annotated_1(s: str) -> KQL:
+            return KQL("response to " + s)
 
-        def str_annotated_2(s: str) -> str:
-            return "response to " + s
+        def str_annotated_2(s: str) -> KQL:
+            return KQL("response to " + s)
 
         self.assertRaises(
             TypeError("Test annotation: type already registered: string"),

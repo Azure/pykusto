@@ -7,15 +7,13 @@ from urllib.parse import urlparse
 import pandas as pd
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultRow
-# noinspection PyProtectedMember
-from azure.kusto.data._response import KustoResponseDataSet
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
+from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.item_fetcher import ItemFetcher
-from pykusto.kql_converters import KQL
-from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
+from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE, KQL
 
 
 class KustoResponse:

@@ -84,7 +84,7 @@ class ItemFetcher(metaclass=ABCMeta):
             self.__items[name] = item
         return item
 
-    def _get_item(self, name: str, fallback: Callable) -> Any:
+    def _get_item(self, name: str, fallback: Callable[[], Any]) -> Any:
         if self.__items is not None:
             resolved_item = self.__items.get(name)
             if resolved_item is not None:

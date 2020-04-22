@@ -33,7 +33,8 @@ class TestClientFetch(TestBase):
         mock_response_future = Future()
         mock_response_future.executed = False
 
-        def upon_execute(query):
+        # noinspection PyUnusedLocal
+        def upon_execute(query):  # Parameter required since function is passed as Callable[[RecordedQuery], None]
             mock_response_future.result()
             mock_response_future.executed = True
 
@@ -86,7 +87,7 @@ class TestClientFetch(TestBase):
         query_thread.join()
         # Make sure the fetch query was indeed called
         assert mock_response_future.executed
-        # Before the fix the order of returned query was reveresed
+        # Before the fix the order of returned query was reversed
         self.assertEqual(
             [
                 RecordedQuery('test_db', '.show table test_table | project AttributeName, AttributeType | limit 10000'),

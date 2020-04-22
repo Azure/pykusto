@@ -801,6 +801,14 @@ class TestFunction(TestBase):
             Query().project(foo=f.iff(t.dateField > f.ago(timedelta(2)), 2, f.array_length(t.arrayField))).render()
         )
 
+    def test_iff_ambiguous_type(self):
+        with self.assertLogs(logger, logging.WARN) as cm:
+            self.assertEqual(
+                " | project foo = iff(boolField, time(3.0:0:0.0), foo - bar)",
+                Query().project(foo=f.iff(t.boolField, timedelta(3), col.foo - col.bar)).render()
+            )
+        self.assertEqual([], cm.output)
+
     def test_iif(self):
         # iif is just an alias to iff
         self.assertEqual(

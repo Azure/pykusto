@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Tuple, Mapping, Optional, Type
+from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
 from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, \
@@ -75,12 +75,15 @@ class BaseExpression:
 
     @staticmethod
     def base_binary_op(
-            left: ExpressionType, operator: str, right: ExpressionType, result_type: Type[KustoType]
+            left: ExpressionType, operator: str, right: ExpressionType, result_type: Optional[KustoType]
     ) -> 'BaseExpression':
         registrar = plain_expression
+        fallback = AnyExpression
         if isinstance(left, AggregationExpression) or isinstance(right, AggregationExpression):
             registrar = aggregation_expression
-        return registrar.for_type(result_type)(KQL('{}{}{}'.format(
+            fallback = AnyAggregationExpression
+        return_type = fallback if result_type is None else registrar.registry[result_type]
+        return return_type(KQL('{}{}{}'.format(
             _subexpr_to_kql(left), operator, _subexpr_to_kql(right))
         ))
 
@@ -141,7 +144,7 @@ class BooleanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'BooleanExpression':
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, bool)
+        return BaseExpression.base_binary_op(left, operator, right, KustoType.BOOL)
 
     def __and__(self, other: BooleanType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' and ', other)
@@ -158,7 +161,7 @@ class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, int)
+        return BaseExpression.base_binary_op(left, operator, right, KustoType.INT)
 
     def __lt__(self, other: NumberType) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' < ', other)
@@ -306,7 +309,7 @@ class DatetimeExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'DatetimeExpression':
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, datetime)
+        return BaseExpression.base_binary_op(left, operator, right, KustoType.DATETIME)
 
     def __lt__(self, other: DatetimeType) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' < ', other)
@@ -416,7 +419,7 @@ class TimespanExpression(BaseExpression):
     @staticmethod
     def binary_op(left: ExpressionType, operator: str, right: ExpressionType) -> 'TimespanExpression':
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(left, operator, right, timedelta)
+        return BaseExpression.base_binary_op(left, operator, right, KustoType.TIMESPAN)
 
     def __add__(self, other: TimespanType) -> 'TimespanExpression':
         return TimespanExpression.binary_op(self, ' + ', other)
@@ -538,12 +541,12 @@ class ArrayAggregationExpression(AggregationExpression, ArrayExpression):
     pass
 
 
-class AnyAggregationExpression(AggregationExpression, AnyExpression):
+@aggregation_expression(KustoType.MAPPING)
+class MappingAggregationExpression(AggregationExpression, MappingExpression):
     pass
 
 
-@aggregation_expression(KustoType.MAPPING)
-class MappingAggregationExpression(AggregationExpression, MappingExpression):
+class AnyAggregationExpression(AggregationExpression, AnyExpression):
     pass
 
 
@@ -650,7 +653,19 @@ class TimespanColumn(BaseColumn, TimespanExpression):
     pass
 
 
-class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
+class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
+    def __sub__(self, other: Union['NumberColumn', 'DatetimeExpression', 'TimespanExpression']) -> Union['NumberColumn', 'DatetimeExpression', 'TimespanExpression']:
+        if isinstance(other, (int, float, NumberExpression)):
+            return_type = KustoType.INT
+        elif isinstance(other, (datetime, DatetimeExpression)):
+            return_type = KustoType.TIMESPAN
+        else:
+            assert isinstance(other, (timedelta, TimespanExpression)), "Invalid type subtracted from datetime"
+            return_type = None
+        return plain_expression.registry[return_type](BaseExpression.base_binary_op(self, '-', other, return_type))
+
+
+class AnyTypeColumn(SubtractableColumn, BooleanColumn, DynamicColumn, StringColumn):
     pass
 
 

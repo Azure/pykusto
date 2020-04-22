@@ -11,7 +11,7 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     BaseExpression, \
     AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType
 from pykusto.logger import logger
-from pykusto.type_utils import KustoType, KQL
+from pykusto.type_utils import KustoType, KQL, get_base_types, typed_column
 from pykusto.udf import stringify_python_func
 
 
@@ -229,10 +229,12 @@ class Query:
             else:
                 assignments.append(arg)
         for column_name, expression in kwargs.items():
+            column_types = set(typed_column.registry[base_type] for base_type in get_base_types(expression))
+            column_type = next(iter(column_types)) if len(column_types) == 1 else AnyTypeColumn
             if isinstance(expression, BaseExpression):
-                assignments.append(expression.assign_to(AnyTypeColumn(column_name)))
+                assignments.append(expression.assign_to(column_type(column_name)))
             else:
-                assignments.append(AnyExpression(to_kql(expression)).assign_to(AnyTypeColumn(column_name)))
+                assignments.append(AnyExpression(to_kql(expression)).assign_to(column_type(column_name)))
         return assignments
 
 

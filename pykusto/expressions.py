@@ -586,8 +586,7 @@ class BaseColumn(BaseExpression):
     _name: str
 
     # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
-    # abstract method, which we don't have here. We can't define "get_kusto_type" as abstract because at least one
-    # concrete subclass (NumberColumn) does not override it. Overriding __new___ is the next best solution.
+    # abstract method, which we don't have here. Overriding __new___ is the next best solution.
     def __new__(cls, *args, **kwargs) -> 'BaseColumn':
         assert cls is not BaseColumn, "BaseColumn is abstract"
         return object.__new__(cls)
@@ -605,9 +604,6 @@ class BaseColumn(BaseExpression):
     def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentFromColumnToColumn':
         return AssignmentFromColumnToColumn(column, self)
 
-    def get_kusto_type(self) -> KustoType:
-        raise NotImplementedError("BaseColumn has no type")
-
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._name})'
 
@@ -622,48 +618,40 @@ class NumberColumn(BaseColumn, NumberExpression):
 
 @typed_column(KustoType.BOOL)
 class BooleanColumn(BaseColumn, BooleanExpression):
-    def get_kusto_type(self) -> KustoType:
-        return KustoType.BOOL
+    pass
 
 
 @typed_column(KustoType.ARRAY)
 class ArrayColumn(BaseColumn, ArrayExpression):
-    def get_kusto_type(self) -> KustoType:
-        return KustoType.ARRAY
+    pass
 
 
 @typed_column(KustoType.MAPPING)
 class MappingColumn(BaseColumn, MappingExpression):
-    def get_kusto_type(self) -> KustoType:
-        return KustoType.MAPPING
+    pass
 
 
 class DynamicColumn(ArrayColumn, MappingColumn):
-    def get_kusto_type(self) -> KustoType:
-        raise ValueError("Column type unknown")
+    pass
 
 
 @typed_column(KustoType.STRING)
 class StringColumn(BaseColumn, StringExpression):
-    def get_kusto_type(self) -> KustoType:
-        return KustoType.STRING
+    pass
 
 
 @typed_column(KustoType.DATETIME)
 class DatetimeColumn(BaseColumn, DatetimeExpression):
-    def get_kusto_type(self) -> KustoType:
-        return KustoType.DATETIME
+    pass
 
 
 @typed_column(KustoType.TIMESPAN)
 class TimespanColumn(BaseColumn, TimespanExpression):
-    def get_kusto_type(self) -> KustoType:
-        return KustoType.TIMESPAN
+    pass
 
 
 class AnyTypeColumn(NumberColumn, BooleanColumn, DynamicColumn, StringColumn, DatetimeColumn, TimespanColumn):
-    def get_kusto_type(self) -> KustoType:
-        raise ValueError("Column type unknown")
+    pass
 
 
 class ColumnGenerator:

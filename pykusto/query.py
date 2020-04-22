@@ -244,9 +244,7 @@ class ProjectQuery(Query):
         self._assignments = assignments
 
     def _compile(self) -> KQL:
-        return KQL('project {}'.format(', '.join(
-            (a.to_kql() for a in self._assignments)
-        )))
+        return KQL('project {}'.format(', '.join(a.to_kql() for a in self._assignments)))
 
 
 class ProjectRenameQuery(Query):
@@ -504,7 +502,7 @@ class MvExpandQuery(Query):
             res += "bagexpansion={} ".format(self._bag_expansion.value)
         if self._with_item_index is not None:
             res += "with_itemindex={} ".format(self._with_item_index.kql)
-        res += ", ".join([a.to_kql() for a in self._assignments])
+        res += ", ".join(a.to_kql() for a in self._assignments)
         if self._limit:
             res += " limit {}".format(self._limit)
         return KQL(res)

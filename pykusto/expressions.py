@@ -3,7 +3,7 @@ from typing import Any, List, Tuple, Mapping, Optional, Type
 from typing import Union
 
 from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, \
-    typed_column, KQL
+    typed_column, KQL, TypeRegistrar, get_base_types
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -685,3 +685,8 @@ def to_kql(obj: ExpressionType) -> KQL:
     if isinstance(obj, BaseExpression):
         return obj.kql
     return kql_converter.for_obj(obj)
+
+
+def expression_to_type(expression: ExpressionType, type_registrar: TypeRegistrar, fallback_type: Any) -> Any:
+    types = set(type_registrar.registry[base_type] for base_type in get_base_types(expression))
+    return next(iter(types)) if len(types) == 1 else fallback_type

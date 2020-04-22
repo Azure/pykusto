@@ -9,7 +9,7 @@ from pykusto.client import Table, KustoResponse
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
-    AssignmentFromColumnToColumn, AnyExpression, to_kql, ColumnToType, expression_to_type
+    AssignmentFromColumnToColumn, AnyExpression, to_kql, expression_to_type, BaseColumn
 from pykusto.logger import logger
 from pykusto.type_utils import KustoType, KQL, typed_column, plain_expression
 from pykusto.udf import stringify_python_func
@@ -104,9 +104,7 @@ class Query:
     def join(self, query: 'Query', kind: JoinKind = None) -> 'JoinQuery':
         return JoinQuery(self, query, kind)
 
-    def project(
-            self, *args: Union[AssignmentBase, BaseExpression], **kwargs: ExpressionType
-    ) -> 'ProjectQuery':
+    def project(self, *args: Union[AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> 'ProjectQuery':
         return ProjectQuery(self, self.extract_assignments(*args, **kwargs))
 
     def project_rename(self, *args: AssignmentFromColumnToColumn, **kwargs: AnyTypeColumn) -> 'ProjectRenameQuery':
@@ -125,8 +123,7 @@ class Query:
         return DistinctQuery(self, (AnyExpression(KQL("*")),))
 
     def extend(self, *args: Union[BaseExpression, AssignmentBase], **kwargs: ExpressionType) -> 'ExtendQuery':
-        assignments = self.extract_assignments(*args, **kwargs)
-        return ExtendQuery(self, *assignments)
+        return ExtendQuery(self, *self.extract_assignments(*args, **kwargs))
 
     def summarize(self, *args: Union[AggregationExpression, AssignmentFromAggregationToColumn],
                   **kwargs: AggregationExpression) -> 'SummarizeQuery':
@@ -143,7 +140,7 @@ class Query:
 
     def mv_expand(
             self, *args: Union[BaseExpression, AssignmentBase], bag_expansion: BagExpansion = None,
-            with_item_index: AnyTypeColumn = None, limit: int = None, **kwargs: ExpressionType
+            with_item_index: BaseColumn = None, limit: int = None, **kwargs: ExpressionType
     ) -> 'MvExpandQuery':
         assignments = self.extract_assignments(*args, **kwargs)
         if len(assignments) == 0:
@@ -489,15 +486,12 @@ class SummarizeQuery(Query):
 
 
 class MvExpandQuery(Query):
-    _assignments: Tuple[Union[AnyTypeColumn, ColumnToType]]
+    _assignments: Tuple[AssignmentBase]
     _bag_expansion: BagExpansion
-    _with_item_index: AnyTypeColumn
+    _with_item_index: BaseColumn
     _limit: int
 
-    def __init__(
-            self, head: Query, bag_expansion: BagExpansion,
-            with_item_index: AnyTypeColumn, limit: int, *assignments: AssignmentBase
-    ):
+    def __init__(self, head: Query, bag_expansion: BagExpansion, with_item_index: BaseColumn, limit: int, *assignments: AssignmentBase):
         super(MvExpandQuery, self).__init__(head)
         self._assignments = assignments
         self._bag_expansion = bag_expansion

@@ -25,9 +25,9 @@ class KustoType(Enum):
     primary_name: str
     internal_name: str
     dot_net_name: str
-    python_types: Tuple[Type[PythonTypes]]
+    python_types: Tuple[PythonTypes]
 
-    def __init__(self, primary_name: str, internal_name: str, dot_net_name: str, *python_types: Type[PythonTypes]) -> None:
+    def __init__(self, primary_name: str, internal_name: str, dot_net_name: str, *python_types: PythonTypes) -> None:
         self.primary_name = primary_name
         self.internal_name = internal_name
         self.dot_net_name = dot_net_name

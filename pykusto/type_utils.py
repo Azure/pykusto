@@ -74,7 +74,7 @@ class TypeRegistrar:
             for t in types:
                 previous = self.registry.setdefault(t, wrapped)
                 if previous is not wrapped:
-                    raise TypeError("{}: type already registered: {}".format(self, t.primary_name))
+                    raise TypeError(f"{self}: type already registered: {t.primary_name}")
             return wrapped
 
         return inner
@@ -90,7 +90,7 @@ class TypeRegistrar:
         for registered_type, registered_callable in self.registry.items():
             if registered_type.is_type_of(obj):
                 return registered_callable(obj)
-        raise ValueError("{}: no registered callable for object {} of type {}".format(self, obj, type(obj).__name__))
+        raise ValueError(f"{self}: no registered callable for object {obj} of type {type(obj).__name__}")
 
     def for_type(self, t: Type[PythonTypes]) -> Union[Type, Callable]:
         """
@@ -102,7 +102,7 @@ class TypeRegistrar:
         for registered_type, registered_callable in self.registry.items():
             if registered_type.is_superclass_of(t):
                 return registered_callable
-        raise ValueError("{}: no registered callable for type {}".format(self, t.__name__))
+        raise ValueError(f"{self}: no registered callable for type {t.__name__}")
 
     def inverse(self, target_callable: Union[Type, Callable]) -> Set[KustoType]:
         result: Set[KustoType] = set()
@@ -124,7 +124,7 @@ class TypeRegistrar:
                 return {kusto_type}
         # The object is one of the expression types decorated with a TypeRegistrar, therefore the original types are
         base_types: Set[KustoType] = self.inverse(obj)
-        assert len(base_types) > 0, "get_base_types called for unsupported type: {}".format(type(obj).__name__)
+        assert len(base_types) > 0, f"get_base_types called for unsupported type: {type(obj).__name__}"
         return base_types
 
 
@@ -146,5 +146,5 @@ def get_base_types(obj: Union[Type, Callable]) -> Set[KustoType]:
         base_types = type_registrar.inverse(obj)
         if len(base_types) > 0:
             break
-    assert len(base_types) > 0, "get_base_types called for unsupported type: {}".format(type(obj).__name__)
+    assert len(base_types) > 0, f"get_base_types called for unsupported type: {type(obj).__name__}"
     return base_types

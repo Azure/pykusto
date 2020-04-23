@@ -133,4 +133,17 @@ typed_column = TypeRegistrar("Column")
 plain_expression = TypeRegistrar("Plain expression")
 aggregation_expression = TypeRegistrar("Aggregation expression")
 
-# noinspection PyUnusedLocal
+
+def get_base_types(obj: Any) -> Set[KustoType]:
+    """
+    A registrar-agnostic version of TypeRegistrar.get_base_types
+    """
+    for kusto_type in KustoType:
+        if kusto_type.is_type_of(obj):
+            # The object is already a member of Kusto types
+            return {kusto_type}
+    for type_registrar in (plain_expression, aggregation_expression, typed_column):
+        base_types = type_registrar.inverse(obj)
+        if len(base_types) > 0:
+            return base_types
+    assert False, "get_base_types called for unsupported type: {}".format(type(obj).__name__)

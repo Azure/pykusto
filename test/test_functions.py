@@ -807,7 +807,7 @@ class TestFunction(TestBase):
             # Therefore, we are adding a dummy warning, and then we will assert it is the only warning.
             logger.warn("Dummy warning")
             self.assertEqual(
-                " | project foo = iff(boolField, time(3.0:0:0.0), foo-bar)",
+                " | project foo = iff(boolField, time(3.0:0:0.0), foo - bar)",
                 Query().project(foo=f.iff(t.boolField, timedelta(3), col.foo - col.bar)).render()
             )
         self.assertEqual(

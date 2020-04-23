@@ -3,7 +3,7 @@ from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column, TypeRegistrar
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column, TypeRegistrar, get_base_types
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -327,13 +327,13 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression.binary_op(self, ' + ', other)
 
     def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
-        if type(other) in DatetimeType.__args__:
-            return_type = TimespanExpression
-        elif type(other) in TimespanType.__args__:
-            return_type = DatetimeExpression
-        else:
-            assert isinstance(other, (AnyExpression, AnyTypeColumn)), "Invalid type subtracted from datetime"
+        base_types = get_base_types(other)
+        possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN}
+        assert len(possible_types) > 0, "Invalid type subtracted from datetime"
+        if len(possible_types) == 2:
             return_type = AnyExpression
+        else:
+            return_type = TimespanExpression if next(iter(possible_types)) == KustoType.DATETIME else DatetimeExpression
         return return_type(DatetimeExpression.binary_op(self, ' - ', other))
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
@@ -430,7 +430,7 @@ class TimespanExpression(BaseExpression):
         return TimespanExpression.binary_op(self, ' - ', other)
 
     def ago(self) -> DatetimeExpression:
-        return DatetimeExpression(KQL('ago({})'.format(_subexpr_to_kql(self))))
+        return DatetimeExpression(KQL('ago({})'.format(to_kql(self))))
 
     def bin(self, round_to: TimespanType) -> 'BaseExpression':
         return TimespanExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
@@ -656,18 +656,18 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 
 
 class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
-    def __sub__(self, other: Union['NumberExpression', 'DatetimeExpression', 'TimespanExpression']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
-        if type(other) in NumberType.__args__:
+    def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
+        base_types = get_base_types(other)
+        possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN, KustoType.INT, KustoType.LONG, KustoType.REAL}
+        assert len(possible_types) > 0, "Invalid type subtracted"
+        if possible_types == {KustoType.INT, KustoType.LONG, KustoType.REAL}:
             return_type = KustoType.INT
-        elif type(other) in DatetimeType.__args__:
-            return_type = KustoType.TIMESPAN
-        elif type(other) in TimespanType.__args__:
+        elif len(possible_types) > 1:
             return_type = None
         else:
-            assert isinstance(other, (AnyExpression, AnyTypeColumn)), "Invalid type subtracted from datetime"
-            return_type = None
+            return_type = KustoType.TIMESPAN if next(iter(possible_types)) == KustoType.DATETIME else None
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(self, '-', other, return_type)
+        return BaseExpression.base_binary_op(self, ' - ', other, return_type)
 
 
 class AnyTypeColumn(SubtractableColumn, BooleanColumn, DynamicColumn, StringColumn):

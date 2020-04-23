@@ -58,20 +58,35 @@ class BaseExpression:
         return StringExpression(KQL('gettype({})'.format(self.kql)))
 
     def __hash__(self) -> 'StringExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/hashfunction
+        """
         return StringExpression(KQL('hash({})'.format(self.kql)))
 
     def hash_sha256(self) -> 'StringExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sha256hashfunction
+        """
         return StringExpression(KQL('hash_sha256({})'.format(self.kql)))
 
     def is_empty(self) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isemptyfunction
+        """
         return BooleanExpression(KQL('isempty({})'.format(self.kql)))
 
     def is_not_empty(self) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isnotemptyfunction
+        """
         return BooleanExpression(KQL('isnotempty({})'.format(self.kql)))
 
-    def has(self, exp: str) -> 'BooleanExpression':
+    def has(self, exp: StringType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
         # The pattern for the search expression must be a constant string.
-        return BooleanExpression(KQL('{} has \"{}\"'.format(self.kql, exp)))
+        return BooleanExpression(KQL(f'{self.kql} has {to_kql(exp)}'))
 
     @staticmethod
     def base_binary_op(
@@ -94,12 +109,22 @@ class BaseExpression:
         return BooleanExpression.binary_op(self, ' != ', other)
 
     def is_in(self, other: ArrayType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        """
         return BooleanExpression.binary_op(self, ' in ', other)
 
     def is_null(self) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isnullfunction
+        """
         return BooleanExpression(KQL('isnull({})'.format(self.kql)))
 
     def is_not_null(self) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isnotnullfunction
+        """
         return BooleanExpression(KQL('isnotnull({})'.format(self.kql)))
 
     def __contains__(self, other: Any) -> bool:
@@ -110,15 +135,27 @@ class BaseExpression:
         raise NotImplementedError("'in' not supported. Instead use '.is_in()'")
 
     def to_bool(self) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toboolfunction
+        """
         return BooleanExpression(KQL('tobool({})'.format(self.kql)))
 
     def to_string(self) -> 'StringExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tostringfunction
+        """
         return StringExpression(KQL('tostring({})'.format(self.kql)))
 
     def to_int(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tointfunction
+        """
         return NumberExpression(KQL('toint({})'.format(self.kql)))
 
     def to_long(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolongfunction
+        """
         return NumberExpression(KQL('tolong({})'.format(self.kql)))
 
     def assign_to_single_column(self, column: 'AnyTypeColumn') -> 'AssignmentToSingleColumn':
@@ -147,12 +184,21 @@ class BooleanExpression(BaseExpression):
         return BaseExpression.base_binary_op(left, operator, right, KustoType.BOOL)
 
     def __and__(self, other: BooleanType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
         return BooleanExpression.binary_op(self, ' and ', other)
 
     def __or__(self, other: BooleanType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
         return BooleanExpression.binary_op(self, ' or ', other)
 
     def __invert__(self) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/notfunction
+        """
         return BooleanExpression(KQL('not({})'.format(self.kql)))
 
 
@@ -194,67 +240,127 @@ class NumberExpression(BaseExpression):
         return NumberExpression(KQL('-{}'.format(self.kql)))
 
     def __abs__(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/abs-function
+        """
         return NumberExpression(KQL('abs({})'.format(self.kql)))
 
     def between(self, lower: NumberType, upper: NumberType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/betweenoperator
+        """
         return BooleanExpression(KQL('{} between ({} .. {})'.format(
             self.kql, _subexpr_to_kql(lower), _subexpr_to_kql(upper)
         )))
 
     def acos(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/acosfunction
+        """
         return NumberExpression(KQL('acos({})'.format(self.kql)))
 
     def cos(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/cosfunction
+        """
         return NumberExpression(KQL('cos({})'.format(self.kql)))
 
     def floor(self, round_to: NumberType) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/floorfunction
+        """
         return NumberExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin(self, round_to: NumberType) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binfunction
+        """
         return NumberExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin_at(self, round_to: NumberType, fixed_point: NumberType) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binatfunction
+        """
         return NumberExpression(KQL('bin_at({}, {}, {})'.format(self.kql,
                                                                 _subexpr_to_kql(round_to),
                                                                 _subexpr_to_kql(fixed_point))))
 
     def bin_auto(self) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bin-autofunction
+        """
         return NumberExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def ceiling(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/ceilingfunction
+        """
         return NumberExpression(KQL('ceiling({})'.format(self.kql)))
 
     def exp(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/exp-function
+        """
         return NumberExpression(KQL('exp({})'.format(self.kql)))
 
     def exp10(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/exp10-function
+        """
         return NumberExpression(KQL('exp10({})'.format(self.kql)))
 
     def exp2(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/exp2-function
+        """
         return NumberExpression(KQL('exp2({})'.format(self.kql)))
 
     def isfinite(self) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isfinitefunction
+        """
         return BooleanExpression(KQL('isfinite({})'.format(self.kql)))
 
     def is_inf(self) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isinffunction
+        """
         return BooleanExpression(KQL('isinf({})'.format(self.kql)))
 
     def is_nan(self) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isnanfunction
+        """
         return BooleanExpression(KQL('isnan({})'.format(self.kql)))
 
     def log(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/log-function
+        """
         return NumberExpression(KQL('log({})'.format(self.kql)))
 
     def log10(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/log10-function
+        """
         return NumberExpression(KQL('log10({})'.format(self.kql)))
 
     def log2(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/log2-function
+        """
         return NumberExpression(KQL('log2({})'.format(self.kql)))
 
     def log_gamma(self) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/loggammafunction
+        """
         return NumberExpression(KQL('loggamma({})'.format(self.kql)))
 
     def round(self, precision: NumberType = None) -> 'NumberExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/roundfunction
+        """
         return NumberExpression(KQL(
             ('round({}, {})' if precision is None else 'round({}, {})').format(self.kql, to_kql(precision))
         ))
@@ -264,9 +370,15 @@ class NumberExpression(BaseExpression):
 class StringExpression(BaseExpression):
     # We would like to allow using len(), but Python requires it to return an int, so we can't
     def string_size(self) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/stringsizefunction
+        """
         return NumberExpression(KQL('string_size({})'.format(self.kql)))
 
     def split(self, delimiter: StringType, requested_index: NumberType = None) -> 'ArrayExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/splitfunction
+        """
         if requested_index is None:
             return ArrayExpression(KQL('split({}, {})'.format(self.kql, to_kql(delimiter))))
         return ArrayExpression(KQL('split({}, {}, {})'.format(
@@ -280,27 +392,51 @@ class StringExpression(BaseExpression):
         return BooleanExpression.binary_op(self, ' != ' if case_sensitive else ' !~ ', other)
 
     def matches(self, regex: StringType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
         return BooleanExpression.binary_op(self, ' matches regex ', regex)
 
     def contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
         return BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
 
     def not_contains(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
         return BooleanExpression.binary_op(self, ' !contains_cs ' if case_sensitive else ' !contains ', other)
 
     def startswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
         return BooleanExpression.binary_op(self, ' startswith_cs ' if case_sensitive else ' startswith ', other)
 
     def endswith(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
         return BooleanExpression.binary_op(self, ' endswith_cs ' if case_sensitive else ' endswith ', other)
 
     def lower(self) -> 'StringExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolowerfunction
+        """
         return StringExpression(KQL('tolower({})'.format(self.kql)))
 
     def upper(self) -> 'StringExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toupperfunction
+        """
         return StringExpression(KQL('toupper({})'.format(self.kql)))
 
     def is_utf8(self) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isutf8
+        """
         return BooleanExpression(KQL('isutf8({})'.format(self.kql)))
 
 
@@ -327,6 +463,7 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression.binary_op(self, ' + ', other)
 
     def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
+        # noinspection PyTypeChecker
         base_types = get_base_types(other)
         possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN}
         assert len(possible_types) > 0, "Invalid type subtracted from datetime"
@@ -337,25 +474,43 @@ class DatetimeExpression(BaseExpression):
         return return_type(DatetimeExpression.binary_op(self, ' - ', other))
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/betweenoperator
+        """
         return BooleanExpression(KQL('{} between ({} .. {})'.format(
             self.kql, _subexpr_to_kql(lower), _subexpr_to_kql(upper)
         )))
 
     def floor(self, round_to: TimespanType) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/floorfunction
+        """
         return DatetimeExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin(self, round_to: TimespanType) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binfunction
+        """
         return DatetimeExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin_at(self, round_to: TimespanType, fixed_point: DatetimeType) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binatfunction
+        """
         return DatetimeExpression(KQL('bin_at({}, {}, {})'.format(
             self.kql, _subexpr_to_kql(round_to), to_kql(fixed_point)
         )))
 
     def bin_auto(self) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bin-autofunction
+        """
         return DatetimeExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def end_of_day(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/endofdayfunction
+        """
         if offset is None:
             res = 'endofday({})'.format(self.kql)
         else:
@@ -363,6 +518,9 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression(KQL(res))
 
     def end_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/endofmonthfunction
+        """
         if offset is None:
             res = 'endofmonth({})'.format(self.kql)
         else:
@@ -370,6 +528,9 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression(KQL(res))
 
     def end_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/endofweekfunction
+        """
         if offset is None:
             res = 'endofweek({})'.format(self.kql)
         else:
@@ -377,6 +538,9 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression(KQL(res))
 
     def end_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/endofyearfunction
+        """
         if offset is None:
             res = 'endofyear({})'.format(self.kql)
         else:
@@ -384,33 +548,57 @@ class DatetimeExpression(BaseExpression):
         return DatetimeExpression(KQL(res))
 
     def format_datetime(self, format_string: StringType) -> StringExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/format-datetimefunction
+        """
         return StringExpression(KQL('format_datetime({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
 
     def get_month(self) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/getmonthfunction
+        """
         return NumberExpression(KQL('getmonth({})'.format(self.kql)))
 
     def get_year(self) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/getyearfunction
+        """
         return NumberExpression(KQL('getyear({})'.format(self.kql)))
 
     def hour_of_day(self) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/hourofdayfunction
+        """
         return NumberExpression(KQL('hourofday({})'.format(self.kql)))
 
     def start_of_day(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofdayfunction
+        """
         return DatetimeExpression(KQL(
             ('startofday({})' if offset is None else 'startofday({}, {})').format(self.kql, to_kql(offset))
         ))
 
     def start_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofmonthfunction
+        """
         return DatetimeExpression(KQL(
             ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(self.kql, to_kql(offset))
         ))
 
     def start_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofweekfunction
+        """
         return DatetimeExpression(KQL(
             ('startofweek({})' if offset is None else 'startofweek({}, {})').format(self.kql, to_kql(offset))
         ))
 
     def start_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofyearfunction
+        """
         return DatetimeExpression(KQL(
             ('startofyear({})' if offset is None else 'startofyear({}, {})').format(self.kql, to_kql(offset))
         ))
@@ -430,23 +618,41 @@ class TimespanExpression(BaseExpression):
         return TimespanExpression.binary_op(self, ' - ', other)
 
     def ago(self) -> DatetimeExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/agofunction
+        """
         return DatetimeExpression(KQL('ago({})'.format(to_kql(self))))
 
     def bin(self, round_to: TimespanType) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binfunction
+        """
         return TimespanExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
 
     def bin_at(self, round_to: TimespanType, fixed_point: TimespanType) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binatfunction
+        """
         return TimespanExpression(KQL('bin_at({}, {}, {})'.format(
             self.kql, to_kql(round_to), to_kql(fixed_point)
         )))
 
     def bin_auto(self) -> 'BaseExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bin-autofunction
+        """
         return TimespanExpression(KQL('bin_auto({})'.format(self.kql)))
 
     def format_timespan(self, format_string: StringType) -> StringExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/format-timespanfunction
+        """
         return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, to_kql(format_string))))
 
     def between(self, lower: TimespanType, upper: TimespanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/betweenoperator
+        """
         return BooleanExpression(KQL('{} between ({} .. {})'.format(
             self.kql, _subexpr_to_kql(lower), _subexpr_to_kql(upper)
         )))
@@ -459,9 +665,16 @@ class ArrayExpression(BaseExpression):
 
     # We would like to allow using len(), but Python requires it to return an int, so we can't
     def array_length(self) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arraylengthfunction
+        """
         return NumberExpression(KQL('array_length({})'.format(self.kql)))
 
     def array_contains(self, other: ExpressionType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        """
         return BooleanExpression.binary_op(other, ' in ', self)
 
     def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentToMultipleColumns':
@@ -477,6 +690,9 @@ class MappingExpression(BaseExpression):
         return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
 
     def keys(self) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bagkeysfunction
+        """
         return ArrayExpression(KQL('bag_keys({})'.format(self.kql)))
 
 

@@ -145,5 +145,6 @@ def get_base_types(obj: Any) -> Set[KustoType]:
     for type_registrar in (plain_expression, aggregation_expression, typed_column):
         base_types = type_registrar.inverse(obj)
         if len(base_types) > 0:
-            return base_types
-    assert False, "get_base_types called for unsupported type: {}".format(type(obj).__name__)
+            break
+    assert len(base_types) > 0, "get_base_types called for unsupported type: {}".format(type(obj).__name__)
+    return base_types

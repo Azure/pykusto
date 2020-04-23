@@ -801,6 +801,20 @@ class TestFunction(TestBase):
             Query().project(foo=f.iff(t.dateField > f.ago(timedelta(2)), 2, f.array_length(t.arrayField))).render()
         )
 
+    def test_iff_ambiguous_type(self):
+        with self.assertLogs(logger, logging.WARN) as cm:
+            # We want to assert there are no warnings, but the 'assertLogs' method does not support that.
+            # Therefore, we are adding a dummy warning, and then we will assert it is the only warning.
+            logger.warn("Dummy warning")
+            self.assertEqual(
+                " | project foo = iff(boolField, time(3.0:0:0.0), foo - bar)",
+                Query().project(foo=f.iff(t.boolField, timedelta(3), col.foo - col.bar)).render()
+            )
+        self.assertEqual(
+            ["WARNING:pykusto:Dummy warning"],
+            cm.output,
+        )
+
     def test_iif(self):
         # iif is just an alias to iff
         self.assertEqual(

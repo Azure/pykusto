@@ -6,8 +6,9 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     ExpressionType, AggregationExpression, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
     ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
+from pykusto.kql_converters import KQL
 from pykusto.logger import logger
-from pykusto.type_utils import plain_expression, get_base_types, KustoType, KQL
+from pykusto.type_utils import plain_expression, KustoType
 
 
 class Functions:
@@ -263,8 +264,8 @@ class Functions:
 
     @staticmethod
     def iff(predicate: BooleanType, if_true: ExpressionType, if_false: ExpressionType) -> BaseExpression:
-        return_types = get_base_types(if_true)
-        other_types = get_base_types(if_false)
+        return_types = plain_expression.get_base_types(if_true)
+        other_types = plain_expression.get_base_types(if_false)
         common_types = other_types & return_types
         if len(common_types) == 0:
             # If there is not at least one common type, then certainly the arguments are not of the same type

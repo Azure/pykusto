@@ -1,5 +1,6 @@
 from pykusto.expressions import to_kql
-from pykusto.type_utils import TypeRegistrar, KustoType, KQL
+from pykusto.kql_converters import KQL
+from pykusto.type_utils import TypeRegistrar, KustoType
 from test.test_base import TestBase
 
 

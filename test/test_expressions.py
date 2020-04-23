@@ -210,6 +210,30 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.dateField - datetime(2020, 1, 1)).render(),
         )
 
+    def test_sub_date_unknown_type(self):
+        self.assertEqual(
+            ' | extend foo = dateField - bar',
+            Query().extend(foo=t.dateField - col.bar).render(),
+        )
+
+    def test_sub_unknown_type_number(self):
+        self.assertEqual(
+            ' | extend foo = cos(bar - numField)',
+            Query().extend(foo=(col.bar - t.numField).cos()).render(),
+        )
+
+    def test_sub_unknown_type_datetime(self):
+        self.assertEqual(
+            ' | extend foo = ago(bar - dateField)',
+            Query().extend(foo=(col.bar - t.dateField).ago()).render(),
+        )
+
+    def test_sub_unknown_type_timespan(self):
+        self.assertEqual(
+            ' | extend foo = bar - timespanField',
+            Query().extend(foo=col.bar - t.timespanField).render(),
+        )
+
     def test_bin_auto(self):
         self.assertEqual(
             ' | extend foo = bin_auto(dateField)',

@@ -1,4 +1,5 @@
 import json
+from itertools import chain
 from typing import Union
 
 from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, TimespanType, \
@@ -25,11 +26,6 @@ class Functions:
     @staticmethod
     def ago(expr: TimespanType) -> DatetimeExpression:
         return TimespanExpression.ago(expr)
-
-    # def array_concat(): return
-    #
-    #
-    # def array_iif(): return
 
     @staticmethod
     def array_length(expr: ArrayType) -> NumberExpression:
@@ -552,13 +548,60 @@ class Functions:
     # def series_subtract(self): return
     #
     #
-    # def set_difference(self): return
-    #
-    #
     # def set_intersect(self): return
     #
     #
     # def set_union(self): return
+
+    @staticmethod
+    def set_has_element(array: ArrayType, value: ExpressionType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sethaselementfunction
+        """
+        return BooleanExpression(KQL(f'set_has_element({to_kql(array)}, {to_kql(value)})'))
+
+    @staticmethod
+    def set_difference(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/setdifferencefunction
+        """
+        return ArrayExpression(KQL(f'set_difference({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+
+    @staticmethod
+    def set_intersect(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/setintersectfunction
+        """
+        return ArrayExpression(KQL(f'set_intersect({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+
+    @staticmethod
+    def set_union(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/setunionfunction
+        """
+        return ArrayExpression(KQL(f'set_union({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+
+    @staticmethod
+    def array_concat(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayconcatfunction
+        """
+        return ArrayExpression(KQL(f'array_concat({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+
+    @staticmethod
+    def array_iif(condition_array: ArrayType, if_true: ArrayType, if_false: ArrayType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayifffunction
+        """
+        return ArrayExpression(KQL(f'array_iif({to_kql(condition_array)}, {to_kql(if_true)}, {to_kql(if_false)})'))
+
+    @staticmethod
+    def array_index_of(array: ArrayType, value: ExpressionType) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayindexoffunction
+        """
+        return NumberExpression(KQL(f'array_index_of({to_kql(array)}, {to_kql(value)})'))
+
 
     @staticmethod
     def sign(expr: NumberType) -> NumberExpression:

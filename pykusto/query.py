@@ -159,11 +159,7 @@ class Query:
     ) -> 'EvaluateQuery':
         return EvaluateQuery(
             self, 'python',
-            AnyExpression(
-                KQL('typeof({})'.format(('*, ' if extend else '') + ', '.join(
-                    field_name + ':' + kusto_type.primary_name for field_name, kusto_type in type_specs.items()
-                )))
-            ),
+            AnyExpression(KQL(f'typeof({("*, " if extend else "") + ", ".join(field_name + ":" + kusto_type.primary_name for field_name, kusto_type in type_specs.items())})')),
             stringify_python_func(udf),
             distribution=distribution
         )
@@ -381,9 +377,7 @@ class _OrderQueryBase(Query):
         return res
 
     def _compile(self) -> KQL:
-        return KQL(
-            '{} by {}'.format(self._query_name,
-                              ", ".join([self._compile_order_spec(order_spec) for order_spec in self._order_specs])))
+        return KQL(f'{self._query_name} by {", ".join([self._compile_order_spec(order_spec) for order_spec in self._order_specs])}')
 
 
 class SortQuery(_OrderQueryBase):
@@ -444,10 +438,9 @@ class JoinQuery(Query):
         if self._joined_query.get_table() is None:
             raise JoinException("The joined query must have a table")
 
-        return KQL("join {} ({}) on {}".format(
-            "" if self._kind is None else "kind={}".format(self._kind.value),
-            self._joined_query.render(use_full_table_name=True),
-            ", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])))
+        return KQL(f'join {"" if self._kind is None else f"kind={self._kind.value}"} '
+                   f'({self._joined_query.render(use_full_table_name=True)}) on '
+                   f'{", ".join([self._compile_on_attribute(attr) for attr in self._on_attributes])}')
 
 
 class SummarizeQuery(Query):
@@ -477,10 +470,7 @@ class SummarizeQuery(Query):
     def _compile(self) -> KQL:
         result = f"summarize {', '.join(a.to_kql() for a in self._assignments)}"
         if len(self._by_assignments) != 0 or len(self._by_columns) != 0:
-            result += ' by {}'.format(', '.join(chain(
-                (c.kql for c in self._by_columns),
-                (a.to_kql() for a in self._by_assignments)
-            )))
+            result += f' by {", ".join(chain((c.kql for c in self._by_columns), (a.to_kql() for a in self._by_assignments)))}'
         return KQL(result)
 
 
@@ -532,8 +522,5 @@ class EvaluateQuery(Query):
         self._distribution = distribution
 
     def _compile(self) -> KQL:
-        return KQL('evaluate {}{}({})'.format(
-            '' if self._distribution is None else 'hint.distribution={} '.format(self._distribution.value),
-            self._plugin_name,
-            ', '.join(to_kql(arg) for arg in self._args),
-        ))
+        return KQL(f'evaluate {"" if self._distribution is None else f"hint.distribution={self._distribution.value} "}'
+                   f'{self._plugin_name}({", ".join(to_kql(arg) for arg in self._args)})')

@@ -355,7 +355,7 @@ class NumberExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/roundfunction
         """
-        return NumberExpression(KQL((f'round({self.kql})' if precision is None else f'round({self.kql}, {to_kql(precision)})')))
+        return NumberExpression(KQL(f'round({self.kql})' if precision is None else f'round({self.kql}, {to_kql(precision)})'))
 
 
 @plain_expression(KustoType.STRING)
@@ -561,25 +561,25 @@ class DatetimeExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofdayfunction
         """
-        return DatetimeExpression(KQL((f'startofday({self.kql})' if offset is None else f'startofday({self.kql}, {to_kql(offset)})')))
+        return DatetimeExpression(KQL(f'startofday({self.kql})' if offset is None else f'startofday({self.kql}, {to_kql(offset)})'))
 
     def start_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofmonthfunction
         """
-        return DatetimeExpression(KQL((f'startofmonth({self.kql})' if offset is None else f'startofmonth({self.kql}, {to_kql(offset)})')))
+        return DatetimeExpression(KQL(f'startofmonth({self.kql})' if offset is None else f'startofmonth({self.kql}, {to_kql(offset)})'))
 
     def start_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofweekfunction
         """
-        return DatetimeExpression(KQL((f'startofweek({self.kql})' if offset is None else f'startofweek({self.kql}, {to_kql(offset)})')))
+        return DatetimeExpression(KQL(f'startofweek({self.kql})' if offset is None else f'startofweek({self.kql}, {to_kql(offset)})'))
 
     def start_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofyearfunction
         """
-        return DatetimeExpression(KQL((f'startofyear({self.kql})' if offset is None else 'startofyear({self.kql}, {to_kql(offset)})')))
+        return DatetimeExpression(KQL(f'startofyear({self.kql})' if offset is None else 'startofyear({self.kql}, {to_kql(offset)})'))
 
 
 @plain_expression(KustoType.TIMESPAN)

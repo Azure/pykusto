@@ -537,9 +537,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packarrayfunction
         """
-        return ArrayExpression(KQL('pack_array({})'.format(
-            ', '.join(to_kql(e) for e in elements)
-        )))
+        return ArrayExpression(KQL(f'pack_array({", ".join(to_kql(e) for e in elements)})'))
 
     @staticmethod
     def pack_dictionary() -> MappingExpression:
@@ -844,9 +842,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/substringfunction
         """
         return StringExpression(KQL(
-            ('substring({}, {})' if length is None else 'substring({}, {}, {})').format(
-                to_kql(expr), to_kql(start_index), to_kql(length)
-            )
+            (f'substring({to_kql(expr)}, {to_kql(start_index)})' if length is None else f'substring({to_kql(expr)}, {to_kql(start_index)}, {to_kql(length)})')
         ))
 
     # def tan(self): return
@@ -901,7 +897,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tohexfunction
         """
-        return StringExpression(KQL(('tohex({})' if expr2 is None else 'tohex({}, {})').format(to_kql(expr1), to_kql(expr2))))
+        return StringExpression(KQL(f'tohex({to_kql(expr1)})' if expr2 is None else 'tohex({to_kql(expr1)}, {to_kql(expr2)})'))
 
     @staticmethod
     def to_int(expr: NumberType) -> NumberExpression:
@@ -1067,26 +1063,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dcount-aggfunction
         """
-        return NumberAggregationExpression(KQL(
-            ('dcount({})' if accuracy is None else 'dcount({}, {})').format(to_kql(expr), to_kql(accuracy))
-        ))
+        return NumberAggregationExpression(KQL(f'dcount({to_kql(expr)})' if accuracy is None else f'dcount({to_kql(expr)}, {to_kql(accuracy)})'))
 
     @staticmethod
     def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dcountif-aggfunction
         """
-        return NumberAggregationExpression(KQL('dcountif({}, {}, {})'.format(
-            to_kql(expr), to_kql(predicate), to_kql(accuracy)
-        )))
-
-    # def hll(expr: ExpressionType, accuracy: NumberType = None) -> AggregationExpression:
-    #     return AggregationExpression(KQL(
-    #         ('hll({})' if accuracy is None else 'hll({}, {})').format(expr, accuracy)
-    #     ))
-
-    # def hll_merge(expr: ExpressionType) -> AggregationExpression:
-    #     return AggregationExpression(KQL(f'hll_merge({to_kql(expr)})'))
+        return NumberAggregationExpression(KQL(f'dcountif({to_kql(expr)}, {to_kql(predicate)}, {to_kql(accuracy)})'))
 
     @staticmethod
     def make_bag(expr: ExpressionType, max_size: NumberType = None) -> MappingAggregationExpression:

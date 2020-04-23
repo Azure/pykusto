@@ -76,9 +76,3 @@ def str_to_kql(s: str) -> KQL:
 @kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL)
 def number_to_kql(n: Number) -> KQL:
     return KQL(str(n))
-
-
-# noinspection PyUnusedLocal
-@kql_converter(KustoType.NULL)
-def none_to_kql(n: None) -> KQL:
-    return KQL("")

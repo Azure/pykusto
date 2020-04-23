@@ -602,6 +602,51 @@ class Functions:
         """
         return NumberExpression(KQL(f'array_index_of({to_kql(array)}, {to_kql(value)})'))
 
+    @staticmethod
+    def array_rotate_left(array: ArrayType, rotate_count: NumberType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_rotate_leftfunction
+        """
+        return ArrayExpression(KQL(f'array_rotate_left({to_kql(array)}, {to_kql(rotate_count)})'))
+
+    @staticmethod
+    def array_rotate_right(array: ArrayType, rotate_count: NumberType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_rotate_rightfunction
+        """
+        return ArrayExpression(KQL(f'array_rotate_right({to_kql(array)}, {to_kql(rotate_count)})'))
+
+    @staticmethod
+    def array_shift_left(array: ArrayType, shift_count: NumberType, fill_value: ExpressionType = None) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_shift_leftfunction
+        """
+        if fill_value is None:
+            return ArrayExpression(KQL(f'array_shift_left({to_kql(array)}, {to_kql(shift_count)})'))
+        return ArrayExpression(KQL(f'array_shift_left({to_kql(array)}, {to_kql(shift_count)}, {to_kql(fill_value)})'))
+
+    @staticmethod
+    def array_shift_right(array: ArrayType, shift_count: NumberType, fill_value: ExpressionType = None) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_shift_rightfunction
+        """
+        if fill_value is None:
+            return ArrayExpression(KQL(f'array_shift_right({to_kql(array)}, {to_kql(shift_count)})'))
+        return ArrayExpression(KQL(f'array_shift_right({to_kql(array)}, {to_kql(shift_count)}, {to_kql(fill_value)})'))
+
+    @staticmethod
+    def array_slice(array: ArrayType, start: NumberType, end: NumberType) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayslicefunction
+        """
+        return ArrayExpression(KQL(f'array_slice({to_kql(array)}, {to_kql(start)}, {to_kql(end)})'))
+
+    @staticmethod
+    def array_split(array: ArrayType, indices: Union[NumberType, ArrayType]) -> ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arraysplitfunction
+        """
+        return ArrayExpression(KQL(f'array_split({to_kql(array)}, {to_kql(indices)})'))
 
     @staticmethod
     def sign(expr: NumberType) -> NumberExpression:

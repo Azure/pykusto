@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All validations" type="CompoundRunConfigurationType">
+    <toRun name="Lint" type="PythonConfigurationType" />
+    <toRun name="Coverage" type="PythonConfigurationType" />
+    <toRun name="Run tests" type="tests" />
+    <method v="2" />
+  </configuration>
+</component>

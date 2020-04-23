@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run lint" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Coverage" type="PythonConfigurationType" factoryName="Python">
     <module name="pykusto" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -12,8 +12,8 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="" />
-    <option name="PARAMETERS" value="-m flake8 pykusto test --count --select=E9,F63,F7,F82 --max-complexity=10 --max-line-length=127 --show-source --statistics" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/venv/Scripts/pytest.exe" />
+    <option name="PARAMETERS" value="--cov=pykusto --cov-fail-under=100" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -188,7 +188,7 @@ class Query:
                 else:
                     return table.to_query_format()
         else:
-            return KQL("{} | {}".format(self._head._compile_all(use_full_table_name), self._compile()))
+            return KQL(f"{self._head._compile_all(use_full_table_name)} | {self._compile()}")
 
     def get_table(self) -> Table:
         if self._head is None:
@@ -245,7 +245,7 @@ class ProjectQuery(Query):
         self._assignments = assignments
 
     def _compile(self) -> KQL:
-        return KQL('project {}'.format(', '.join(a.to_kql() for a in self._assignments)))
+        return KQL(f"project {', '.join(a.to_kql() for a in self._assignments)}")
 
 
 class ProjectRenameQuery(Query):
@@ -256,7 +256,7 @@ class ProjectRenameQuery(Query):
         self._assignments = assignments
 
     def _compile(self) -> KQL:
-        return KQL('project-rename {}'.format(', '.join(a.to_kql() for a in self._assignments)))
+        return KQL(f"project-rename {', '.join(a.to_kql() for a in self._assignments)}")
 
 
 class ProjectAwayQuery(Query):
@@ -267,7 +267,7 @@ class ProjectAwayQuery(Query):
         self._columns = columns
 
     def _compile(self) -> KQL:
-        return KQL('project-away {}'.format(', '.join((str(c) for c in self._columns))))
+        return KQL(f"project-away {', '.join(str(c) for c in self._columns)}")
 
 
 class DistinctQuery(Query):
@@ -278,7 +278,7 @@ class DistinctQuery(Query):
         self._columns = columns
 
     def _compile(self) -> KQL:
-        return KQL('distinct {}'.format(', '.join((c.kql for c in self._columns))))
+        return KQL(f"distinct {', '.join(c.kql for c in self._columns)}")
 
 
 class ExtendQuery(Query):
@@ -289,7 +289,7 @@ class ExtendQuery(Query):
         self._assignments = assignments
 
     def _compile(self) -> KQL:
-        return KQL('extend {}'.format(', '.join(a.to_kql() for a in self._assignments)))
+        return KQL(f"extend {', '.join(a.to_kql() for a in self._assignments)}")
 
 
 class WhereQuery(Query):
@@ -300,7 +300,7 @@ class WhereQuery(Query):
         self._predicate = predicate
 
     def _compile(self) -> KQL:
-        return KQL('where {}'.format(self._predicate.kql))
+        return KQL(f'where {self._predicate.kql}')
 
 
 class _SingleNumberQuery(Query):
@@ -313,7 +313,7 @@ class _SingleNumberQuery(Query):
         self._num_rows = num_rows
 
     def _compile(self) -> KQL:
-        return KQL('{} {}'.format(self._query_name, self._num_rows))
+        return KQL(f'{self._query_name} {self._num_rows}')
 
 
 class TakeQuery(_SingleNumberQuery):
@@ -407,7 +407,7 @@ class TopQuery(Query):
 
     def _compile(self) -> KQL:
         # noinspection PyProtectedMember
-        return KQL('top {} by {}'.format(self._num_rows, SortQuery._compile_order_spec(self._order_spec)))
+        return KQL(f'top {self._num_rows} by {SortQuery._compile_order_spec(self._order_spec)}')
 
 
 class JoinException(Exception):
@@ -436,7 +436,7 @@ class JoinQuery(Query):
         if len(attribute) == 1:
             return attribute[0].kql
         else:
-            return "$left.{}==$right.{}".format(attribute[0].kql, attribute[1].kql)
+            return f"$left.{attribute[0].kql}==$right.{attribute[1].kql}"
 
     def _compile(self) -> KQL:
         if len(self._on_attributes) == 0:
@@ -475,7 +475,7 @@ class SummarizeQuery(Query):
         return self
 
     def _compile(self) -> KQL:
-        result = 'summarize {}'.format(', '.join(a.to_kql() for a in self._assignments))
+        result = f"summarize {', '.join(a.to_kql() for a in self._assignments)}"
         if len(self._by_assignments) != 0 or len(self._by_columns) != 0:
             result += ' by {}'.format(', '.join(chain(
                 (c.kql for c in self._by_columns),
@@ -500,12 +500,12 @@ class MvExpandQuery(Query):
     def _compile(self) -> KQL:
         res = "mv-expand "
         if self._bag_expansion is not None:
-            res += "bagexpansion={} ".format(self._bag_expansion.value)
+            res += f"bagexpansion={self._bag_expansion.value} "
         if self._with_item_index is not None:
-            res += "with_itemindex={} ".format(self._with_item_index.kql)
+            res += f"with_itemindex={self._with_item_index.kql} "
         res += ", ".join(a.to_kql() for a in self._assignments)
         if self._limit:
-            res += " limit {}".format(self._limit)
+            res += f" limit {self._limit}"
         return KQL(res)
 
 

@@ -18,13 +18,7 @@ def datetime_to_kql(dt: datetime) -> KQL:
 def timedelta_to_kql(td: timedelta) -> KQL:
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
-    return KQL('time({days}.{hours}:{minutes}:{seconds}.{microseconds})'.format(
-        days=td.days,
-        hours=hours,
-        minutes=minutes,
-        seconds=seconds,
-        microseconds=td.microseconds,
-    ))
+    return KQL(f'time({td.days}.{hours}:{minutes}:{seconds}.{td.microseconds})')
 
 
 @kql_converter(KustoType.ARRAY, KustoType.MAPPING)
@@ -62,9 +56,9 @@ def build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
     if isinstance(d, BaseExpression):
         return d.kql
     if isinstance(d, Mapping):
-        return KQL('pack({})'.format(', '.join(map(build_dynamic, chain(*d.items())))))
+        return KQL(f"pack({', '.join(map(build_dynamic, chain(*d.items())))})")
     if isinstance(d, (List, Tuple)):
-        return KQL('pack_array({})'.format(', '.join(map(build_dynamic, d))))
+        return KQL(f"pack_array({', '.join(map(build_dynamic, d))})")
     from pykusto.expressions import to_kql
     return to_kql(d)
 
@@ -76,7 +70,7 @@ def bool_to_kql(b: bool) -> KQL:
 
 @kql_converter(KustoType.STRING)
 def str_to_kql(s: str) -> KQL:
-    return KQL('"{}"'.format(s))
+    return KQL(f'"{s}"')
 
 
 @kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL)

@@ -467,29 +467,25 @@ class DatetimeExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/betweenoperator
         """
-        return BooleanExpression(KQL('{} between ({} .. {})'.format(
-            self.kql, _subexpr_to_kql(lower), _subexpr_to_kql(upper)
-        )))
+        return BooleanExpression(KQL(f'{self.kql} between ({_subexpr_to_kql(lower)} .. {_subexpr_to_kql(upper)})'))
 
     def floor(self, round_to: TimespanType) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/floorfunction
         """
-        return DatetimeExpression(KQL('floor({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+        return DatetimeExpression(KQL(f'floor({self.kql}, {_subexpr_to_kql(round_to)})'))
 
     def bin(self, round_to: TimespanType) -> 'BaseExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binfunction
         """
-        return DatetimeExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+        return DatetimeExpression(KQL(f'bin({self.kql}, {_subexpr_to_kql(round_to)})'))
 
     def bin_at(self, round_to: TimespanType, fixed_point: DatetimeType) -> 'BaseExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binatfunction
         """
-        return DatetimeExpression(KQL('bin_at({}, {}, {})'.format(
-            self.kql, _subexpr_to_kql(round_to), to_kql(fixed_point)
-        )))
+        return DatetimeExpression(KQL(f'bin_at({self.kql}, {_subexpr_to_kql(round_to)}, {to_kql(fixed_point)})'))
 
     def bin_auto(self) -> 'DatetimeExpression':
         """
@@ -504,7 +500,7 @@ class DatetimeExpression(BaseExpression):
         if offset is None:
             res = f'endofday({self.kql})'
         else:
-            res = 'endofday({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+            res = f'endofday({self.kql}, {_subexpr_to_kql(offset)})'
         return DatetimeExpression(KQL(res))
 
     def end_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
@@ -514,7 +510,7 @@ class DatetimeExpression(BaseExpression):
         if offset is None:
             res = f'endofmonth({self.kql})'
         else:
-            res = 'endofmonth({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+            res = f'endofmonth({self.kql}, {_subexpr_to_kql(offset)})'
         return DatetimeExpression(KQL(res))
 
     def end_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
@@ -524,7 +520,7 @@ class DatetimeExpression(BaseExpression):
         if offset is None:
             res = f'endofweek({self.kql})'
         else:
-            res = 'endofweek({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+            res = f'endofweek({self.kql}, {_subexpr_to_kql(offset)})'
         return DatetimeExpression(KQL(res))
 
     def end_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
@@ -534,14 +530,14 @@ class DatetimeExpression(BaseExpression):
         if offset is None:
             res = f'endofyear({self.kql})'
         else:
-            res = 'endofyear({}, {})'.format(self.kql, _subexpr_to_kql(offset))
+            res = f'endofyear({self.kql}, {_subexpr_to_kql(offset)})'
         return DatetimeExpression(KQL(res))
 
     def format_datetime(self, format_string: StringType) -> StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/format-datetimefunction
         """
-        return StringExpression(KQL('format_datetime({}, {})'.format(self.kql, _subexpr_to_kql(format_string))))
+        return StringExpression(KQL(f'format_datetime({self.kql}, {_subexpr_to_kql(format_string)})'))
 
     def get_month(self) -> NumberExpression:
         """
@@ -565,33 +561,25 @@ class DatetimeExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofdayfunction
         """
-        return DatetimeExpression(KQL(
-            ('startofday({})' if offset is None else 'startofday({}, {})').format(self.kql, to_kql(offset))
-        ))
+        return DatetimeExpression(KQL((f'startofday({self.kql})' if offset is None else f'startofday({self.kql}, {to_kql(offset)})')))
 
     def start_of_month(self, offset: NumberType = None) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofmonthfunction
         """
-        return DatetimeExpression(KQL(
-            ('startofmonth({})' if offset is None else 'startofmonth({}, {})').format(self.kql, to_kql(offset))
-        ))
+        return DatetimeExpression(KQL((f'startofmonth({self.kql})' if offset is None else f'startofmonth({self.kql}, {to_kql(offset)})')))
 
     def start_of_week(self, offset: NumberType = None) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofweekfunction
         """
-        return DatetimeExpression(KQL(
-            ('startofweek({})' if offset is None else 'startofweek({}, {})').format(self.kql, to_kql(offset))
-        ))
+        return DatetimeExpression(KQL((f'startofweek({self.kql})' if offset is None else f'startofweek({self.kql}, {to_kql(offset)})')))
 
     def start_of_year(self, offset: NumberType = None) -> 'DatetimeExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/startofyearfunction
         """
-        return DatetimeExpression(KQL(
-            ('startofyear({})' if offset is None else 'startofyear({}, {})').format(self.kql, to_kql(offset))
-        ))
+        return DatetimeExpression(KQL((f'startofyear({self.kql})' if offset is None else 'startofyear({self.kql}, {to_kql(offset)})')))
 
 
 @plain_expression(KustoType.TIMESPAN)
@@ -617,15 +605,13 @@ class TimespanExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binfunction
         """
-        return TimespanExpression(KQL('bin({}, {})'.format(self.kql, _subexpr_to_kql(round_to))))
+        return TimespanExpression(KQL(f'bin({self.kql}, {_subexpr_to_kql(round_to)})'))
 
     def bin_at(self, round_to: TimespanType, fixed_point: TimespanType) -> 'BaseExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/binatfunction
         """
-        return TimespanExpression(KQL('bin_at({}, {}, {})'.format(
-            self.kql, to_kql(round_to), to_kql(fixed_point)
-        )))
+        return TimespanExpression(KQL(f'bin_at({self.kql}, {to_kql(round_to)}, {to_kql(fixed_point)})'))
 
     def bin_auto(self) -> 'BaseExpression':
         """
@@ -637,21 +623,19 @@ class TimespanExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/format-timespanfunction
         """
-        return StringExpression(KQL('format_timespan({}, {})'.format(self.kql, to_kql(format_string))))
+        return StringExpression(KQL(f'format_timespan({self.kql}, {to_kql(format_string)})'))
 
     def between(self, lower: TimespanType, upper: TimespanType) -> BooleanExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/betweenoperator
         """
-        return BooleanExpression(KQL('{} between ({} .. {})'.format(
-            self.kql, _subexpr_to_kql(lower), _subexpr_to_kql(upper)
-        )))
+        return BooleanExpression(KQL(f'{self.kql} between ({_subexpr_to_kql(lower)} .. {_subexpr_to_kql(upper)})'))
 
 
 @plain_expression(KustoType.ARRAY)
 class ArrayExpression(BaseExpression):
     def __getitem__(self, index: NumberType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
+        return AnyExpression(KQL(f'{self.kql}[{to_kql(index)}]'))
 
     # We would like to allow using len(), but Python requires it to return an int, so we can't
     def array_length(self) -> NumberExpression:
@@ -674,10 +658,10 @@ class ArrayExpression(BaseExpression):
 @plain_expression(KustoType.MAPPING)
 class MappingExpression(BaseExpression):
     def __getitem__(self, index: StringType) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, to_kql(index))))
+        return AnyExpression(KQL(f'{self.kql}[{to_kql(index)}]'))
 
     def __getattr__(self, name: str) -> 'AnyExpression':
-        return AnyExpression(KQL('{}.{}'.format(self.kql, name)))
+        return AnyExpression(KQL(f'{self.kql}.{name}'))
 
     def keys(self) -> ArrayExpression:
         """
@@ -688,7 +672,7 @@ class MappingExpression(BaseExpression):
 
 class DynamicExpression(ArrayExpression, MappingExpression):
     def __getitem__(self, index: Union[StringType, NumberType]) -> 'AnyExpression':
-        return AnyExpression(KQL('{}[{}]'.format(self.kql, _subexpr_to_kql(index))))
+        return AnyExpression(KQL(f'{self.kql}[{_subexpr_to_kql(index)}]'))
 
 
 class AnyExpression(
@@ -770,7 +754,7 @@ class AssignmentBase:
         if self._lvalue is None:
             # Unspecified column name
             return self._rvalue
-        return KQL('{} = {}'.format(self._lvalue, self._rvalue))
+        return KQL(f'{self._lvalue} = {self._rvalue}')
 
 
 class AssignmentToSingleColumn(AssignmentBase):
@@ -803,7 +787,7 @@ class BaseColumn(BaseExpression):
         return object.__new__(cls)
 
     def __init__(self, name: str) -> None:
-        super().__init__(KQL("['{}']".format(name) if '.' in name else name))
+        super().__init__(KQL(f"['{name}']" if '.' in name else name))
         self._name = name
 
     def get_name(self) -> str:
@@ -896,7 +880,7 @@ column_generator = ColumnGenerator()
 
 class ColumnToType(BaseExpression):
     def __init__(self, col: BaseColumn, kusto_type: KustoType) -> None:
-        super().__init__(KQL("{} to typeof({})".format(col.kql, kusto_type.primary_name)))
+        super().__init__(KQL(f"{col.kql} to typeof({kusto_type.primary_name})"))
 
 
 def to_kql(obj: ExpressionType) -> KQL:

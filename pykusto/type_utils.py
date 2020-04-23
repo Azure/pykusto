@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Any, Set
+from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set
 
 # TODO: Unhandled data types: guid, decimal
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
@@ -57,7 +57,7 @@ class TypeRegistrar:
     can then be used to retrieve the python type or function corresponding to a given Kusto type.
     """
     name: str
-    registry: Dict[KustoType, Callable[[Any], Any]]
+    registry: Dict[KustoType, Union[Type, Callable]]
 
     def __init__(self, name: str) -> None:
         """
@@ -69,8 +69,8 @@ class TypeRegistrar:
     def __repr__(self) -> str:
         return self.name
 
-    def __call__(self, *types: KustoType) -> Callable[[Callable[[Any], Any]], Callable[[Any], Any]]:
-        def inner(wrapped: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    def __call__(self, *types: KustoType) -> Callable[[Union[Type, Callable]], Union[Type, Callable]]:
+        def inner(wrapped: Union[Type, Callable]) -> Union[Type, Callable]:
             for t in types:
                 previous = self.registry.setdefault(t, wrapped)
                 if previous is not wrapped:
@@ -79,7 +79,7 @@ class TypeRegistrar:
 
         return inner
 
-    def for_obj(self, obj: PythonTypes) -> Any:
+    def for_obj(self, obj: PythonTypes) -> Union[Type, Callable]:
         """
         Given an object of Kusto type, retrieve the python type or function associated with the object's type, and call
         it with the given object as a parameter
@@ -92,7 +92,7 @@ class TypeRegistrar:
                 return registered_callable(obj)
         raise ValueError("{}: no registered callable for object {} of type {}".format(self, obj, type(obj).__name__))
 
-    def for_type(self, t: Type[PythonTypes]) -> Callable[[Any], Any]:
+    def for_type(self, t: Type[PythonTypes]) -> Union[Type, Callable]:
         """
         Given a Kusto type, retrieve the associated python type or function
 
@@ -104,14 +104,14 @@ class TypeRegistrar:
                 return registered_callable
         raise ValueError("{}: no registered callable for type {}".format(self, t.__name__))
 
-    def inverse(self, target_callable: Callable[[Any], Any]) -> Set[KustoType]:
+    def inverse(self, target_callable: Union[Type, Callable]) -> Set[KustoType]:
         result: Set[KustoType] = set()
         for kusto_type, associated_callable in self.registry.items():
             if isinstance(target_callable, associated_callable):
                 result.add(kusto_type)
         return result
 
-    def get_base_types(self, obj: Any) -> Set[KustoType]:
+    def get_base_types(self, obj: Union[Type, Callable]) -> Set[KustoType]:
         """
         For a given object, return the associated basic type, which is a member of :class:`KustoType`
 
@@ -134,7 +134,7 @@ plain_expression = TypeRegistrar("Plain expression")
 aggregation_expression = TypeRegistrar("Aggregation expression")
 
 
-def get_base_types(obj: Any) -> Set[KustoType]:
+def get_base_types(obj: Union[Type, Callable]) -> Set[KustoType]:
     """
     A registrar-agnostic version of TypeRegistrar.get_base_types
     """

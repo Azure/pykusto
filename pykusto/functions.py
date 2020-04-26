@@ -779,18 +779,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_shift_leftfunction
         """
-        if fill_value is None:
-            return ArrayExpression(KQL(f'array_shift_left({to_kql(array)}, {to_kql(shift_count)})'))
-        return ArrayExpression(KQL(f'array_shift_left({to_kql(array)}, {to_kql(shift_count)}, {to_kql(fill_value)})'))
+        return ArrayExpression(KQL(f'array_shift_left({to_kql(array)}, {to_kql(shift_count)}{"" if fill_value is None else ", " + to_kql(fill_value)})'))
 
     @staticmethod
     def array_shift_right(array: ArrayType, shift_count: NumberType, fill_value: ExpressionType = None) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_shift_rightfunction
         """
-        if fill_value is None:
-            return ArrayExpression(KQL(f'array_shift_right({to_kql(array)}, {to_kql(shift_count)})'))
-        return ArrayExpression(KQL(f'array_shift_right({to_kql(array)}, {to_kql(shift_count)}, {to_kql(fill_value)})'))
+        return ArrayExpression(KQL(f'array_shift_right({to_kql(array)}, {to_kql(shift_count)}{"" if fill_value is None else ", " + to_kql(fill_value)})'))
 
     @staticmethod
     def array_slice(array: ArrayType, start: NumberType, end: NumberType) -> ArrayExpression:

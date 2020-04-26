@@ -827,3 +827,81 @@ class TestFunction(TestBase):
             ' | extend foo = pack_array(numField, stringField)',
             Query().extend(foo=f.pack_array(t.numField, t.stringField)).render()
         )
+
+    def test_set_has_element(self):
+        self.assertEqual(
+            ' | extend foo = set_has_element(arrayField, numField)',
+            Query().extend(foo=f.set_has_element(t.arrayField, t.numField)).render()
+        )
+
+    def test_set_difference(self):
+        self.assertEqual(
+            ' | extend foo = set_difference(arrayField, arrayField2)',
+            Query().extend(foo=f.set_difference(t.arrayField, t.arrayField2)).render()
+        )
+
+    def test_set_intersect(self):
+        self.assertEqual(
+            ' | extend foo = set_intersect(arrayField, arrayField2)',
+            Query().extend(foo=f.set_intersect(t.arrayField, t.arrayField2)).render()
+        )
+
+    def test_set_union(self):
+        self.assertEqual(
+            ' | extend foo = set_union(arrayField, arrayField2)',
+            Query().extend(foo=f.set_union(t.arrayField, t.arrayField2)).render()
+        )
+
+    def test_array_concat(self):
+        self.assertEqual(
+            ' | extend foo = array_concat(arrayField, arrayField2)',
+            Query().extend(foo=f.array_concat(t.arrayField, t.arrayField2)).render()
+        )
+
+    def test_array_iif(self):
+        self.assertEqual(
+            ' | extend foo = array_iif(arrayField, arrayField2, arrayField3)',
+            Query().extend(foo=f.array_iif(t.arrayField, t.arrayField2, t.arrayField3)).render()
+        )
+
+    def test_array_index_of(self):
+        self.assertEqual(
+            ' | extend foo = array_index_of(arrayField, numField)',
+            Query().extend(foo=f.array_index_of(t.arrayField, t.numField)).render()
+        )
+
+    def test_array_rotate_left(self):
+        self.assertEqual(
+            ' | extend foo = array_rotate_left(arrayField, numField)',
+            Query().extend(foo=f.array_rotate_left(t.arrayField, t.numField)).render()
+        )
+
+    def test_array_rotate_right(self):
+        self.assertEqual(
+            ' | extend foo = array_rotate_right(arrayField, numField)',
+            Query().extend(foo=f.array_rotate_right(t.arrayField, t.numField)).render()
+        )
+
+    def test_array_shift_left(self):
+        self.assertEqual(
+            ' | extend foo = array_shift_left(arrayField, numField)',
+            Query().extend(foo=f.array_shift_left(t.arrayField, t.numField)).render()
+        )
+
+    def test_array_shift_right(self):
+        self.assertEqual(
+            ' | extend foo = array_shift_right(arrayField, numField, numField2)',
+            Query().extend(foo=f.array_shift_right(t.arrayField, t.numField, t.numField2)).render()
+        )
+
+    def test_array_slice(self):
+        self.assertEqual(
+            ' | extend foo = array_slice(arrayField, numField, numField2)',
+            Query().extend(foo=f.array_slice(t.arrayField, t.numField, t.numField2)).render()
+        )
+
+    def test_array_split(self):
+        self.assertEqual(
+            ' | extend foo = array_split(arrayField, numField)',
+            Query().extend(foo=f.array_split(t.arrayField, t.numField)).render()
+        )

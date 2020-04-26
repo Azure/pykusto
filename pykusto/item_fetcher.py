@@ -92,7 +92,7 @@ class ItemFetcher(metaclass=ABCMeta):
         return fallback()
 
     def __dir__(self) -> Iterable[str]:
-        return sorted(chain(super().__dir__(), tuple() if self.__items is None else self.__items.keys()))
+        return sorted(chain(super().__dir__(), tuple() if self.__items is None else filter(lambda name: '.' not in name, self.__items.keys())))
 
     def refresh(self) -> None:
         """

@@ -316,7 +316,7 @@ class Table(ItemFetcher):
         if not self.is_union():
             # Retrieves column names and types for this table only
             res: KustoResponse = self.execute(
-                KQL('.show table {} | project AttributeName, AttributeType | limit 10000'.format(self.get_name()))
+                KQL(f'.show table {self.get_name()} | project AttributeName, AttributeType | limit 10000')
             )
             return {
                 column_name: typed_column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
@@ -324,7 +324,7 @@ class Table(ItemFetcher):
             }
         # Get Kusto to figure out the schema of the union, especially useful for column name conflict resolution
         res: KustoResponse = self.execute(
-            KQL('{} | getschema | project ColumnName, DataType | limit 10000'.format(self.to_query_format()))
+            KQL(f'{self.to_query_format()} | getschema | project ColumnName, DataType | limit 10000')
         )
         return {
             column_name: typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name)

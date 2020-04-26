@@ -460,12 +460,6 @@ class TestFunction(TestBase):
             Query().where(f.to_bool(t.stringField)).render()
         )
 
-    def test_toboolean(self):
-        self.assertEqual(
-            " | where toboolean(stringField)",
-            Query().where(f.to_boolean(t.stringField)).render()
-        )
-
     def test_todouble(self):
         self.assertEqual(
             " | where (todouble(stringField)) > 0.2",

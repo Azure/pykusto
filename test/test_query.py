@@ -341,13 +341,13 @@ class TestQuery(TestBase):
 
     def test_udf(self):
         self.assertEqual(
-            "test_table | evaluate python(typeof(*, StateZone:string), {})".format(STRINGIFIED),
+            f"test_table | evaluate python(typeof(*, StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, StateZone=KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
         self.assertEqual(
-            "test_table | evaluate python(typeof(StateZone:string), {})".format(STRINGIFIED),
+            f"test_table | evaluate python(typeof(StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, extend=False, StateZone=KustoType.STRING).render(),
         )
 

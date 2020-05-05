@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
+from pykusto.keywords import KUSTO_KEYWORDS
 from pykusto.kql_converters import KQL
 from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column, TypeRegistrar, get_base_types
 
@@ -786,8 +787,8 @@ class BaseColumn(BaseExpression):
         assert cls is not BaseColumn, "BaseColumn is abstract"
         return object.__new__(cls)
 
-    def __init__(self, name: str) -> None:
-        super().__init__(KQL(f"['{name}']" if '.' in name else name))
+    def __init__(self, name: str, quote: bool = False) -> None:
+        super().__init__(KQL(f"['{name}']" if quote or '.' in name or name in KUSTO_KEYWORDS else name))
         self._name = name
 
     def get_name(self) -> str:
@@ -871,6 +872,13 @@ class ColumnGenerator:
 
     def __getitem__(self, name: str) -> AnyTypeColumn:
         return AnyTypeColumn(name)
+
+    # noinspection PyMethodMayBeStatic
+    def of(self, name: str) -> AnyTypeColumn:
+        """
+        Workaround in case automatic column name quoting fails
+        """
+        return AnyTypeColumn(name, quote=True)
 
 
 # Recommended usage: from pykusto.expressions import column_generator as col

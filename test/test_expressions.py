@@ -349,3 +349,13 @@ class TestExpressions(TestBase):
         self.assertIsInstance(field2, AnyTypeColumn)
         self.assertEqual('foo', field1.get_name())
         self.assertEqual('foo.bar', field2.get_name())
+
+    def test_column_name_quoting(self):
+        self.assertEqual(
+            ' | where [\'title\'] has "test"',
+            Query().where(t.title.has("test")).render()
+        )
+        self.assertEqual(
+            ' | where [\'stringField\'] has "test"',
+            Query().where(col.of('stringField').has("test")).render()
+        )

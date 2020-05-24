@@ -21,6 +21,10 @@ class KustoType(Enum):
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
     NULL = ('null', 'null', 'null', type(None))
+    # the following types are unsupported currently, but were supported in the past
+    UINT8 = ('uint8', 'UI8', 'System.Byte', int)
+    UINT32 = ('uint32', 'UI32', 'System.UInt32', int)
+    UINT64 = ('UI64', 'UI64', 'System.UInt64', int)
 
     primary_name: str
     internal_name: str

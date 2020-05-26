@@ -73,6 +73,6 @@ def str_to_kql(s: str) -> KQL:
     return KQL(f'"{s}"')
 
 
-@kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.UINT8, KustoType.UINT32, KustoType.UINT64)
+@kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8)
 def number_to_kql(n: Number) -> KQL:
     return KQL(str(n))

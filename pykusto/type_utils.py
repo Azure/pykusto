@@ -22,9 +22,12 @@ class KustoType(Enum):
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
     NULL = ('null', 'null', 'null', type(None))
     # the following types are not supported in Kusto anymore
-    UINT8 = ('uint8', 'UI8', 'System.Byte', int)
+    FLOAT = ('float', 'R32', 'System.Single', int)
+    INT16 = ('int16', 'I16', 'System.Int16', int )
+    UINT16 = ('uint16', 'UI16', 'System.UInt16', int)
     UINT32 = ('uint32', 'UI32', 'System.UInt32', int)
     UINT64 = ('uint64', 'UI64', 'System.UInt64', int)
+    UINT8 = ('uint8', 'UI8', 'System.Byte', int)
 
     primary_name: str
     internal_name: str

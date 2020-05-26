@@ -201,7 +201,7 @@ class BooleanExpression(BaseExpression):
         return BooleanExpression(KQL(f'not({self.kql})'))
 
 
-@plain_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@plain_expression(KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8)
 class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
@@ -709,7 +709,7 @@ class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
     pass
 
 
-@aggregation_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@aggregation_expression(KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8)
 class NumberAggregationExpression(AggregationExpression, NumberExpression):
     pass
 
@@ -807,7 +807,7 @@ class BaseColumn(BaseExpression):
         return self._name
 
 
-@typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8)
 class NumberColumn(BaseColumn, NumberExpression):
     pass
 
@@ -850,9 +850,10 @@ class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
     def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
         # noinspection PyTypeChecker
         base_types = get_base_types(other)
-        possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN, KustoType.INT, KustoType.LONG, KustoType.REAL}
+        possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN, KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8}
+
         assert len(possible_types) > 0, "Invalid type subtracted"
-        if possible_types == {KustoType.INT, KustoType.LONG, KustoType.REAL}:
+        if possible_types == {KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8}:
             return_type = KustoType.INT
         elif len(possible_types) > 1:
             return_type = None

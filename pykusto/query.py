@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from copy import copy, deepcopy
-from enum import Enum
 from itertools import chain
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
 from pykusto.client import Table, KustoResponse
+from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
@@ -14,42 +14,6 @@ from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import KustoType, typed_column, plain_expression
 from pykusto.udf import stringify_python_func
-
-
-class Order(Enum):
-    ASC = "asc"
-    DESC = "desc"
-
-
-class Nulls(Enum):
-    FIRST = "first"
-    LAST = "last"
-
-
-class JoinKind(Enum):
-    INNERUNIQUE = "innerunique"
-    INNER = "inner"
-    LEFTOUTER = "leftouter"
-    RIGHTOUTER = "rightouter"
-    FULLOUTER = "fullouter"
-    LEFTANTI = "leftanti"
-    ANTI = "anti"
-    LEFTANTISEMI = "leftantisemi"
-    RIGHTANTI = "rightanti"
-    RIGHTANTISEMI = "rightantisemi"
-    LEFTSEMI = "leftsemi"
-    RIGHTSEMI = "rightsemi"
-
-
-class Distribution(Enum):
-    SINGLE = 'single'
-    PER_NODE = 'per_node'
-    PER_SHARD = 'per_shard'
-
-
-class BagExpansion(Enum):
-    BAG = "bag"
-    ARRAY = "array"
 
 
 class Query:

@@ -2,6 +2,7 @@ import json
 from itertools import chain
 from typing import Union
 
+from pykusto.enums import Kind
 from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, TimespanType, \
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, StringExpression, BooleanExpression, \
@@ -155,9 +156,13 @@ class Functions:
 
     # def cot(self): return
 
-    # def countof(self): return
-    #
-    #
+    @staticmethod
+    def count_of(text: StringType, search: StringType, kind: Kind = Kind.NORMAL) -> NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/countoffunction
+        """
+        return NumberExpression(KQL(f'countof({to_kql(text)}, {to_kql(search)}, {to_kql(kind.value)})'))
+
     # def current_cluster_endpoint(self): return
     #
     #

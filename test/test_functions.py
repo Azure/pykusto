@@ -454,6 +454,12 @@ class TestFunction(TestBase):
             Query().extend(foo=f.split("1_2", "_")[3]).render()
         )
 
+    def test_count_of(self):
+        self.assertEqual(
+            ' | where (countof(stringField, "abc", "normal")) == 2',
+            Query().where(f.count_of(t.stringField, "abc") == 2).render()
+        )
+
     def test_tobool(self):
         self.assertEqual(
             " | where tobool(stringField)",

@@ -1,9 +1,10 @@
 import pandas as pd
 
 from pykusto.client import PyKustoClient
+from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from pykusto.expressions import column_generator as col
 from pykusto.functions import Functions as f
-from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
+from pykusto.query import Query, JoinException
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import test_table as t, mock_columns_response

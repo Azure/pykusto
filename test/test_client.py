@@ -72,7 +72,7 @@ class TestClient(TestBase):
 
     def test_default_authentication(self):
         mock_kusto_client = MockKustoClient()
-        with patch('pykusto.client.PyKustoClient._get_client_for_cluster', lambda s, cluster: mock_kusto_client):
+        with patch('pykusto.client._get_client_for_cluster', lambda cluster: mock_kusto_client):
             table = PyKustoClient('https://help.kusto.windows.net/')['test_db']['test_table']
             Query().take(5).execute(table)
         self.assertIs(
@@ -82,6 +82,36 @@ class TestClient(TestBase):
         self.assertEqual(
             [RecordedQuery('test_db', 'test_table | take 5')],
             mock_kusto_client.recorded_queries,
+        )
+
+    def test_client_instances(self):
+        with patch('pykusto.client._get_client_for_cluster', MockKustoClient):
+            client_1 = PyKustoClient('https://help.kusto.windows.net/')
+            client_2 = PyKustoClient('https://help.kusto.windows.net/')
+
+        self.assertIsNot(
+            client_1._PyKustoClient__client,
+            client_2._PyKustoClient__client,
+        )
+
+    def test_client_instances_cached(self):
+        with patch('pykusto.client._get_client_for_cluster', MockKustoClient):
+            client_1 = PyKustoClient('https://help.kusto.windows.net/', use_global_cache=True)
+            client_2 = PyKustoClient('https://help.kusto.windows.net/', use_global_cache=True)
+
+        self.assertIs(
+            client_1._PyKustoClient__client,
+            client_2._PyKustoClient__client,
+        )
+
+    def test_client_instances_cached_distinct(self):
+        with patch('pykusto.client._get_client_for_cluster', MockKustoClient):
+            client_1 = PyKustoClient('https://help1.kusto.windows.net/', use_global_cache=True)
+            client_2 = PyKustoClient('https://help2.kusto.windows.net/', use_global_cache=True)
+
+        self.assertIsNot(
+            client_1._PyKustoClient__client,
+            client_2._PyKustoClient__client,
         )
 
     def test_cross_cluster_join(self):

@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set
+from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set, FrozenSet
 
-# TODO: Unhandled data types: guid, decimal
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
 
 
@@ -19,11 +18,11 @@ class KustoType(Enum):
     REAL = ('real', 'R64', 'System.Double', float)
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
-    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal')  # TODO: Should this be treated as a number?
+    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', int)
     GUID = ('guid', 'UniqueId', 'System.Guid')  # Not supported by Kusto yet
 
     # Deprecated types, kept here for back compatibility
-    FLOAT = ('float', 'R32', 'System.Single', int)
+    FLOAT = ('float', 'R32', 'System.Single', float)
     INT16 = ('int16', 'I16', 'System.Int16', int)
     UINT16 = ('uint16', 'UI16', 'System.UInt16', int)
     UINT32 = ('uint32', 'UI32', 'System.UInt32', int)
@@ -33,7 +32,7 @@ class KustoType(Enum):
     primary_name: str
     internal_name: str
     dot_net_name: str
-    python_types: Tuple[PythonTypes]
+    python_types: Tuple[PythonTypes, ...]
 
     def __init__(self, primary_name: str, internal_name: str, dot_net_name: str, *python_types: PythonTypes) -> None:
         self.primary_name = primary_name
@@ -56,6 +55,9 @@ class KustoType(Enum):
 
 INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in KustoType}
 DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in KustoType}
+NUMBER_TYPES: FrozenSet[KustoType] = frozenset([
+    KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.DECIMAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8
+])
 
 
 class TypeRegistrar:
@@ -136,7 +138,6 @@ class TypeRegistrar:
         return base_types
 
     def assert_all_types_covered(self) -> None:
-        # noinspection PyTypeChecker
         missing = set(t for t in KustoType if len(t.python_types) > 0) - set(self.registry.keys())
         assert len(missing) == 0, [t.name for t in missing]
 

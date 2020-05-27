@@ -18,18 +18,6 @@ from pykusto.kql_converters import KQL
 from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
 
 
-def _get_client_for_cluster(cluster: str) -> KustoClient:
-    return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
-
-
-@lru_cache(maxsize=128)
-def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
-    """
-    Provided for convenience during development, not recommended for general use.
-    """
-    return _get_client_for_cluster(cluster)
-
-
 class KustoResponse:
     __response: KustoResponseDataSet
 
@@ -83,7 +71,7 @@ class PyKustoClient(ItemFetcher):
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
 
-            self.__client = (_cached_get_client_for_cluster if use_global_cache else _get_client_for_cluster)(client_or_cluster)
+            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster)
             self.__cluster_name = client_or_cluster
         self._refresh_if_needed()
 
@@ -121,6 +109,18 @@ class PyKustoClient(ItemFetcher):
 
     def get_cluster_name(self) -> str:
         return self.__cluster_name
+
+    @staticmethod
+    def _get_client_for_cluster(cluster: str) -> KustoClient:
+        return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
+        """
+        Provided for convenience during development, not recommended for general use.
+        """
+        return PyKustoClient._get_client_for_cluster(cluster)
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

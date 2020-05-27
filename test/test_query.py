@@ -321,6 +321,12 @@ class TestQuery(TestBase):
             Query(t).distinct(t.stringField, t.numField * 2).render(),
         )
 
+    def test_distinct_sample(self):
+        self.assertEqual(
+            "test_table | sample-distinct 5 of stringField",
+            Query(t).distinct(t.stringField).sample(5).render(),
+        )
+
     def test_distinct_all(self):
         self.assertEqual(
             "test_table | distinct *",

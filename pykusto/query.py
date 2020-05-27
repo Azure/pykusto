@@ -9,7 +9,7 @@ from pykusto.client import Table, KustoResponse
 from pykusto.expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
-    AssignmentFromColumnToColumn, AnyExpression, to_kql, expression_to_type, BaseColumn
+    AssignmentFromColumnToColumn, AnyExpression, to_kql, expression_to_type, BaseColumn, NumberType
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import KustoType, typed_column, plain_expression
@@ -117,11 +117,11 @@ class Query:
     def project_away(self, *columns: StringType) -> 'ProjectAwayQuery':
         return ProjectAwayQuery(self, columns)
 
-    def distinct(self, *columns: BaseExpression) -> 'DistinctQuery':
+    def distinct(self, *columns: BaseColumn) -> 'DistinctQuery':
         return DistinctQuery(self, columns)
 
     def distinct_all(self) -> 'DistinctQuery':
-        return DistinctQuery(self, (AnyExpression(KQL("*")),))
+        return DistinctQuery(self, (AnyTypeColumn(KQL("*")),))
 
     def extend(self, *args: Union[BaseExpression, AssignmentBase], **kwargs: ExpressionType) -> 'ExtendQuery':
         return ExtendQuery(self, *self.extract_assignments(*args, **kwargs))
@@ -267,14 +267,34 @@ class ProjectAwayQuery(Query):
 
 
 class DistinctQuery(Query):
-    _columns: Tuple[BaseExpression, ...]
+    _columns: Tuple[BaseColumn, ...]
 
-    def __init__(self, head: 'Query', columns: Tuple[BaseExpression]) -> None:
+    def __init__(self, head: 'Query', columns: Tuple[BaseColumn]) -> None:
         super().__init__(head)
         self._columns = columns
 
+    def sample(self, number_of_values: NumberType) -> 'SampleDistinctQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sampledistinctoperator
+        """
+        assert len(self._columns) == 1, "sample-distinct supports only one column"
+        return SampleDistinctQuery(self._head, self._columns[0], number_of_values)
+
     def _compile(self) -> KQL:
         return KQL(f"distinct {', '.join(c.kql for c in self._columns)}")
+
+
+class SampleDistinctQuery(Query):
+    _number_of_values: NumberType
+    _column: BaseColumn
+
+    def __init__(self, head: 'Query', column: BaseColumn, number_of_values: NumberType) -> None:
+        super().__init__(head)
+        self._column = column
+        self._number_of_values = number_of_values
+
+    def _compile(self) -> KQL:
+        return KQL(f"sample-distinct {to_kql(self._number_of_values)} of {self._column.kql}")
 
 
 class ExtendQuery(Query):

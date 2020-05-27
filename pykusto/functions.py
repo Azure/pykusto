@@ -130,7 +130,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/casefunction
         """
-        return AnyExpression(KQL(f"case({to_kql(predicate)}, {to_kql(val)}, {', '.join([to_kql(arg) for arg in args])})"))
+        return AnyExpression(KQL(f"case({to_kql(predicate)}, {to_kql(val)}, {', '.join(to_kql(arg) for arg in args)})"))
 
     @staticmethod
     def ceiling(expr: NumberType) -> NumberExpression:
@@ -882,7 +882,7 @@ class Functions:
         """
         res = f'strcat_delim({to_kql(delimiter)}, {to_kql(expr1)}, {to_kql(expr2)}'
         if len(expressions) > 0:
-            res = res + ', ' + ', '.join([to_kql(expr) for expr in expressions])
+            res = res + ', ' + ', '.join(to_kql(expr) for expr in expressions)
         return StringExpression(KQL(res + ')'))
 
     @staticmethod
@@ -1090,7 +1090,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/any-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"any({', '.join([arg.kql for arg in args])})"))
+        return AnyAggregationExpression(KQL(f"any({', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
     def any_if(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
@@ -1104,14 +1104,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-max-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"arg_max({', '.join([arg.kql for arg in args])})"))
+        return AnyAggregationExpression(KQL(f"arg_max({', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
     def arg_min(*args: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-min-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"arg_min({', '.join([arg.kql for arg in args])})"))
+        return AnyAggregationExpression(KQL(f"arg_min({', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
     def avg(expr: ExpressionType) -> NumberAggregationExpression:
@@ -1164,7 +1164,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-bag-aggfunction
         """
         if max_size:
-            return MappingAggregationExpression(KQL(f'make_bag({expr}, {max_size})'))
+            return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)}, {to_kql(max_size)})'))
         return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)})'))
 
     @staticmethod
@@ -1173,7 +1173,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makelist-aggfunction
         """
         if max_size:
-            return ArrayAggregationExpression(KQL(f'make_list({expr}, {max_size})'))
+            return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)}, {to_kql(max_size)})'))
         return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)})'))
 
     @staticmethod
@@ -1182,7 +1182,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction
         """
         if max_size:
-            return ArrayAggregationExpression(KQL(f'make_set({expr}, {max_size})'))
+            return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)}, {to_kql(max_size)})'))
         return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)})'))
 
     @staticmethod
@@ -1218,14 +1218,21 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentiles-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'percentiles({expr}, {to_kql(per)})'))
+        return AnyAggregationExpression(KQL(f'percentiles({to_kql(expr)}, {to_kql(per)})'))
 
     @staticmethod
     def percentiles(expr: ExpressionType, *pers: NumberType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentiles-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"percentiles({expr.kql}, {', '.join([str(to_kql(per)) for per in pers])})"))
+        return AnyAggregationExpression(KQL(f"percentiles({to_kql(expr)}, {', '.join(str(to_kql(per)) for per in pers)})"))
+
+    @staticmethod
+    def percentiles_array(expr: ExpressionType, *pers: NumberType) -> ArrayAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentiles-aggfunction
+        """
+        return ArrayAggregationExpression(KQL(f"percentiles_array({to_kql(expr)}, {', '.join(str(to_kql(per)) for per in pers)})"))
 
     @staticmethod
     def stdev(expr: ExpressionType) -> AnyAggregationExpression:

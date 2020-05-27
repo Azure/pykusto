@@ -910,3 +910,8 @@ def to_kql(obj: ExpressionType) -> KQL:
 def expression_to_type(expression: ExpressionType, type_registrar: TypeRegistrar, fallback_type: Any) -> Any:
     types = set(type_registrar.registry[base_type] for base_type in plain_expression.get_base_types(expression))
     return next(iter(types)) if len(types) == 1 else fallback_type
+
+
+typed_column.assert_all_types_covered()
+plain_expression.assert_all_types_covered()
+aggregation_expression.assert_all_types_covered()

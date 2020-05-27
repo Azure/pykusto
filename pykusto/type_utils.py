@@ -7,23 +7,24 @@ PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timed
 
 
 class KustoType(Enum):
+    """
+    https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/
+    """
     BOOL = ('bool', 'I8', 'System.SByte', bool)
     DATETIME = ('datetime', 'DateTime', 'System.DateTime', datetime)
-    # noinspection PyTypeChecker
-    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', None)  # TODO
     ARRAY = ('dynamic', 'Dynamic', 'System.Object', List, Tuple)
     MAPPING = ('dynamic', 'Dynamic', 'System.Object', Mapping)
-    # noinspection PyTypeChecker
-    GUID = ('guid', 'UniqueId', 'System.Guid', None)  # TODO
     INT = ('int', 'I32', 'System.Int32', int)
     LONG = ('long', 'I64', 'System.Int64', int)
     REAL = ('real', 'R64', 'System.Double', float)
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
-    NULL = ('null', 'null', 'null', type(None))
-    # the following types are not supported in Kusto anymore
+    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal')  # TODO: Should this be treated as a number?
+    GUID = ('guid', 'UniqueId', 'System.Guid')  # Not supported by Kusto yet
+
+    # Deprecated types, kept here for back compatibility
     FLOAT = ('float', 'R32', 'System.Single', int)
-    INT16 = ('int16', 'I16', 'System.Int16', int )
+    INT16 = ('int16', 'I16', 'System.Int16', int)
     UINT16 = ('uint16', 'UI16', 'System.UInt16', int)
     UINT32 = ('uint32', 'UI32', 'System.UInt32', int)
     UINT64 = ('uint64', 'UI64', 'System.UInt64', int)
@@ -133,6 +134,11 @@ class TypeRegistrar:
         base_types: Set[KustoType] = self.inverse(obj)
         assert len(base_types) > 0, f"get_base_types called for unsupported type: {type(obj).__name__}"
         return base_types
+
+    def assert_all_types_covered(self) -> None:
+        # noinspection PyTypeChecker
+        missing = set(t for t in KustoType if len(t.python_types) > 0) - set(self.registry.keys())
+        assert len(missing) == 0, [t.name for t in missing]
 
 
 kql_converter = TypeRegistrar("KQL Converter")

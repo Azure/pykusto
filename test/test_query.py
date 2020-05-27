@@ -327,6 +327,18 @@ class TestQuery(TestBase):
             Query(t).distinct(t.stringField).sample(5).render(),
         )
 
+    def test_top_hitters(self):
+        self.assertEqual(
+            "test_table | top-hitters 5 of stringField",
+            Query(t).distinct(t.stringField).top_hitters(5).render(),
+        )
+
+    def test_top_hitters_by(self):
+        self.assertEqual(
+            "test_table | top-hitters 5 of stringField by numField",
+            Query(t).distinct(t.stringField).top_hitters(5).by(t.numField).render(),
+        )
+
     def test_distinct_all(self):
         self.assertEqual(
             "test_table | distinct *",

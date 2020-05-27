@@ -280,6 +280,13 @@ class DistinctQuery(Query):
         assert len(self._columns) == 1, "sample-distinct supports only one column"
         return SampleDistinctQuery(self._head, self._columns[0], number_of_values)
 
+    def top_hitters(self, number_of_values: NumberType) -> 'TopHittersQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tophittersoperator
+        """
+        assert len(self._columns) == 1, "top-hitters supports only one column"
+        return TopHittersQuery(self._head, self._columns[0], number_of_values)
+
     def _compile(self) -> KQL:
         return KQL(f"distinct {', '.join(c.kql for c in self._columns)}")
 
@@ -295,6 +302,25 @@ class SampleDistinctQuery(Query):
 
     def _compile(self) -> KQL:
         return KQL(f"sample-distinct {to_kql(self._number_of_values)} of {self._column.kql}")
+
+
+class TopHittersQuery(Query):
+    _number_of_values: NumberType
+    _column: BaseColumn
+    _by_expression: Optional[NumberType]
+
+    def __init__(self, head: 'Query', column: BaseColumn, number_of_values: NumberType, by_expression: Optional[NumberType] = None) -> None:
+        super().__init__(head)
+        self._column = column
+        self._number_of_values = number_of_values
+        self._by_expression = by_expression
+
+    def by(self, by_expression: NumberType) -> 'TopHittersQuery':
+        assert self._by_expression is None, "duplicate 'by' clause"
+        return TopHittersQuery(self._head, self._column, self._number_of_values, by_expression)
+
+    def _compile(self) -> KQL:
+        return KQL(f"top-hitters {to_kql(self._number_of_values)} of {self._column.kql}{'' if self._by_expression is None else f' by {to_kql(self._by_expression)}'}")
 
 
 class ExtendQuery(Query):

@@ -524,6 +524,12 @@ class TestFunction(TestBase):
             Query().summarize(f.any(t.stringField, t.numField, t.boolField)).render()
         )
 
+    def test_any_if(self):
+        self.assertEqual(
+            " | summarize anyif(stringField, boolField)",
+            Query().summarize(f.any_if(t.stringField, t.boolField)).render()
+        )
+
     def test_aggregation_assign_to(self):
         self.assertEqual(
             " | summarize foo = any(stringField)",
@@ -709,6 +715,12 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize percentiles(numField, 5, 50, 95)",
             Query().summarize(f.percentiles(t.numField, 5, 50, 95)).render()
+        )
+
+    def test_percentiles_array(self):
+        self.assertEqual(
+            " | summarize percentiles_array(numField, 5, 50, 95)",
+            Query().summarize(f.percentiles_array(t.numField, 5, 50, 95)).render()
         )
 
     def test_stdev(self):

@@ -372,10 +372,11 @@ class Functions:
     # def indexof_regex(self): return
     #
     #
-    # def ingestion_time(self): return
-    #
-    #
     # def isascii(self): return
+
+    @staticmethod
+    def ingestion_time() -> DatetimeExpression:
+        return DatetimeExpression(KQL('ingestion_time()'))
 
     @staticmethod
     def is_empty(expr: ExpressionType) -> BooleanExpression:

@@ -923,3 +923,9 @@ class TestFunction(TestBase):
             ' | extend foo = array_split(arrayField, numField)',
             Query().extend(foo=f.array_split(t.arrayField, t.numField)).render()
         )
+
+    def test_ingestion_time(self):
+        self.assertEqual(
+            ' | extend ingestionTime = ingestion_time()',
+            Query().extend(ingestionTime=f.ingestion_time()).render()
+        )

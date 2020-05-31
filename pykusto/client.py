@@ -11,10 +11,12 @@ from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRe
 from azure.kusto.data._models import KustoResultRow
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
+from azure.kusto.data.security import _get_azure_cli_auth_token
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.item_fetcher import ItemFetcher
 from pykusto.kql_converters import KQL
+from pykusto.logger import logger
 from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
 
 
@@ -58,7 +60,8 @@ class PyKustoClient(ItemFetcher):
         """
         Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
-        :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given, a KustoClient is generated with AAD device authentication.
+        :param client_or_cluster: Either a KustoClient instance, or a cluster name. In case a cluster name is provided, a KustoClient is generated using Azure CLI authentication,
+            falling back to AAD device authentication if needed.
         :param use_global_cache: If true, share a global client cache between all instances. Provided for convenience during development, not recommended for general use.
         """
         super().__init__(None, fetch_by_default)
@@ -112,7 +115,16 @@ class PyKustoClient(ItemFetcher):
 
     @staticmethod
     def _get_client_for_cluster(cluster: str) -> KustoClient:
-        return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+        # If we call 'with_az_cli_authentication' directly, in case of failure we will get an un-informative exception.
+        # As a workaround, we first attempt to manually get the Azure CLI token, and see if it works.
+        # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
+        stored_token = _get_azure_cli_auth_token()
+        if stored_token is None:
+            connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
+        else:
+            logger.debug("Failed to get Azure CLI token, using AAD device authentication")
+            connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
+        return KustoClient(connection_string_builder)
 
     @staticmethod
     @lru_cache(maxsize=128)

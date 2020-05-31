@@ -376,6 +376,9 @@ class Functions:
 
     @staticmethod
     def ingestion_time() -> DatetimeExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/ingestiontimefunction
+        """
         return DatetimeExpression(KQL('ingestion_time()'))
 
     @staticmethod
@@ -511,13 +514,13 @@ class Functions:
         raise NotImplemented  # pragma: no cover
 
     @staticmethod
-    def now(offset: TimespanType = None) -> StringExpression:
+    def now(offset: TimespanType = None) -> DatetimeExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/nowfunction
         """
         if offset:
-            return StringExpression(KQL(f'now({to_kql(offset)})'))
-        return StringExpression(KQL('now()'))
+            return DatetimeExpression(KQL(f'now({to_kql(offset)})'))
+        return DatetimeExpression(KQL('now()'))
 
     @staticmethod
     def pack(**kwargs: ExpressionType) -> MappingExpression:

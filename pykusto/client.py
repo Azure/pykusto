@@ -1,8 +1,9 @@
 from collections import defaultdict
+from enum import Enum
 from fnmatch import fnmatch
 from functools import lru_cache
 from threading import Lock
-from typing import Union, List, Tuple, Dict, Generator, Optional, Set
+from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Callable
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -16,6 +17,16 @@ from pykusto.expressions import BaseColumn, AnyTypeColumn
 from pykusto.item_fetcher import ItemFetcher
 from pykusto.kql_converters import KQL
 from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
+
+
+class AuthMethod(Enum):
+    DEVICE = (KustoConnectionStringBuilder.with_aad_device_authentication, )
+    AZ_CLI = (KustoConnectionStringBuilder.with_az_cli_authentication, )
+
+    auth: Callable[[str], KustoConnectionStringBuilder]
+
+    def __init__(self, auth_func: Callable[[str], KustoConnectionStringBuilder]):
+        self.auth = auth_func
 
 
 class KustoResponse:
@@ -54,7 +65,10 @@ class PyKustoClient(ItemFetcher):
     __first_execution: bool
     __first_execution_lock: Lock
 
-    def __init__(self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False) -> None:
+    def __init__(
+            self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True,
+            auth_method: AuthMethod = AuthMethod.DEVICE, use_global_cache: bool = False
+    ) -> None:
         """
         Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
@@ -71,7 +85,7 @@ class PyKustoClient(ItemFetcher):
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
 
-            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster)
+            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster, auth_method)
             self.__cluster_name = client_or_cluster
         self._refresh_if_needed()
 
@@ -111,16 +125,16 @@ class PyKustoClient(ItemFetcher):
         return self.__cluster_name
 
     @staticmethod
-    def _get_client_for_cluster(cluster: str) -> KustoClient:
-        return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+    def _get_client_for_cluster(cluster: str, auth_method: AuthMethod = AuthMethod.DEVICE) -> KustoClient:
+        return KustoClient(auth_method.auth(cluster))
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
+    def _cached_get_client_for_cluster(cluster: str, auth_method: AuthMethod = AuthMethod.DEVICE) -> KustoClient:
         """
         Provided for convenience during development, not recommended for general use.
         """
-        return PyKustoClient._get_client_for_cluster(cluster)
+        return PyKustoClient._get_client_for_cluster(cluster, auth_method)
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

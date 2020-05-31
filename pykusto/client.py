@@ -1,5 +1,6 @@
 from collections import defaultdict
 from fnmatch import fnmatch
+from functools import lru_cache
 from threading import Lock
 from typing import Union, List, Tuple, Dict, Generator, Optional, Set
 from urllib.parse import urlparse
@@ -53,13 +54,12 @@ class PyKustoClient(ItemFetcher):
     __first_execution: bool
     __first_execution_lock: Lock
 
-    def __init__(self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True) -> None:
+    def __init__(self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False) -> None:
         """
-        Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also
-        passed on to database instances.
+        Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
-        :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given,
-            a KustoClient is generated with AAD device authentication
+        :param client_or_cluster: Either a KustoClient object, or a cluster name. In case a cluster name is given, a KustoClient is generated with AAD device authentication.
+        :param use_global_cache: If true, share a global client cache between all instances. Provided for convenience during development, not recommended for general use.
         """
         super().__init__(None, fetch_by_default)
         self.__first_execution = True
@@ -67,9 +67,11 @@ class PyKustoClient(ItemFetcher):
         if isinstance(client_or_cluster, KustoClient):
             self.__client = client_or_cluster
             # noinspection PyProtectedMember
-            self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc  # TODO neater way
+            self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
+            assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
-            self.__client = self._get_client_for_cluster(client_or_cluster)
+
+            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster)
             self.__cluster_name = client_or_cluster
         self._refresh_if_needed()
 
@@ -111,6 +113,14 @@ class PyKustoClient(ItemFetcher):
     @staticmethod
     def _get_client_for_cluster(cluster: str) -> KustoClient:
         return KustoClient(KustoConnectionStringBuilder.with_aad_device_authentication(cluster))
+
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
+        """
+        Provided for convenience during development, not recommended for general use.
+        """
+        return PyKustoClient._get_client_for_cluster(cluster)
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

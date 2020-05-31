@@ -454,6 +454,12 @@ class TestFunction(TestBase):
             Query().extend(foo=f.split("1_2", "_")[3]).render()
         )
 
+    def test_count_of(self):
+        self.assertEqual(
+            ' | where (countof(stringField, "abc", "normal")) == 2',
+            Query().where(f.count_of(t.stringField, "abc") == 2).render()
+        )
+
     def test_tobool(self):
         self.assertEqual(
             " | where tobool(stringField)",
@@ -522,6 +528,12 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize any(stringField, numField, boolField)",
             Query().summarize(f.any(t.stringField, t.numField, t.boolField)).render()
+        )
+
+    def test_any_if(self):
+        self.assertEqual(
+            " | summarize anyif(stringField, boolField)",
+            Query().summarize(f.any_if(t.stringField, t.boolField)).render()
         )
 
     def test_aggregation_assign_to(self):
@@ -709,6 +721,12 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize percentiles(numField, 5, 50, 95)",
             Query().summarize(f.percentiles(t.numField, 5, 50, 95)).render()
+        )
+
+    def test_percentiles_array(self):
+        self.assertEqual(
+            " | summarize percentiles_array(numField, 5, 50, 95)",
+            Query().summarize(f.percentiles_array(t.numField, 5, 50, 95)).render()
         )
 
     def test_stdev(self):
@@ -904,4 +922,10 @@ class TestFunction(TestBase):
         self.assertEqual(
             ' | extend foo = array_split(arrayField, numField)',
             Query().extend(foo=f.array_split(t.arrayField, t.numField)).render()
+        )
+
+    def test_ingestion_time(self):
+        self.assertEqual(
+            ' | extend ingestionTime = ingestion_time()',
+            Query().extend(ingestionTime=f.ingestion_time()).render()
         )

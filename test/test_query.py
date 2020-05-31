@@ -1,9 +1,10 @@
 import pandas as pd
 
 from pykusto.client import PyKustoClient
+from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from pykusto.expressions import column_generator as col
 from pykusto.functions import Functions as f
-from pykusto.query import Query, Order, Nulls, JoinKind, JoinException, BagExpansion, Distribution
+from pykusto.query import Query, JoinException
 from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import test_table as t, mock_columns_response
@@ -319,6 +320,24 @@ class TestQuery(TestBase):
         self.assertEqual(
             "test_table | distinct stringField, numField * 2",
             Query(t).distinct(t.stringField, t.numField * 2).render(),
+        )
+
+    def test_distinct_sample(self):
+        self.assertEqual(
+            "test_table | sample-distinct 5 of stringField",
+            Query(t).distinct(t.stringField).sample(5).render(),
+        )
+
+    def test_top_hitters(self):
+        self.assertEqual(
+            "test_table | top-hitters 5 of stringField",
+            Query(t).distinct(t.stringField).top_hitters(5).render(),
+        )
+
+    def test_top_hitters_by(self):
+        self.assertEqual(
+            "test_table | top-hitters 5 of stringField by numField",
+            Query(t).distinct(t.stringField).top_hitters(5).by(t.numField).render(),
         )
 
     def test_distinct_all(self):

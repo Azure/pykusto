@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from azure.kusto.data.request import KustoClient
+from azure.kusto.data import KustoClient
 
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col

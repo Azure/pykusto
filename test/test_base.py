@@ -5,9 +5,9 @@ from typing import Callable, Tuple, Any, List
 from unittest import TestCase
 from urllib.parse import urljoin
 
+from azure.kusto.data import KustoClient, ClientRequestProperties
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
-from azure.kusto.data.request import KustoClient, ClientRequestProperties
 from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.client import Table

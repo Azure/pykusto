@@ -6,10 +6,10 @@ from typing import Union, List, Tuple, Dict, Generator, Optional, Set
 from urllib.parse import urlparse
 
 import pandas as pd
+from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultRow
 from azure.kusto.data.helpers import dataframe_from_result_table
-from azure.kusto.data.request import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn

@@ -22,6 +22,7 @@ class KustoType(Enum):
     GUID = ('guid', 'UniqueId', 'System.Guid')  # Not supported by Kusto yet
 
     # Deprecated types, kept here for back compatibility
+    # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/unsupported-data-types
     FLOAT = ('float', 'R32', 'System.Single', float)
     INT16 = ('int16', 'I16', 'System.Int16', int)
     UINT16 = ('uint16', 'UI16', 'System.UInt16', int)

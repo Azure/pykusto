@@ -1,35 +1,39 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set
+from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set, FrozenSet
 
-# TODO: Unhandled data types: guid, decimal
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
 
 
 class KustoType(Enum):
+    """
+    https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/
+    """
     BOOL = ('bool', 'I8', 'System.SByte', bool)
     DATETIME = ('datetime', 'DateTime', 'System.DateTime', datetime)
-    # noinspection PyTypeChecker
-    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', None)  # TODO
     ARRAY = ('dynamic', 'Dynamic', 'System.Object', List, Tuple)
     MAPPING = ('dynamic', 'Dynamic', 'System.Object', Mapping)
-    # noinspection PyTypeChecker
-    GUID = ('guid', 'UniqueId', 'System.Guid', None)  # TODO
     INT = ('int', 'I32', 'System.Int32', int)
     LONG = ('long', 'I64', 'System.Int64', int)
     REAL = ('real', 'R64', 'System.Double', float)
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
-    NULL = ('null', 'null', 'null', type(None))
-    # the following types are not supported in Kusto anymore
-    UINT8 = ('uint8', 'UI8', 'System.Byte', int)
+    DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', int)
+    GUID = ('guid', 'UniqueId', 'System.Guid')  # Not supported by Kusto yet
+
+    # Deprecated types, kept here for back compatibility
+    # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/unsupported-data-types
+    FLOAT = ('float', 'R32', 'System.Single', float)
+    INT16 = ('int16', 'I16', 'System.Int16', int)
+    UINT16 = ('uint16', 'UI16', 'System.UInt16', int)
     UINT32 = ('uint32', 'UI32', 'System.UInt32', int)
-    UINT64 = ('UI64', 'UI64', 'System.UInt64', int)
+    UINT64 = ('uint64', 'UI64', 'System.UInt64', int)
+    UINT8 = ('uint8', 'UI8', 'System.Byte', int)
 
     primary_name: str
     internal_name: str
     dot_net_name: str
-    python_types: Tuple[PythonTypes]
+    python_types: Tuple[PythonTypes, ...]
 
     def __init__(self, primary_name: str, internal_name: str, dot_net_name: str, *python_types: PythonTypes) -> None:
         self.primary_name = primary_name
@@ -52,6 +56,9 @@ class KustoType(Enum):
 
 INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in KustoType}
 DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in KustoType}
+NUMBER_TYPES: FrozenSet[KustoType] = frozenset([
+    KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.DECIMAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8
+])
 
 
 class TypeRegistrar:
@@ -130,6 +137,10 @@ class TypeRegistrar:
         base_types: Set[KustoType] = self.inverse(obj)
         assert len(base_types) > 0, f"get_base_types called for unsupported type: {type(obj).__name__}"
         return base_types
+
+    def assert_all_types_covered(self) -> None:
+        missing = set(t for t in KustoType if len(t.python_types) > 0) - set(self.registry.keys())
+        assert len(missing) == 0, [t.name for t in missing]
 
 
 kql_converter = TypeRegistrar("KQL Converter")

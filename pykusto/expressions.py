@@ -4,7 +4,7 @@ from typing import Union
 
 from pykusto.keywords import KUSTO_KEYWORDS
 from pykusto.kql_converters import KQL
-from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column, TypeRegistrar, get_base_types
+from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column, TypeRegistrar, get_base_types, NUMBER_TYPES
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
 StringType = Union[str, 'StringExpression']
@@ -201,7 +201,7 @@ class BooleanExpression(BaseExpression):
         return BooleanExpression(KQL(f'not({self.kql})'))
 
 
-@plain_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@plain_expression(*NUMBER_TYPES)
 class NumberExpression(BaseExpression):
     @staticmethod
     def binary_op(left: NumberType, operator: str, right: NumberType) -> 'NumberExpression':
@@ -709,7 +709,7 @@ class BooleanAggregationExpression(AggregationExpression, BooleanExpression):
     pass
 
 
-@aggregation_expression(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@aggregation_expression(*NUMBER_TYPES)
 class NumberAggregationExpression(AggregationExpression, NumberExpression):
     pass
 
@@ -807,7 +807,7 @@ class BaseColumn(BaseExpression):
         return self._name
 
 
-@typed_column(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@typed_column(*NUMBER_TYPES)
 class NumberColumn(BaseColumn, NumberExpression):
     pass
 
@@ -850,9 +850,10 @@ class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
     def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
         # noinspection PyTypeChecker
         base_types = get_base_types(other)
-        possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN, KustoType.INT, KustoType.LONG, KustoType.REAL}
+        possible_types = base_types & ({KustoType.DATETIME, KustoType.TIMESPAN} | NUMBER_TYPES)
+
         assert len(possible_types) > 0, "Invalid type subtracted"
-        if possible_types == {KustoType.INT, KustoType.LONG, KustoType.REAL}:
+        if possible_types == NUMBER_TYPES:
             return_type = KustoType.INT
         elif len(possible_types) > 1:
             return_type = None
@@ -909,3 +910,8 @@ def to_kql(obj: ExpressionType) -> KQL:
 def expression_to_type(expression: ExpressionType, type_registrar: TypeRegistrar, fallback_type: Any) -> Any:
     types = set(type_registrar.registry[base_type] for base_type in plain_expression.get_base_types(expression))
     return next(iter(types)) if len(types) == 1 else fallback_type
+
+
+typed_column.assert_all_types_covered()
+plain_expression.assert_all_types_covered()
+aggregation_expression.assert_all_types_covered()

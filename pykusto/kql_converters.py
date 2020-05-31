@@ -4,7 +4,7 @@ from itertools import chain
 from numbers import Number
 from typing import NewType, Union, Mapping, List, Tuple
 
-from pykusto.type_utils import kql_converter, KustoType
+from pykusto.type_utils import kql_converter, KustoType, NUMBER_TYPES
 
 KQL = NewType('KQL', str)
 
@@ -73,6 +73,9 @@ def str_to_kql(s: str) -> KQL:
     return KQL(f'"{s}"')
 
 
-@kql_converter(KustoType.INT, KustoType.LONG, KustoType.REAL)
+@kql_converter(*NUMBER_TYPES)
 def number_to_kql(n: Number) -> KQL:
     return KQL(str(n))
+
+
+kql_converter.assert_all_types_covered()

@@ -367,6 +367,12 @@ class TestExpressions(TestBase):
             Query().where(f.to_double(100 * t.numberField) > 0.2).render(),
         )
 
+    def test_add_number_column(self):
+        self.assertEqual(
+            ' | where (todouble(100 + numberField)) > 0.2',
+            Query().where(f.to_double(100 + t.numberField) > 0.2).render(),
+        )
+
     def test_multiply_number_expression(self):
         self.assertEqual(
             ' | where (100 * (todouble(numberField))) > 0.2',

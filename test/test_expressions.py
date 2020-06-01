@@ -115,10 +115,22 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.numField / 2).render(),
         )
 
+    def test_swapped_div(self):
+        self.assertEqual(
+            ' | extend foo = 2 / numField',
+            Query().extend(foo=2 / t.numField).render(),
+        )
+
     def test_mod(self):
         self.assertEqual(
             ' | extend foo = numField % 2',
             Query().extend(foo=t.numField % 2).render(),
+        )
+
+    def test_swapped_mod(self):
+        self.assertEqual(
+            ' | extend foo = 2 % numField',
+            Query().extend(foo=2 % t.numField).render(),
         )
 
     def test_negation(self):
@@ -227,6 +239,12 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | extend foo = dateField - datetime(2020-01-01 00:00:00.000000)',
             Query().extend(foo=t.dateField - datetime(2020, 1, 1)).render(),
+        )
+
+    def test_sub_from_number(self):
+        self.assertEqual(
+            ' | extend foo = 3 - numField',
+            Query().extend(foo=3 - t.numField).render(),
         )
 
     def test_sub_date_unknown_type(self):

@@ -478,9 +478,12 @@ class DatetimeExpression(BaseExpression):
         return BooleanExpression.binary_op(self, ' >= ', other)
 
     def __add__(self, other: TimespanType) -> 'DatetimeExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return DatetimeExpression.binary_op(self, ' + ', other)
 
     def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
+
         # noinspection PyTypeChecker
         base_types = get_base_types(other)
         possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN}
@@ -492,6 +495,7 @@ class DatetimeExpression(BaseExpression):
         return return_type(DatetimeExpression.binary_op(self, ' - ', other))
 
     def __rsub__(self, other: DatetimeType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(other, ' - ', self)
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
@@ -621,15 +625,19 @@ class TimespanExpression(BaseExpression):
         return BaseExpression.base_binary_op(left, operator, right, KustoType.TIMESPAN)
 
     def __add__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(self, ' + ', other)
 
     def __radd__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(other, ' + ', self)
 
     def __sub__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(self, ' - ', other)
 
     def __rsub__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(other, ' - ', self)
 
     def ago(self) -> DatetimeExpression:
@@ -897,7 +905,6 @@ class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
             return None
         return next(iter(possible_types))
 
-    # num > num, date > span, span > [date, span]
     def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
         resolved_type = self.__resolve_type(other)
         if resolved_type == KustoType.DATETIME:
@@ -911,7 +918,6 @@ class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
         # noinspection PyTypeChecker
         return BaseExpression.base_binary_op(self, ' - ', other, resolved_type)
 
-    # num > num, date > [date, span], span > span
     def __rsub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
         resolved_type = self.__resolve_type(other)
         if resolved_type == KustoType.DATETIME:

@@ -217,6 +217,12 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.timespanField + timedelta(hours=1)).render(),
         )
 
+    def test_add_swapped_timespan_to_timespan(self):
+        self.assertEqual(
+            ' | extend foo = time(0.1:0:0.0) + timespanField',
+            Query().extend(foo=timedelta(hours=1) + t.timespanField).render(),
+        )
+
     def test_subtract_timespan_from_timespan(self):
         self.assertEqual(
             ' | extend foo = timespanField - time(0.1:0:0.0)',
@@ -241,6 +247,12 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.dateField - datetime(2020, 1, 1)).render(),
         )
 
+    def test_sub_from_datetime(self):
+        self.assertEqual(
+            ' | extend foo = datetime(2020-01-01 00:00:00.000000) - dateField',
+            Query().extend(foo=datetime(2020, 1, 1) - t.dateField).render(),
+        )
+
     def test_sub_from_number(self):
         self.assertEqual(
             ' | extend foo = 3 - numField',
@@ -251,6 +263,12 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | extend foo = dateField - (case(boolField, bar, baz))',
             Query().extend(foo=t.dateField - f.case(t.boolField, col.bar, col.baz)).render(),
+        )
+
+    def test_sub_date_unknown_column(self):
+        self.assertEqual(
+            ' | extend foo = dateField - bar',
+            Query().extend(foo=t.dateField - col.bar).render(),
         )
 
     def test_sub_unknown_type_number(self):

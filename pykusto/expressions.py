@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Tuple, Mapping, Optional, Type
+from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
 from pykusto.keywords import KUSTO_KEYWORDS
@@ -480,26 +480,19 @@ class DatetimeExpression(BaseExpression):
     def __add__(self, other: TimespanType) -> 'DatetimeExpression':
         return DatetimeExpression.binary_op(self, ' + ', other)
 
-    def __radd__(self, other: TimespanType) -> 'DatetimeExpression':
-        return DatetimeExpression.binary_op(other, ' + ', self)
-
-    @staticmethod
-    def __datetime_or_timespan(type_to_resolve: Union[DatetimeType, TimespanType]) -> Type['AnyExpression']:
+    def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
         # noinspection PyTypeChecker
-        base_types = get_base_types(type_to_resolve)
+        base_types = get_base_types(other)
         possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN}
         assert len(possible_types) > 0, "Invalid type subtracted from datetime"
         if len(possible_types) == 2:
             return_type = AnyExpression
         else:
             return_type = TimespanExpression if next(iter(possible_types)) == KustoType.DATETIME else DatetimeExpression
-        return return_type
+        return return_type(DatetimeExpression.binary_op(self, ' - ', other))
 
-    def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
-        return self.__datetime_or_timespan(other)(DatetimeExpression.binary_op(self, ' - ', other))
-
-    def __rsub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
-        return self.__datetime_or_timespan(other)(DatetimeExpression.binary_op(other, ' - ', self))
+    def __rsub__(self, other: DatetimeType) -> 'TimespanExpression':
+        return TimespanExpression.binary_op(other, ' - ', self)
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
         """
@@ -893,26 +886,41 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 
 class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
     @staticmethod
-    def __number_or_datetime_or_timespan(type_to_resolve: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Optional[KustoType]:
+    def __resolve_type(type_to_resolve: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Optional[KustoType]:
         # noinspection PyTypeChecker
         base_types = get_base_types(type_to_resolve)
         possible_types = base_types & ({KustoType.DATETIME, KustoType.TIMESPAN} | NUMBER_TYPES)
         assert len(possible_types) > 0, "Invalid type subtracted"
         if possible_types == NUMBER_TYPES:
-            return_type = KustoType.INT
-        elif len(possible_types) > 1:
-            return_type = None
-        else:
-            return_type = KustoType.TIMESPAN if next(iter(possible_types)) == KustoType.DATETIME else None
-        return return_type
+            return KustoType.INT
+        if len(possible_types) > 1:
+            return None
+        return next(iter(possible_types))
 
+    # num > num, date > span, span > [date, span]
     def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
-        # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(self, ' - ', other, self.__number_or_datetime_or_timespan(other))
+        resolved_type = self.__resolve_type(other)
+        if resolved_type == KustoType.DATETIME:
+            # Subtracting a datetime can only result in a timespan
+            resolved_type = KustoType.TIMESPAN
+        elif resolved_type == KustoType.TIMESPAN:
+            # Subtracting a timespan can result in either a timespan or a datetime
+            resolved_type = None
+        # Otherwise: subtracting a number can only result in a number
 
-    def __rsub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(other, ' - ', self, self.__number_or_datetime_or_timespan(other))
+        return BaseExpression.base_binary_op(self, ' - ', other, resolved_type)
+
+    # num > num, date > [date, span], span > span
+    def __rsub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
+        resolved_type = self.__resolve_type(other)
+        if resolved_type == KustoType.DATETIME:
+            # Subtracting from a datetime can result in either a datetime or a timespan
+            resolved_type = None
+        # Otherwise: subtracting from a number or a timespan can only result in a number or a timespan respectively
+
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(other, ' - ', self, resolved_type)
 
 
 class AnyTypeColumn(SubtractableColumn, BooleanColumn, DynamicColumn, StringColumn):

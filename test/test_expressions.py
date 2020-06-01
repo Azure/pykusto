@@ -79,10 +79,22 @@ class TestExpressions(TestBase):
             Query().where(t.boolField & t.stringField.contains("hello")).render(),
         )
 
+    def test_swapped_and(self):
+        self.assertEqual(
+            ' | where 1 and boolField',
+            Query().where(1 & t.boolField).render(),
+        )
+
     def test_or(self):
         self.assertEqual(
             ' | where boolField or (stringField contains "hello")',
             Query().where(t.boolField | t.stringField.contains("hello")).render(),
+        )
+
+    def test_swapped_or(self):
+        self.assertEqual(
+            ' | where 0 or boolField',
+            Query().where(0 | t.boolField).render(),
         )
 
     def test_not(self):
@@ -197,6 +209,12 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | extend foo = timespanField - time(0.1:0:0.0)',
             Query().extend(foo=t.timespanField - timedelta(hours=1)).render(),
+        )
+
+    def test_swapped_subtract_timespan_from_timespan(self):
+        self.assertEqual(
+            ' | extend foo = time(0.1:0:0.0) - timespanField',
+            Query().extend(foo=timedelta(hours=1) - t.timespanField).render(),
         )
 
     def test_sub_timespan(self):

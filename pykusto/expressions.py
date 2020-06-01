@@ -229,6 +229,9 @@ class NumberExpression(BaseExpression):
     def __mul__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' * ', other)
 
+    def __rmul__(self, other: NumberType) -> 'NumberExpression':
+        return NumberExpression.binary_op(other, ' * ', self)
+
     def __truediv__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' / ', other)
 
@@ -788,7 +791,9 @@ class BaseColumn(BaseExpression):
         return object.__new__(cls)
 
     def __init__(self, name: str, quote: bool = False) -> None:
-        super().__init__(KQL(f"['{name}']" if quote or '.' in name or name in KUSTO_KEYWORDS else name))
+        assert len(name) > 0, "Column name must not be empty"
+        should_quote = quote or '.' in name or name in KUSTO_KEYWORDS or name.isdigit()
+        super().__init__(KQL(f"['{name}']" if should_quote else name))
         self._name = name
 
     def get_name(self) -> str:

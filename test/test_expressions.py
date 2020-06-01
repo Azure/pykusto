@@ -363,18 +363,18 @@ class TestExpressions(TestBase):
 
     def test_multiply_number_column(self):
         self.assertEqual(
-            ' | where todouble(100 * numberField) > 0.2',
+            ' | where (todouble(100 * numberField)) > 0.2',
             Query().where(f.to_double(100 * t.numberField) > 0.2).render(),
         )
 
     def test_multiply_number_expression(self):
         self.assertEqual(
-            ' | where 100 * todouble(numberField) > 0.2',
+            ' | where (100 * (todouble(numberField))) > 0.2',
             Query().where(100 * f.to_double(t.numberField) > 0.2).render(),
         )
 
     def test_column_with_digits(self):
         self.assertEqual(
-            " | where (['100'] * todouble(numberField)) > 0.2",
+            " | where (['100'] * (todouble(numberField))) > 0.2",
             Query().where(col['100'] * f.to_double(t.numberField) > 0.2).render(),
         )

@@ -1,8 +1,10 @@
 import json
 import logging
 import sys
-from typing import Callable, Tuple, Any, List
+from typing import Callable, Tuple, Any, List, Optional
 from unittest import TestCase
+# noinspection PyProtectedMember
+from unittest.case import _AssertLogsContext
 from urllib.parse import urljoin
 
 from azure.kusto.data import KustoClient, ClientRequestProperties
@@ -54,6 +56,25 @@ class TestBase(TestCase):
             expected_exception_message,
             str(cm.exception)
         )
+
+    def assertLogs(self, logger_to_watch=None, level=None) -> 'CustomAssertLogsContext':
+        """
+        This method overrides the one in `unittest.case.TestCase`, and has the same behavior, except for not causing a failure when there are no log messages.
+        The point is to allow asserting there are no logs.
+        Get rid of this once this is resolved: https://github.com/python/cpython/pull/18067
+        """
+        # noinspection PyArgumentList
+        return CustomAssertLogsContext(self, logger_to_watch, level)
+
+
+class CustomAssertLogsContext(_AssertLogsContext):
+    # noinspection PyUnresolvedReferences
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
+        # Fool the original exit method to think there is at least one record, to avoid causing a failure
+        self.watcher.records.append("DUMMY")
+        result = super().__exit__(exc_type, exc_val, exc_tb)
+        self.watcher.records.pop()
+        return result
 
 
 # noinspection PyMissingConstructor

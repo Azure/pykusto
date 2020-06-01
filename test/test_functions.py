@@ -815,18 +815,11 @@ class TestFunction(TestBase):
 
     def test_iff_ambiguous_type(self):
         with self.assertLogs(logger, logging.WARN) as cm:
-            # We want to assert there are no log messages, but the 'assertLogs' method does not support that.
-            # Therefore, we are adding a dummy message, and then we will assert it is the only message.
-            # Get rid of this once this is resolved: https://github.com/python/cpython/pull/18067
-            logger.warn("Dummy message")
             self.assertEqual(
                 " | project foo = iff(boolField, time(3.0:0:0.0), foo - bar)",
                 Query().project(foo=f.iff(t.boolField, timedelta(3), col.foo - col.bar)).render()
             )
-        self.assertEqual(
-            ["WARNING:pykusto:Dummy message"],
-            cm.output,
-        )
+        self.assertEqual([], cm.output)
 
     def test_iif(self):
         # iif is just an alias to iff

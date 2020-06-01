@@ -11,6 +11,7 @@ from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRe
 from azure.kusto.data._models import KustoResultRow
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
+# noinspection PyProtectedMember
 from azure.kusto.data.security import _get_azure_cli_auth_token
 
 from pykusto.expressions import BaseColumn, AnyTypeColumn
@@ -120,7 +121,7 @@ class PyKustoClient(ItemFetcher):
         # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
         stored_token = _get_azure_cli_auth_token()
         if stored_token is None:
-            logger.debug("Failed to get Azure CLI token, using AAD device authentication")
+            logger.info("Failed to get Azure CLI token, falling back to AAD device authentication")
             connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
         else:
             connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)

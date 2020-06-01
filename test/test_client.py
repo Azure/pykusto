@@ -1,9 +1,11 @@
+import logging
 from unittest.mock import patch
 
 from azure.kusto.data import KustoClient
 
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
+from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase, MockKustoClient, RecordedQuery
 
@@ -151,7 +153,26 @@ class TestClient(TestBase):
             client1.recorded_queries,
         )
 
-    def test_client_for_cluster(self):
-        client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
-        self.assertIsInstance(client._PyKustoClient__client, KustoClient)
-        self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
+    def test_client_for_cluster_with_azure_cli_auth(self):
+        with patch('pykusto.client._get_azure_cli_auth_token', lambda: "MOCK_TOKEN"), self.assertLogs(logger, logging.INFO) as cm:
+            # We want to assert there are no log messages, but the 'assertLogs' method does not support that.
+            # Therefore, we are adding a dummy message, and then we will assert it is the only message.
+            # Get rid of this once this is resolved: https://github.com/python/cpython/pull/18067
+            logger.info("Dummy message")
+            client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
+            self.assertIsInstance(client._PyKustoClient__client, KustoClient)
+            self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
+        self.assertEqual(
+            ["INFO:pykusto:Dummy message"],
+            cm.output,
+        )
+
+    def test_client_for_cluster_fallback_to_aad_device_auth(self):
+        with patch('pykusto.client._get_azure_cli_auth_token', lambda: None), self.assertLogs(logger, logging.INFO) as cm:
+            client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
+            self.assertIsInstance(client._PyKustoClient__client, KustoClient)
+            self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
+        self.assertEqual(
+            ['INFO:pykusto:Failed to get Azure CLI token, falling back to AAD device authentication'],
+            cm.output
+        )

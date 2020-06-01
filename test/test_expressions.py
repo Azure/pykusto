@@ -249,8 +249,8 @@ class TestExpressions(TestBase):
 
     def test_sub_date_unknown_type(self):
         self.assertEqual(
-            ' | extend foo = dateField - bar',
-            Query().extend(foo=t.dateField - col.bar).render(),
+            ' | extend foo = dateField - (case(boolField, bar, baz))',
+            Query().extend(foo=t.dateField - f.case(t.boolField, col.bar, col.baz)).render(),
         )
 
     def test_sub_unknown_type_number(self):

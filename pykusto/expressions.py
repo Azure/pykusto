@@ -188,11 +188,23 @@ class BooleanExpression(BaseExpression):
         """
         return BooleanExpression.binary_op(self, ' and ', other)
 
+    def __rand__(self, other: BooleanType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
+        return BooleanExpression.binary_op(other, ' and ', self)
+
     def __or__(self, other: BooleanType) -> 'BooleanExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
         """
         return BooleanExpression.binary_op(self, ' or ', other)
+
+    def __ror__(self, other: BooleanType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
+        return BooleanExpression.binary_op(other, ' or ', self)
 
     def __invert__(self) -> 'BooleanExpression':
         """
@@ -223,17 +235,32 @@ class NumberExpression(BaseExpression):
     def __add__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' + ', other)
 
+    def __radd__(self, other: NumberType) -> 'NumberExpression':
+        return NumberExpression.binary_op(other, ' + ', self)
+
     def __sub__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' - ', other)
+
+    def __rsub__(self, other: NumberType) -> 'NumberExpression':
+        return NumberExpression.binary_op(other, ' - ', self)
 
     def __mul__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' * ', other)
 
+    def __rmul__(self, other: NumberType) -> 'NumberExpression':
+        return NumberExpression.binary_op(other, ' * ', self)
+
     def __truediv__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' / ', other)
 
+    def __rtruediv__(self, other: NumberType) -> 'NumberExpression':
+        return NumberExpression.binary_op(other, ' / ', self)
+
     def __mod__(self, other: NumberType) -> 'NumberExpression':
         return NumberExpression.binary_op(self, ' % ', other)
+
+    def __rmod__(self, other: NumberType) -> 'NumberExpression':
+        return NumberExpression.binary_op(other, ' % ', self)
 
     def __neg__(self) -> 'NumberExpression':
         return NumberExpression(KQL(f'-{self.kql}'))
@@ -451,9 +478,12 @@ class DatetimeExpression(BaseExpression):
         return BooleanExpression.binary_op(self, ' >= ', other)
 
     def __add__(self, other: TimespanType) -> 'DatetimeExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return DatetimeExpression.binary_op(self, ' + ', other)
 
     def __sub__(self, other: Union[DatetimeType, TimespanType]) -> Union['DatetimeExpression', 'TimespanExpression']:
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
+
         # noinspection PyTypeChecker
         base_types = get_base_types(other)
         possible_types = base_types & {KustoType.DATETIME, KustoType.TIMESPAN}
@@ -463,6 +493,10 @@ class DatetimeExpression(BaseExpression):
         else:
             return_type = TimespanExpression if next(iter(possible_types)) == KustoType.DATETIME else DatetimeExpression
         return return_type(DatetimeExpression.binary_op(self, ' - ', other))
+
+    def __rsub__(self, other: DatetimeType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
+        return TimespanExpression.binary_op(other, ' - ', self)
 
     def between(self, lower: DatetimeType, upper: DatetimeType) -> BooleanExpression:
         """
@@ -591,10 +625,20 @@ class TimespanExpression(BaseExpression):
         return BaseExpression.base_binary_op(left, operator, right, KustoType.TIMESPAN)
 
     def __add__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(self, ' + ', other)
 
+    def __radd__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
+        return TimespanExpression.binary_op(other, ' + ', self)
+
     def __sub__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return TimespanExpression.binary_op(self, ' - ', other)
+
+    def __rsub__(self, other: TimespanType) -> 'TimespanExpression':
+        # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
+        return TimespanExpression.binary_op(other, ' - ', self)
 
     def ago(self) -> DatetimeExpression:
         """
@@ -788,7 +832,9 @@ class BaseColumn(BaseExpression):
         return object.__new__(cls)
 
     def __init__(self, name: str, quote: bool = False) -> None:
-        super().__init__(KQL(f"['{name}']" if quote or '.' in name or name in KUSTO_KEYWORDS else name))
+        assert len(name) > 0, "Column name must not be empty"
+        should_quote = quote or '.' in name or name in KUSTO_KEYWORDS or name.isdigit()
+        super().__init__(KQL(f"['{name}']" if should_quote else name))
         self._name = name
 
     def get_name(self) -> str:
@@ -847,20 +893,40 @@ class TimespanColumn(BaseColumn, TimespanExpression):
 
 
 class SubtractableColumn(NumberColumn, DatetimeColumn, TimespanColumn):
-    def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
+    @staticmethod
+    def __resolve_type(type_to_resolve: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Optional[KustoType]:
         # noinspection PyTypeChecker
-        base_types = get_base_types(other)
+        base_types = get_base_types(type_to_resolve)
         possible_types = base_types & ({KustoType.DATETIME, KustoType.TIMESPAN} | NUMBER_TYPES)
-
         assert len(possible_types) > 0, "Invalid type subtracted"
         if possible_types == NUMBER_TYPES:
-            return_type = KustoType.INT
-        elif len(possible_types) > 1:
-            return_type = None
-        else:
-            return_type = KustoType.TIMESPAN if next(iter(possible_types)) == KustoType.DATETIME else None
+            return KustoType.INT
+        if len(possible_types) > 1:
+            return None
+        return next(iter(possible_types))
+
+    def __sub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
+        resolved_type = self.__resolve_type(other)
+        if resolved_type == KustoType.DATETIME:
+            # Subtracting a datetime can only result in a timespan
+            resolved_type = KustoType.TIMESPAN
+        elif resolved_type == KustoType.TIMESPAN:
+            # Subtracting a timespan can result in either a timespan or a datetime
+            resolved_type = None
+        # Otherwise: subtracting a number can only result in a number
+
         # noinspection PyTypeChecker
-        return BaseExpression.base_binary_op(self, ' - ', other, return_type)
+        return BaseExpression.base_binary_op(self, ' - ', other, resolved_type)
+
+    def __rsub__(self, other: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Union['NumberExpression', 'TimespanExpression', 'AnyExpression']:
+        resolved_type = self.__resolve_type(other)
+        if resolved_type == KustoType.DATETIME:
+            # Subtracting from a datetime can result in either a datetime or a timespan
+            resolved_type = None
+        # Otherwise: subtracting from a number or a timespan can only result in a number or a timespan respectively
+
+        # noinspection PyTypeChecker
+        return BaseExpression.base_binary_op(other, ' - ', self, resolved_type)
 
 
 class AnyTypeColumn(SubtractableColumn, BooleanColumn, DynamicColumn, StringColumn):

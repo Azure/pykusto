@@ -131,6 +131,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/casefunction
         """
+        assert len(args) > 0, "case must have at least three arguments"
         return AnyExpression(KQL(f"case({to_kql(predicate)}, {to_kql(val)}, {', '.join(to_kql(arg) for arg in args)})"))
 
     @staticmethod

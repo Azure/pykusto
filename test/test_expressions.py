@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 
 from pykusto.expressions import column_generator as col, AnyTypeColumn
+from pykusto.functions import Functions as f
 from pykusto.query import Query
 from test.test_base import TestBase, test_table as t
 
@@ -78,10 +79,22 @@ class TestExpressions(TestBase):
             Query().where(t.boolField & t.stringField.contains("hello")).render(),
         )
 
+    def test_swapped_and(self):
+        self.assertEqual(
+            ' | where 1 and boolField',
+            Query().where(1 & t.boolField).render(),
+        )
+
     def test_or(self):
         self.assertEqual(
             ' | where boolField or (stringField contains "hello")',
             Query().where(t.boolField | t.stringField.contains("hello")).render(),
+        )
+
+    def test_swapped_or(self):
+        self.assertEqual(
+            ' | where 0 or boolField',
+            Query().where(0 | t.boolField).render(),
         )
 
     def test_not(self):
@@ -102,10 +115,22 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.numField / 2).render(),
         )
 
+    def test_swapped_div(self):
+        self.assertEqual(
+            ' | extend foo = 2 / numField',
+            Query().extend(foo=2 / t.numField).render(),
+        )
+
     def test_mod(self):
         self.assertEqual(
             ' | extend foo = numField % 2',
             Query().extend(foo=t.numField % 2).render(),
+        )
+
+    def test_swapped_mod(self):
+        self.assertEqual(
+            ' | extend foo = 2 % numField',
+            Query().extend(foo=2 % t.numField).render(),
         )
 
     def test_negation(self):
@@ -192,10 +217,22 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.timespanField + timedelta(hours=1)).render(),
         )
 
+    def test_add_swapped_timespan_to_timespan(self):
+        self.assertEqual(
+            ' | extend foo = time(0.1:0:0.0) + timespanField',
+            Query().extend(foo=timedelta(hours=1) + t.timespanField).render(),
+        )
+
     def test_subtract_timespan_from_timespan(self):
         self.assertEqual(
             ' | extend foo = timespanField - time(0.1:0:0.0)',
             Query().extend(foo=t.timespanField - timedelta(hours=1)).render(),
+        )
+
+    def test_swapped_subtract_timespan_from_timespan(self):
+        self.assertEqual(
+            ' | extend foo = time(0.1:0:0.0) - timespanField',
+            Query().extend(foo=timedelta(hours=1) - t.timespanField).render(),
         )
 
     def test_sub_timespan(self):
@@ -210,7 +247,25 @@ class TestExpressions(TestBase):
             Query().extend(foo=t.dateField - datetime(2020, 1, 1)).render(),
         )
 
+    def test_sub_from_datetime(self):
+        self.assertEqual(
+            ' | extend foo = datetime(2020-01-01 00:00:00.000000) - dateField',
+            Query().extend(foo=datetime(2020, 1, 1) - t.dateField).render(),
+        )
+
+    def test_sub_from_number(self):
+        self.assertEqual(
+            ' | extend foo = 3 - numField',
+            Query().extend(foo=3 - t.numField).render(),
+        )
+
     def test_sub_date_unknown_type(self):
+        self.assertEqual(
+            ' | extend foo = dateField - (case(boolField, bar, baz))',
+            Query().extend(foo=t.dateField - f.case(t.boolField, col.bar, col.baz)).render(),
+        )
+
+    def test_sub_date_unknown_column(self):
         self.assertEqual(
             ' | extend foo = dateField - bar',
             Query().extend(foo=t.dateField - col.bar).render(),
@@ -358,4 +413,28 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | where [\'stringField\'] has "test"',
             Query().where(col.of('stringField').has("test")).render()
+        )
+
+    def test_multiply_number_column(self):
+        self.assertEqual(
+            ' | where (todouble(100 * numberField)) > 0.2',
+            Query().where(f.to_double(100 * t.numberField) > 0.2).render(),
+        )
+
+    def test_add_number_column(self):
+        self.assertEqual(
+            ' | where (todouble(100 + numberField)) > 0.2',
+            Query().where(f.to_double(100 + t.numberField) > 0.2).render(),
+        )
+
+    def test_multiply_number_expression(self):
+        self.assertEqual(
+            ' | where (100 * (todouble(numberField))) > 0.2',
+            Query().where(100 * f.to_double(t.numberField) > 0.2).render(),
+        )
+
+    def test_column_with_digits(self):
+        self.assertEqual(
+            " | where (['100'] * (todouble(numberField))) > 0.2",
+            Query().where(col['100'] * f.to_double(t.numberField) > 0.2).render(),
         )

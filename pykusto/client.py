@@ -120,10 +120,10 @@ class PyKustoClient(ItemFetcher):
         # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
         stored_token = _get_azure_cli_auth_token()
         if stored_token is None:
-            connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
-        else:
             logger.debug("Failed to get Azure CLI token, using AAD device authentication")
             connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
+        else:
+            connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
         return KustoClient(connection_string_builder)
 
     @staticmethod

@@ -146,7 +146,7 @@ class Query:
                 if self._table_name is None:
                     return KQL("")
                 else:
-                    return KQL(self._table_name)
+                    return KQL(self.get_table_name())
             else:
                 table = self._table
                 if use_full_table_name:

@@ -75,6 +75,10 @@ class TestQuery(TestBase):
             "test_table | where numField > 4 | take 5",
             query.render(),
         )
+        self.assertEqual(
+            "test_table",
+            query.get_table_name(),
+        )
 
         # make sure the originals didn't change
         self.assertEqual(
@@ -82,8 +86,17 @@ class TestQuery(TestBase):
             query_a.render(),
         )
         self.assertEqual(
+            "test_table",
+            query_a.get_table_name(),
+        )
+
+        self.assertEqual(
             " | take 5",
             query_b.render(),
+        )
+        self.assertEqual(
+            None,
+            query_b.get_table_name(),
         )
 
     def test_pretty_render(self):

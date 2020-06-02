@@ -33,4 +33,4 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest pytest-cov
-        pytest --cov=pykusto --cov-fail-under=100
+        pytest --cov=pykusto --cov-report term-missing --cov-fail-under=100

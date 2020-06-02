@@ -1,3 +1,5 @@
+from builtins import list
+
 import pandas as pd
 
 from pykusto.client import PyKustoClient
@@ -9,6 +11,7 @@ from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import test_table as t, mock_columns_response
 from test.udf import func, STRINGIFIED
+from os import linesep
 
 
 class TestQuery(TestBase):
@@ -62,6 +65,34 @@ class TestQuery(TestBase):
         self.assertEqual(
             "test_table | take 5 | take 2 | sort by stringField asc nulls last",
             query_b.render(),
+        )
+
+    def test_add_queries_with_table_name(self):
+        query_a = Query('test_table').where(col.numField > 4)
+        query_b = Query().take(5)
+        query = query_a + query_b
+        self.assertEqual(
+            "test_table | where numField > 4 | take 5",
+            query.render(),
+        )
+
+        # make sure the originals didn't change
+        self.assertEqual(
+            "test_table | where numField > 4",
+            query_a.render(),
+        )
+        self.assertEqual(
+            " | take 5",
+            query_b.render(),
+        )
+
+    def test_pretty_render(self):
+        query = Query('test_table').where(col.numField > 4).take(5)
+        self.assertEqual(
+            "test_table" + linesep +
+            "| where numField > 4" + linesep +
+            "| take 5",
+            query.pretty_render(),
         )
 
     def test_where(self):

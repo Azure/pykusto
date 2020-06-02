@@ -1,4 +1,4 @@
-from builtins import list
+from os import linesep
 
 import pandas as pd
 
@@ -11,7 +11,6 @@ from pykusto.type_utils import KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import test_table as t, mock_columns_response
 from test.udf import func, STRINGIFIED
-from os import linesep
 
 
 class TestQuery(TestBase):
@@ -267,7 +266,9 @@ class TestQuery(TestBase):
     def test_mv_expand_assign_to_with_assign_other_params(self):
         self.assertEqual(
             "test_table | mv-expand bagexpansion=bag with_itemindex=foo expanded_field = arrayField, expanded_field2 = arrayField2 limit 4",
-            Query(t).mv_expand(t.arrayField.assign_to(col.expanded_field), expanded_field2=t.arrayField2, bag_expansion=BagExpansion.BAG, with_item_index=col.foo, limit=4).render(),
+            Query(t).mv_expand(
+                t.arrayField.assign_to(col.expanded_field), expanded_field2=t.arrayField2, bag_expansion=BagExpansion.BAG, with_item_index=col.foo, limit=4
+            ).render(),
         )
 
     def test_mv_expand_assign_multiple(self):

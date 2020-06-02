@@ -176,7 +176,7 @@ class Query:
     def pretty_render(self, use_full_table_name: bool = False) -> KQL:
         kql = self.render(use_full_table_name)
         if kql is not None:
-            kql = kql.replace(' |', linesep + '|')
+            kql = to_kql(kql.replace(' |', linesep + '|'))
         return kql
 
     def execute(self, table: Table = None) -> KustoResponse:

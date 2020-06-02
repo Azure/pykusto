@@ -3,6 +3,7 @@ from copy import copy, deepcopy
 from itertools import chain
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
+from os import linesep
 
 from pykusto.client import Table, KustoResponse
 from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
@@ -19,10 +20,12 @@ from pykusto.udf import stringify_python_func
 class Query:
     _head: Optional['Query']
     _table: Optional[Table]
+    _table_name: Optional[str]
 
     def __init__(self, head=None) -> None:
         self._head = head if isinstance(head, Query) else None
         self._table = head if isinstance(head, Table) else None
+        self._table_name = head if isinstance(head, str) else None
 
     def __add__(self, other: 'Query') -> 'Query':
         self_copy = deepcopy(self)
@@ -140,7 +143,10 @@ class Query:
     def _compile_all(self, use_full_table_name) -> KQL:
         if self._head is None:
             if self._table is None:
-                return KQL("")
+                if self._table_name is None:
+                    return KQL("")
+                else:
+                    return KQL(self.get_table_name())
             else:
                 table = self._table
                 if use_full_table_name:
@@ -156,10 +162,22 @@ class Query:
         else:
             return self._head.get_table()
 
+    def get_table_name(self) -> str:
+        if self._head is None:
+            return self._table_name
+        else:
+            return self._head.get_table_name()
+
     def render(self, use_full_table_name: bool = False) -> KQL:
         result = self._compile_all(use_full_table_name)
         logger.debug("Complied query: " + result)
         return result
+
+    def pretty_render(self, use_full_table_name: bool = False) -> KQL:
+        kql = self.render(use_full_table_name)
+        if kql is not None:
+            kql = KQL(kql.replace(" |", linesep + "|"))
+        return kql
 
     def execute(self, table: Table = None) -> KustoResponse:
         if self.get_table() is None:

@@ -1,3 +1,5 @@
+from os import linesep
+
 import pandas as pd
 
 from pykusto.client import PyKustoClient
@@ -62,6 +64,47 @@ class TestQuery(TestBase):
         self.assertEqual(
             "test_table | take 5 | take 2 | sort by stringField asc nulls last",
             query_b.render(),
+        )
+
+    def test_add_queries_with_table_name(self):
+        query_a = Query('test_table').where(col.numField > 4)
+        query_b = Query().take(5)
+        query = query_a + query_b
+        self.assertEqual(
+            "test_table | where numField > 4 | take 5",
+            query.render(),
+        )
+        self.assertEqual(
+            "test_table",
+            query.get_table_name(),
+        )
+
+        # make sure the originals didn't change
+        self.assertEqual(
+            "test_table | where numField > 4",
+            query_a.render(),
+        )
+        self.assertEqual(
+            "test_table",
+            query_a.get_table_name(),
+        )
+
+        self.assertEqual(
+            " | take 5",
+            query_b.render(),
+        )
+        self.assertEqual(
+            None,
+            query_b.get_table_name(),
+        )
+
+    def test_pretty_render(self):
+        query = Query('test_table').where(col.numField > 4).take(5)
+        self.assertEqual(
+            "test_table" + linesep +
+            "| where numField > 4" + linesep +
+            "| take 5",
+            query.pretty_render(),
         )
 
     def test_where(self):
@@ -223,7 +266,9 @@ class TestQuery(TestBase):
     def test_mv_expand_assign_to_with_assign_other_params(self):
         self.assertEqual(
             "test_table | mv-expand bagexpansion=bag with_itemindex=foo expanded_field = arrayField, expanded_field2 = arrayField2 limit 4",
-            Query(t).mv_expand(t.arrayField.assign_to(col.expanded_field), expanded_field2=t.arrayField2, bag_expansion=BagExpansion.BAG, with_item_index=col.foo, limit=4).render(),
+            Query(t).mv_expand(
+                t.arrayField.assign_to(col.expanded_field), expanded_field2=t.arrayField2, bag_expansion=BagExpansion.BAG, with_item_index=col.foo, limit=4
+            ).render(),
         )
 
     def test_mv_expand_assign_multiple(self):

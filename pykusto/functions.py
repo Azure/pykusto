@@ -117,7 +117,7 @@ class Functions:
         return BooleanExpression(KQL(' and '.join(_subexpr_to_kql(c) for c in predicates)))
 
     @staticmethod
-    def all_of(*predicates: BooleanType) -> BooleanExpression:
+    def any_of(*predicates: BooleanType) -> BooleanExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
         """

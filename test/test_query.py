@@ -119,6 +119,18 @@ class TestQuery(TestBase):
             Query(t).where(t.boolField, t.numField > t.numField2, t.stringField.contains('hello')).render(),
         )
 
+    def test_where_no_predicates(self):
+        self.assertEqual(
+            'test_table | project numField',
+            Query(t).where().project(t.numField).render(),
+        )
+
+    def test_where_trivial_predicate(self):
+        self.assertEqual(
+            'test_table | project numField',
+            Query(t).where(True).project(t.numField).render(),
+        )
+
     def test_take(self):
         self.assertEqual(
             "test_table | take 3",

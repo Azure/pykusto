@@ -46,12 +46,14 @@ class Query:
             new_object._head = self._head.__deepcopy__(memo)
         return new_object
 
-    def where(self, *predicates: BooleanType) -> 'WhereQuery':
+    def where(self, *predicates: BooleanType) -> 'Query':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/whereoperator
 
         Implicitly apply conjunction if multiple predicates are provided
         """
+        if all(p is True for p in predicates):  # Also satisfied if no predicates are provided
+            return self
         return WhereQuery(self, *predicates)
 
     def take(self, num_rows: int) -> 'TakeQuery':

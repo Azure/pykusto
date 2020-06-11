@@ -52,9 +52,10 @@ class Query:
 
         Implicitly apply conjunction if multiple predicates are provided
         """
-        if all(p is True for p in predicates):  # Also satisfied if no predicates are provided
+        filtered_predicates = tuple(filter(lambda p: p is not True, predicates))
+        if len(filtered_predicates) == 0:
             return self
-        return WhereQuery(self, *predicates)
+        return WhereQuery(self, *filtered_predicates)
 
     def take(self, num_rows: int) -> 'TakeQuery':
         """

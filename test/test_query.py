@@ -127,6 +127,12 @@ class TestQuery(TestBase):
 
     def test_where_trivial_predicate(self):
         self.assertEqual(
+            'test_table | where boolField | project numField',
+            Query(t).where(t.boolField, True).project(t.numField).render(),
+        )
+
+    def test_where_only_trivial_predicate(self):
+        self.assertEqual(
             'test_table | project numField',
             Query(t).where(True).project(t.numField).render(),
         )

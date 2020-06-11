@@ -1,6 +1,6 @@
 import json
 from itertools import chain
-from typing import Union
+from typing import Union, Mapping, List, Tuple
 
 from pykusto.enums import Kind
 from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, TimespanType, \
@@ -8,7 +8,8 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     ExpressionType, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
     ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
-from pykusto.kql_converters import KQL
+from pykusto.keyword import Keyword
+from pykusto.kql import Function
 from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, KustoType
 
@@ -132,7 +133,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/casefunction
         """
         assert len(args) > 0, "case must have at least three arguments"
-        return AnyExpression(KQL(f"case({to_kql(predicate)}, {to_kql(val)}, {', '.join(to_kql(arg) for arg in args)})"))
+        return AnyExpression(Function(Keyword.CASE, *((to_kql(predicate), to_kql(val)) + tuple(map(to_kql, args)))))
 
     @staticmethod
     def ceiling(expr: NumberType) -> NumberExpression:
@@ -162,7 +163,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/countoffunction
         """
-        return NumberExpression(KQL(f'countof({to_kql(text)}, {to_kql(search)}, {to_kql(kind.value)})'))
+        return NumberExpression(Function(Keyword.COUNTOF, to_kql(text), to_kql(search), to_kql(kind.value)))
 
     # def current_cluster_endpoint(self): return
     #
@@ -356,7 +357,7 @@ class Functions:
         else:
             expression_type = plain_expression.registry[next(iter(common_types))]
         return expression_type(
-            KQL(f'iff({to_kql(predicate)}, {to_kql(if_true)}, {to_kql(if_false)})')
+            Function(Keyword.IFF, to_kql(predicate), to_kql(if_true), to_kql(if_false))
         )
 
     @staticmethod
@@ -1314,3 +1315,15 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/mvexpandoperator
         """
         return ColumnToType(column, type_name)
+
+    @staticmethod
+    def pack_dynamic(d: Union[Mapping, List, Tuple]) -> DynamicExpression:
+        if isinstance(d, BaseExpression):
+            result = d.kql
+        elif isinstance(d, Mapping):
+            result = KQL(f"pack({', '.join(map(Functions.pack_dynamic, chain(*d.items())))})")
+        elif isinstance(d, (List, Tuple)):
+            result = KQL(f"pack_array({', '.join(map(Functions.pack_dynamic, d))})")
+        else:
+            result = to_kql(d)
+        return DynamicExpression(result)

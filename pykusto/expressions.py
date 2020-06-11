@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
-from pykusto.keywords import KUSTO_KEYWORDS
 from pykusto.kql_converters import KQL
+
+from pykusto.keyword import Keyword
 from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, KustoType, typed_column, TypeRegistrar, get_base_types, NUMBER_TYPES
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
@@ -833,7 +834,7 @@ class BaseColumn(BaseExpression):
 
     def __init__(self, name: str, quote: bool = False) -> None:
         assert len(name) > 0, "Column name must not be empty"
-        should_quote = quote or '.' in name or name in KUSTO_KEYWORDS or name.isdigit()
+        should_quote = quote or '.' in name or Keyword.check(name) or name.isdigit()
         super().__init__(KQL(f"['{name}']" if should_quote else name))
         self._name = name
 

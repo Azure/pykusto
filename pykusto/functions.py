@@ -9,7 +9,7 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
     ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
 from pykusto.keyword import Keyword
-from pykusto.kql import Function
+from pykusto.kql import Function, KQL
 from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, KustoType
 
@@ -19,7 +19,12 @@ class Functions:
     Recommended import style:\n
     `from pykusto.functions import Functions as f`
     """
+
     # Scalar functions
+
+    @staticmethod
+    def _func(name: Keyword, *args: ExpressionType) -> KQL:
+        return Function(name, *map(to_kql, args))
 
     @staticmethod
     def acos(expr: NumberType) -> NumberExpression:
@@ -133,7 +138,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/casefunction
         """
         assert len(args) > 0, "case must have at least three arguments"
-        return AnyExpression(Function(Keyword.CASE, *((to_kql(predicate), to_kql(val)) + tuple(map(to_kql, args)))))
+        return AnyExpression(Functions._func(Keyword.CASE, *((predicate, val) + args)))
 
     @staticmethod
     def ceiling(expr: NumberType) -> NumberExpression:
@@ -163,7 +168,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/countoffunction
         """
-        return NumberExpression(Function(Keyword.COUNTOF, to_kql(text), to_kql(search), to_kql(kind.value)))
+        return NumberExpression(Functions._func(Keyword.COUNTOF, text, search, kind.value))
 
     # def current_cluster_endpoint(self): return
     #
@@ -357,7 +362,7 @@ class Functions:
         else:
             expression_type = plain_expression.registry[next(iter(common_types))]
         return expression_type(
-            Function(Keyword.IFF, to_kql(predicate), to_kql(if_true), to_kql(if_false))
+            Functions._func(Keyword.IFF, predicate, if_true, if_false)
         )
 
     @staticmethod
@@ -381,7 +386,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/ingestiontimefunction
         """
-        return DatetimeExpression(KQL('ingestion_time()'))
+        return DatetimeExpression(Functions._func(Keyword.INGESTION_TIME))
 
     @staticmethod
     def is_empty(expr: ExpressionType) -> BooleanExpression:
@@ -468,19 +473,20 @@ class Functions:
         return expr.log_gamma()
 
     @staticmethod
-    def make_datetime(year: NumberType,
-                      month: NumberType,
-                      day: NumberType,
-                      hour: NumberType = None,
-                      minute: NumberType = None,
-                      second: NumberType = None) -> DatetimeExpression:
+    def make_datetime(
+            year: NumberType, month: NumberType, day: NumberType,
+            hour: NumberType = None, minute: NumberType = None, second: NumberType = None
+    ) -> DatetimeExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-datetimefunction
         """
-        res = f'make_datetime(' \
-              f'{to_kql(year)}, {to_kql(month)}, {to_kql(day)}, {to_kql(0 if hour is None else hour)}, ' \
-              f'{to_kql(0 if minute is None else minute)}, {to_kql(0 if second is None else second)})'
-        return DatetimeExpression(KQL(res))
+        return DatetimeExpression(Functions._func(
+            Keyword.MAKE_DATETIME,
+            year, month, day,
+            0 if hour is None else hour,
+            0 if minute is None else minute,
+            0 if second is None else second,
+        ))
 
     @staticmethod
     def make_string() -> StringExpression:
@@ -520,16 +526,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/nowfunction
         """
-        if offset:
-            return DatetimeExpression(KQL(f'now({to_kql(offset)})'))
-        return DatetimeExpression(KQL('now()'))
+        return DatetimeExpression(Functions._func(Keyword.NOW, *(tuple() if offset is None else (offset, ))))
 
     @staticmethod
     def pack(**kwargs: ExpressionType) -> MappingExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packfunction
         """
-        return MappingExpression(KQL(f'pack({", ".join(f"{to_kql(k)}, {to_kql(v)}" for k, v in kwargs.items())})'))
+        return MappingExpression(Functions._func(Keyword.PACK, *chain(*kwargs.items())))
 
     @staticmethod
     def pack_all() -> MappingExpression:
@@ -543,7 +547,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packarrayfunction
         """
-        return ArrayExpression(KQL(f'pack_array({", ".join(to_kql(e) for e in elements)})'))
+        return ArrayExpression(Functions._func(Keyword.PACK_ARRAY, *elements))
 
     @staticmethod
     def pack_dictionary() -> MappingExpression:
@@ -564,7 +568,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/parsejsonfunction
         """
-        return DynamicExpression(KQL(f'parse_json({to_kql(expr)})'))
+        return DynamicExpression(Functions._func(Keyword.PARSE_JSON, expr))
 
     # def parse_path(self): return
     #
@@ -598,11 +602,11 @@ class Functions:
         raise NotImplemented  # pragma: no cover
 
     @staticmethod
-    def pow(expr1: NumberType, expr2: NumberType) -> NumberExpression:
+    def pow(base: NumberType, exponent: NumberType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/powfunction
         """
-        return NumberExpression(KQL(f'pow({to_kql(expr1)}, {to_kql(expr2)})'))
+        return NumberExpression(Functions._func(Keyword.POW, base, exponent))
 
     # def radians(self): return
     #
@@ -726,35 +730,35 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sethaselementfunction
         """
-        return BooleanExpression(KQL(f'set_has_element({to_kql(array)}, {to_kql(value)})'))
+        return BooleanExpression(Functions._func(Keyword.SET_HAS_ELEMENT, array, value))
 
     @staticmethod
     def set_difference(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/setdifferencefunction
         """
-        return ArrayExpression(KQL(f'set_difference({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+        return ArrayExpression(Functions._func(Keyword.SET_DIFFERENCE, *((array1, ) + tuple(chain([array2], more_arrays)))))
 
     @staticmethod
     def set_intersect(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/setintersectfunction
         """
-        return ArrayExpression(KQL(f'set_intersect({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+        return ArrayExpression(Functions._func(Keyword.SET_INTERSECT, *((array1, ) + tuple(chain([array2], more_arrays)))))
 
     @staticmethod
     def set_union(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/setunionfunction
         """
-        return ArrayExpression(KQL(f'set_union({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+        return ArrayExpression(Functions._func(Keyword.SET_UNION, *((array1, ) + tuple(chain([array2], more_arrays)))))
 
     @staticmethod
     def array_concat(array1: ArrayType, array2: ArrayType, *more_arrays: ArrayType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayconcatfunction
         """
-        return ArrayExpression(KQL(f'array_concat({to_kql(array1)}, {", ".join(to_kql(a) for a in chain([array2], more_arrays))})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_CONCAT, *((array1, ) + tuple(chain([array2], more_arrays)))))
 
     @staticmethod
     def array_iif(condition_array: ArrayType, if_true: ArrayType, if_false: ArrayType) -> ArrayExpression:

@@ -60,6 +60,7 @@ class Keyword(Enum):
     IFF = 'iff'
     IIF = 'iif'
     IN = 'in'
+    INGESTION_TIME = 'ingestion_time'
     ISEMPTY = 'isempty'
     ISFINITE = 'isfinite'
     ISINF = 'isinf'

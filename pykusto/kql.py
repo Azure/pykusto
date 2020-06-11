@@ -22,14 +22,6 @@ class Word(KQL):
         return self.keyword.value()
 
 
-class Special(KQL):
-    def __init__(self, s: str) -> None:
-        self.s = s
-
-    def __str__(self) -> str:
-        return self.s
-
-
 @kql_converter(KustoType.STRING)
 class LiteralString(KQL):
     def __init__(self, s) -> None:
@@ -80,17 +72,23 @@ class OperatorWithArgs(Compound):
 
 
 @kql_converter(KustoType.DATETIME)
-class Datetime(Function):
+class Datetime(KQL):
     def __init__(self, dt: datetime) -> None:
-        super().__init__(Keyword.DATETIME, Special(dt.strftime('%Y-%m-%d %H:%M:%S.%f')))
+        self.dt = dt
+
+    def __str__(self) -> str:
+        return f'{Keyword.DATETIME.value()}({self.dt.strftime("%Y-%m-%d %H:%M:%S.%f")})'
 
 
 @kql_converter(KustoType.TIMESPAN)
-class Timedelta(Function):
+class Timedelta(KQL):
     def __init__(self, td: timedelta) -> None:
-        hours, remainder = divmod(td.seconds, 3600)
+        self.td = td
+
+    def __str__(self) -> str:
+        hours, remainder = divmod(self.td.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
-        super().__init__(Keyword.TIME, Special(f'{td.days}.{hours}:{minutes}:{seconds}.{td.microseconds}'))
+        return f'{Keyword.TIME}({self.td.days}.{hours}:{minutes}:{seconds}.{self.td.microseconds})'
 
 
 @kql_converter(KustoType.ARRAY, KustoType.MAPPING)

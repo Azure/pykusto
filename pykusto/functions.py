@@ -208,7 +208,7 @@ class Functions:
     # def dayofyear(self): return
 
     # def dcount_hll(expr: ExpressionType) -> BaseExpression:
-    #     return BaseExpression(KQL(f'dcount_hll({to_kql(expr)})'))
+    #     return BaseExpression(Functions._func(Keyword.DCOUNT_HLL, expr))
 
     # def degrees(self): return
 
@@ -765,63 +765,63 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayifffunction
         """
-        return ArrayExpression(KQL(f'array_iif({to_kql(condition_array)}, {to_kql(if_true)}, {to_kql(if_false)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_IIF, condition_array, if_true, if_false))
 
     @staticmethod
     def array_index_of(array: ArrayType, value: ExpressionType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayindexoffunction
         """
-        return NumberExpression(KQL(f'array_index_of({to_kql(array)}, {to_kql(value)})'))
+        return NumberExpression(Functions._func(Keyword.ARRAY_INDEX_OF, array, value))
 
     @staticmethod
     def array_rotate_left(array: ArrayType, rotate_count: NumberType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_rotate_leftfunction
         """
-        return ArrayExpression(KQL(f'array_rotate_left({to_kql(array)}, {to_kql(rotate_count)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_ROTATE_LEFT, array, rotate_count))
 
     @staticmethod
     def array_rotate_right(array: ArrayType, rotate_count: NumberType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_rotate_rightfunction
         """
-        return ArrayExpression(KQL(f'array_rotate_right({to_kql(array)}, {to_kql(rotate_count)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_ROTATE_RIGHT, array, rotate_count))
 
     @staticmethod
     def array_shift_left(array: ArrayType, shift_count: NumberType, fill_value: ExpressionType = None) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_shift_leftfunction
         """
-        return ArrayExpression(KQL(f'array_shift_left({to_kql(array)}, {to_kql(shift_count)}{"" if fill_value is None else ", " + to_kql(fill_value)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_SHIFT_LEFT, *((array, shift_count) + tuple() if fill_value is None else (fill_value, ))))
 
     @staticmethod
     def array_shift_right(array: ArrayType, shift_count: NumberType, fill_value: ExpressionType = None) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/array_shift_rightfunction
         """
-        return ArrayExpression(KQL(f'array_shift_right({to_kql(array)}, {to_kql(shift_count)}{"" if fill_value is None else ", " + to_kql(fill_value)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_SHIFT_RIGHT, *((array, shift_count) + tuple() if fill_value is None else (fill_value, ))))
 
     @staticmethod
     def array_slice(array: ArrayType, start: NumberType, end: NumberType) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayslicefunction
         """
-        return ArrayExpression(KQL(f'array_slice({to_kql(array)}, {to_kql(start)}, {to_kql(end)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_SLICE, array, start, end))
 
     @staticmethod
     def array_split(array: ArrayType, indices: Union[NumberType, ArrayType]) -> ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arraysplitfunction
         """
-        return ArrayExpression(KQL(f'array_split({to_kql(array)}, {to_kql(indices)})'))
+        return ArrayExpression(Functions._func(Keyword.ARRAY_SPLIT, array, indices))
 
     @staticmethod
     def sign(expr: NumberType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/signfunction
         """
-        return NumberExpression(KQL(f'sign({to_kql(expr)})'))
+        return NumberExpression(Functions._func(Keyword.SIGN, expr))
 
     # def sin(self): return
     #
@@ -838,7 +838,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sqrtfunction
         """
-        return NumberExpression(KQL(f'sqrt({to_kql(expr)})'))
+        return NumberExpression(Functions._func(Keyword.SQRT, expr))
 
     @staticmethod
     def start_of_day(expr: DatetimeType, offset: NumberType = None) -> DatetimeExpression:
@@ -875,20 +875,20 @@ class Functions:
         """
         if len(strings) < 2:
             raise ValueError("strcat requires at least two arguments")
-        return StringExpression(KQL(f"strcat({', '.join(to_kql(s) for s in strings)})"))
+        return StringExpression(Functions._func(Keyword.STRCAT, *strings))
 
     @staticmethod
     def to_literal_dynamic(d: DynamicType) -> KQL:
         if isinstance(d, BaseExpression):
             return d.kql
-        return KQL(f'dynamic({json.dumps(d)})')
+        return Functions._func(Keyword.DYNAMIC, json.dumps(d))
 
     @staticmethod
     def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/strcat-arrayfunction
         """
-        return StringExpression(KQL(f'strcat_array({Functions.to_literal_dynamic(expr)}, {to_kql(delimiter)})'))
+        return StringExpression(Functions._func(Keyword.STRCAT_ARRAY, Functions.to_literal_dynamic(expr), delimiter))
 
     @staticmethod
     def strcat_delim(delimiter: StringType, expr1: StringType, expr2: StringType, *expressions: StringType) -> StringExpression:
@@ -905,7 +905,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/strcmpfunction
         """
-        return NumberExpression(KQL(f'strcmp({to_kql(expr1)}, {to_kql(expr2)})'))
+        return NumberExpression(Functions._func(Keyword.STRCMP, expr1, expr2))
 
     @staticmethod
     def string_size(expr: StringType) -> NumberExpression:
@@ -919,7 +919,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/strlenfunction
         """
-        return NumberExpression(KQL(f'strlen({to_kql(expr)})'))
+        return NumberExpression(Functions._func(Keyword.STRLEN, expr))
 
     @staticmethod
     def strrep(expr: StringType,
@@ -953,28 +953,28 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toboolfunction
         """
-        return BooleanExpression(KQL(f'tobool({to_kql(expr)})'))
+        return BooleanExpression(Functions._func(Keyword.TOBOOL, expr))
 
     @staticmethod
     def to_datetime(expr: StringType) -> DatetimeExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todatetimefunction
         """
-        return DatetimeExpression(KQL(f'todatetime({to_kql(expr)})'))
+        return DatetimeExpression(Functions._func(Keyword.TODATETIME, expr))
 
     @staticmethod
     def to_decimal(expr: NumberType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todecimalfunction
         """
-        return NumberExpression(KQL(f"todecimal({to_kql(expr)})"))
+        return NumberExpression(Functions._func(Keyword.TODECIMAL, expr))
 
     @staticmethod
     def to_double(expr: NumberType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
-        return NumberExpression(KQL(f"todouble({to_kql(expr)})"))
+        return NumberExpression(Functions._func(Keyword.TODOUBLE, expr))
 
     @staticmethod
     def to_dynamic() -> DynamicExpression:
@@ -1002,14 +1002,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tointfunction
         """
-        return NumberExpression(KQL(f"toint({to_kql(expr)})"))
+        return NumberExpression(Functions._func(Keyword.TOINT, expr))
 
     @staticmethod
     def to_long(expr: NumberType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolongfunction
         """
-        return NumberExpression(KQL(f"tolong({to_kql(expr)})"))
+        return NumberExpression(Functions._func(Keyword.TOLONG, expr))
 
     @staticmethod
     def to_lower(expr: StringType) -> StringExpression:
@@ -1023,7 +1023,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
-        return NumberExpression(KQL(f"toreal({to_kql(expr)})"))
+        return NumberExpression(Functions._func(Keyword.TOREAL, expr))
 
     @staticmethod
     def to_string(expr: ExpressionType):
@@ -1105,42 +1105,42 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/any-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"any({', '.join(arg.kql for arg in args)})"))
+        return AnyAggregationExpression(Functions._func(Keyword.ANY, *args))
 
     @staticmethod
     def any_if(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/anyif-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"anyif({to_kql(expr)}, {to_kql(predicate)})"))
+        return AnyAggregationExpression(Functions._func(Keyword.ANYIF, expr, predicate))
 
     @staticmethod
     def arg_max(*args: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-max-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"arg_max({', '.join(arg.kql for arg in args)})"))
+        return AnyAggregationExpression(Functions._func(Keyword.ARG_MAX, *args))
 
     @staticmethod
     def arg_min(*args: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-min-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"arg_min({', '.join(arg.kql for arg in args)})"))
+        return AnyAggregationExpression(Functions._func(Keyword.ARG_MIN, *args))
 
     @staticmethod
     def avg(expr: ExpressionType) -> NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/avg-aggfunction
         """
-        return NumberAggregationExpression(KQL(f'avg({to_kql(expr)})'))
+        return NumberAggregationExpression(Functions._func(Keyword.AVG, expr))
 
     @staticmethod
     def avg_if(expr: ExpressionType, predicate: BooleanType) -> NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/avgif-aggfunction
         """
-        return NumberAggregationExpression(KQL(f'avgif({to_kql(expr)}, {to_kql(predicate)})'))
+        return NumberAggregationExpression(Functions._func(Keyword.AVGIF, expr, predicate))
 
     # def buildschema(self):
     #     return
@@ -1150,28 +1150,28 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/count-aggfunction
         """
-        return NumberAggregationExpression(KQL("count()" if col is None else f"count({col.kql})"))
+        return NumberAggregationExpression(Functions._func(Keyword.COUNT, *(tuple() if col is None else (col, ))))
 
     @staticmethod
     def count_if(predicate: BooleanType) -> NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/countif-aggfunction
         """
-        return NumberAggregationExpression(KQL(f'countif({to_kql(predicate)})'))
+        return NumberAggregationExpression(Functions._func(Keyword.COUNTIF, predicate))
 
     @staticmethod
     def dcount(expr: ExpressionType, accuracy: NumberType = None) -> NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dcount-aggfunction
         """
-        return NumberAggregationExpression(KQL(f'dcount({to_kql(expr)})' if accuracy is None else f'dcount({to_kql(expr)}, {to_kql(accuracy)})'))
+        return NumberAggregationExpression(Functions._func(Keyword.DCOUNT, *((expr, ) + tuple() if accuracy is None else (accuracy, ))))
 
     @staticmethod
     def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dcountif-aggfunction
         """
-        return NumberAggregationExpression(KQL(f'dcountif({to_kql(expr)}, {to_kql(predicate)}, {to_kql(accuracy)})'))
+        return NumberAggregationExpression(Functions._func(Keyword.DCOUNTIF, expr, predicate, accuracy))
 
     @staticmethod
     def make_bag(expr: ExpressionType, max_size: NumberType = None) -> MappingAggregationExpression:
@@ -1179,8 +1179,8 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-bag-aggfunction
         """
         if max_size:
-            return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)}, {to_kql(max_size)})'))
-        return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)})'))
+            return MappingAggregationExpression(Functions._func(Keyword.MAKE_BAG, expr, max_size))
+        return MappingAggregationExpression(Functions._func(Keyword.MAKE_BAG, expr))
 
     @staticmethod
     def make_list(expr: ExpressionType, max_size: NumberType = None) -> ArrayAggregationExpression:
@@ -1188,8 +1188,8 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makelist-aggfunction
         """
         if max_size:
-            return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)}, {to_kql(max_size)})'))
-        return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)})'))
+            return ArrayAggregationExpression(Functions._func(Keyword.MAKE_LIST, expr, max_size))
+        return ArrayAggregationExpression(Functions._func(Keyword.MAKE_LIST, expr))
 
     @staticmethod
     def make_set(expr: ExpressionType, max_size: NumberType = None) -> ArrayAggregationExpression:
@@ -1197,92 +1197,92 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction
         """
         if max_size:
-            return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)}, {to_kql(max_size)})'))
-        return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)})'))
+            return ArrayAggregationExpression(Functions._func(Keyword.MAKE_SET, expr, max_size))
+        return ArrayAggregationExpression(Functions._func(Keyword.MAKE_SET, expr))
 
     @staticmethod
     def max(expr: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'max({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.MAX, expr))
 
     @staticmethod
     def min(expr: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/min-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'min({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.MIN, expr))
 
     @staticmethod
     def max_if(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/maxif-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'maxif({to_kql(expr)}, {to_kql(predicate)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.MAXIF, expr, predicate))
 
     @staticmethod
     def min_if(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/minif-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'minif({to_kql(expr)}, {to_kql(predicate)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.MINIF, expr, predicate))
 
     @staticmethod
     def percentile(expr: ExpressionType, per: NumberType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentiles-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'percentiles({to_kql(expr)}, {to_kql(per)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.PERCENTILES, expr, per))
 
     @staticmethod
     def percentiles(expr: ExpressionType, *pers: NumberType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentiles-aggfunction
         """
-        return AnyAggregationExpression(KQL(f"percentiles({to_kql(expr)}, {', '.join(str(to_kql(per)) for per in pers)})"))
+        return AnyAggregationExpression(Functions._func(Keyword.PERCENTILES, *((expr, ) + pers)))
 
     @staticmethod
     def percentiles_array(expr: ExpressionType, *pers: NumberType) -> ArrayAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentiles-aggfunction
         """
-        return ArrayAggregationExpression(KQL(f"percentiles_array({to_kql(expr)}, {', '.join(str(to_kql(per)) for per in pers)})"))
+        return ArrayAggregationExpression(Functions._func(Keyword.PERCENTILES_ARRAY, *((expr, ) + pers)))
 
     @staticmethod
     def stdev(expr: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/stdev-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'stdev({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.STDEV, expr))
 
     @staticmethod
     def stdevif(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/stdevif-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'stdevif({to_kql(expr)}, {to_kql(predicate)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.STDEVIF, expr, predicate))
 
     @staticmethod
     def stdevp(expr: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/stdevp-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'stdevp({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.STDEVP, expr))
 
     @staticmethod
     def sum(expr: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sum-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'sum({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.SUM, expr))
 
     @staticmethod
     def sum_if(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sumif-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'sumif({to_kql(expr)}, {to_kql(predicate)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.SUMIF, expr, predicate))
 
     # def tdigest(self):
     #     return
@@ -1296,21 +1296,21 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/variance-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'variance({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.VARIANCE, expr))
 
     @staticmethod
     def variance_if(expr: ExpressionType, predicate: BooleanType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/varianceif-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'varianceif({to_kql(expr)}, {to_kql(predicate)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.VARIANCEIF, expr, predicate))
 
     @staticmethod
     def variancep(expr: ExpressionType) -> AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/variancep-aggfunction
         """
-        return AnyAggregationExpression(KQL(f'variancep({to_kql(expr)})'))
+        return AnyAggregationExpression(Functions._func(Keyword.VARIANCEP, expr))
 
     # Used for mv-expand
     @staticmethod

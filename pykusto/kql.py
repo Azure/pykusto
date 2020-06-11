@@ -21,6 +21,11 @@ class Word(KQL):
     def __str__(self) -> str:
         return self.keyword.value()
 
+    @staticmethod
+    @kql_converter(KustoType.BOOL)
+    def from_bool(b: bool) -> KQL:
+        return Word(Keyword.TRUE) if b else Word(Keyword.FALSE)
+
 
 @kql_converter(KustoType.STRING)
 class LiteralString(KQL):
@@ -121,11 +126,6 @@ class LiteralDynamic(KQL):
             prev = self.elements[i]
         assert counter == 0
         return "".join(self.elements)
-
-
-@kql_converter(KustoType.BOOL)
-def bool_to_kql(b: bool) -> KQL:
-    return Word(Keyword.TRUE) if b else Word(Keyword.FALSE)
 
 
 kql_converter.assert_all_types_covered()

@@ -1,9 +1,9 @@
 from abc import abstractmethod
 from copy import copy, deepcopy
 from itertools import chain
+from os import linesep
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
-from os import linesep
 
 from pykusto.client import Table, KustoResponse
 from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
@@ -11,6 +11,7 @@ from pykusto.expressions import BooleanType, ExpressionType, AggregationExpressi
     StringType, AssignmentBase, AssignmentFromAggregationToColumn, AssignmentToSingleColumn, AnyTypeColumn, \
     BaseExpression, \
     AssignmentFromColumnToColumn, AnyExpression, to_kql, expression_to_type, BaseColumn, NumberType
+from pykusto.functions import Functions as f
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import KustoType, typed_column, plain_expression
@@ -45,56 +46,106 @@ class Query:
             new_object._head = self._head.__deepcopy__(memo)
         return new_object
 
-    def where(self, predicate: BooleanType) -> 'WhereQuery':
-        return WhereQuery(self, predicate)
+    def where(self, *predicates: BooleanType) -> 'WhereQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/whereoperator
+
+        Implicitly apply conjunction if multiple predicates are provided
+        """
+        return WhereQuery(self, *predicates)
 
     def take(self, num_rows: int) -> 'TakeQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/takeoperator
+        """
         return TakeQuery(self, num_rows)
 
     def limit(self, num_rows: int) -> 'LimitQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/limitoperator
+        """
         return LimitQuery(self, num_rows)
 
     def sample(self, num_rows: int) -> 'SampleQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sampleoperator
+        """
         return SampleQuery(self, num_rows)
 
     def count(self) -> 'CountQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/countoperator
+        """
         return CountQuery(self)
 
     def sort_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sortoperator
+        """
         return SortQuery(self, col, order, nulls)
 
-    def order_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> 'OrderQuery':
-        return OrderQuery(self, col, order, nulls)
+    def order_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> 'SortQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/orderoperator
+        """
+        return self.sort_by(col, order, nulls)
 
     def top(self, num_rows: int, col: AnyTypeColumn, order: Order = None, nulls: Nulls = None) -> 'TopQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/topoperator
+        """
         return TopQuery(self, num_rows, col, order, nulls)
 
     def join(self, query: 'Query', kind: JoinKind = None) -> 'JoinQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/joinoperator
+        """
         return JoinQuery(self, query, kind)
 
     def project(self, *args: Union[AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> 'ProjectQuery':
-        return ProjectQuery(self, self.extract_assignments(*args, **kwargs))
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectoperator
+        """
+        return ProjectQuery(self, self._extract_assignments(*args, **kwargs))
 
     def project_rename(self, *args: AssignmentFromColumnToColumn, **kwargs: AnyTypeColumn) -> 'ProjectRenameQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectrenameoperator
+        """
         assignments: List[AssignmentFromColumnToColumn] = list(args)
         for column_name, column in kwargs.items():
             assignments.append(AssignmentFromColumnToColumn(AnyTypeColumn(column_name), column))
         return ProjectRenameQuery(self, assignments)
 
     def project_away(self, *columns: StringType) -> 'ProjectAwayQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectawayoperator
+        """
         return ProjectAwayQuery(self, columns)
 
     def distinct(self, *columns: BaseColumn) -> 'DistinctQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/distinctoperator
+        """
         return DistinctQuery(self, columns)
 
     def distinct_all(self) -> 'DistinctQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/distinctoperator
+        """
         return DistinctQuery(self, (AnyTypeColumn(KQL("*")),))
 
     def extend(self, *args: Union[BaseExpression, AssignmentBase], **kwargs: ExpressionType) -> 'ExtendQuery':
-        return ExtendQuery(self, *self.extract_assignments(*args, **kwargs))
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extendoperator
+        """
+        return ExtendQuery(self, *self._extract_assignments(*args, **kwargs))
 
     def summarize(self, *args: Union[AggregationExpression, AssignmentFromAggregationToColumn],
                   **kwargs: AggregationExpression) -> 'SummarizeQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/summarizeoperator
+        """
         assignments: List[AssignmentFromAggregationToColumn] = []
         for arg in args:
             if isinstance(arg, AggregationExpression):
@@ -110,7 +161,10 @@ class Query:
             self, *args: Union[BaseExpression, AssignmentBase], bag_expansion: BagExpansion = None,
             with_item_index: BaseColumn = None, limit: int = None, **kwargs: ExpressionType
     ) -> 'MvExpandQuery':
-        assignments = self.extract_assignments(*args, **kwargs)
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/mvexpandoperator
+        """
+        assignments = self._extract_assignments(*args, **kwargs)
         if len(assignments) == 0:
             raise ValueError("Please specify one or more columns for mv-expand")
         return MvExpandQuery(self, bag_expansion, with_item_index, limit, *assignments)
@@ -119,11 +173,17 @@ class Query:
         return CustomQuery(self, custom_query)
 
     def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> 'EvaluateQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/evaluateoperator
+        """
         return EvaluateQuery(self, plugin_name, *args, distribution=distribution)
 
     def evaluate_udf(
             self, udf: FunctionType, extend: bool = True, distribution: Distribution = None, **type_specs: KustoType
     ) -> 'EvaluateQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/pythonplugin
+        """
         return EvaluateQuery(
             self, 'python',
             AnyExpression(KQL(f'typeof({("*, " if extend else "") + ", ".join(field_name + ":" + kusto_type.primary_name for field_name, kusto_type in type_specs.items())})')),
@@ -132,6 +192,9 @@ class Query:
         )
 
     def bag_unpack(self, col: AnyTypeColumn, prefix: str = None) -> 'EvaluateQuery':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bag-unpackplugin
+        """
         if prefix is None:
             return EvaluateQuery(self, 'bag_unpack', col)
         return EvaluateQuery(self, 'bag_unpack', col, prefix)
@@ -197,7 +260,7 @@ class Query:
         return self.execute(table).to_dataframe()
 
     @staticmethod
-    def extract_assignments(*args: Union[AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> List[AssignmentBase]:
+    def _extract_assignments(*args: Union[AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> List[AssignmentBase]:
         assignments: List[AssignmentBase] = []
         for arg in args:
             if isinstance(arg, BaseExpression):
@@ -317,14 +380,16 @@ class ExtendQuery(Query):
 
 
 class WhereQuery(Query):
-    _predicate: BooleanType
+    _predicates: Tuple[BooleanType, ...]
 
-    def __init__(self, head: Query, predicate: BooleanType):
+    def __init__(self, head: Query, *predicates: BooleanType):
         super(WhereQuery, self).__init__(head)
-        self._predicate = predicate
+        self._predicates = predicates
 
     def _compile(self) -> KQL:
-        return KQL(f'where {self._predicate.kql}')
+        if len(self._predicates) == 1:
+            return KQL(f'where {to_kql(self._predicates[0])}')
+        return KQL(f'where {f.all_of(*self._predicates)}')
 
 
 class _SingleNumberQuery(Query):
@@ -413,19 +478,14 @@ class SortQuery(_OrderQueryBase):
         super(SortQuery, self).__init__(head, "sort", col, order, nulls)
 
 
-class OrderQuery(_OrderQueryBase):
-    def __init__(self, head: Query, col: OrderedType, order: Order, nulls: Nulls):
-        super(OrderQuery, self).__init__(head, "order", col, order, nulls)
-
-
 class TopQuery(Query):
     _num_rows: int
-    _order_spec: OrderQuery.OrderSpec
+    _order_spec: _OrderQueryBase.OrderSpec
 
     def __init__(self, head: Query, num_rows: int, col: AnyTypeColumn, order: Order, nulls: Nulls):
         super(TopQuery, self).__init__(head)
         self._num_rows = num_rows
-        self._order_spec = OrderQuery.OrderSpec(col, order, nulls)
+        self._order_spec = _OrderQueryBase.OrderSpec(col, order, nulls)
 
     def _compile(self) -> KQL:
         # noinspection PyProtectedMember

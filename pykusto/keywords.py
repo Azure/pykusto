@@ -81,6 +81,7 @@ KUSTO_KEYWORDS = frozenset([
     'none',
     'not',
     'now',
+    'null',
     'or',
     'pack',
     'pack_array',

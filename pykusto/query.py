@@ -50,10 +50,24 @@ class Query:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/whereoperator
 
-        Implicitly apply conjunction if multiple predicates are provided
+        Implicitly apply conjunction if multiple predicates are provided. You can use predicates which are calculated at runtime and result in boolean values, which are
+        pre-processed: 'True' values ignored, and 'False' values cause all other predicates to be ignored. If the result of pre-processing is a single 'True' predicate, no 'where'
+        clause will be generated.
+
+        Warning: to apply a logical 'not', do not use the Python 'not' operator, it will simply produce a 'False' boolean value. Use either the `~` operator or `f.not_of()`.
         """
-        filtered_predicates = tuple(filter(lambda p: p is not True, predicates))
+        filtered_predicates = []
+        for predicate in predicates:
+            if predicate is True:
+                # This predicate has no effect on the outcome
+                continue
+            if predicate is False:
+                # All other predicates have no effect on the outcome
+                filtered_predicates = [False]
+                break
+            filtered_predicates.append(predicate)
         if len(filtered_predicates) == 0:
+            # Do no generate 'where' clause
             return self
         return WhereQuery(self, *filtered_predicates)
 

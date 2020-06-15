@@ -125,16 +125,28 @@ class TestQuery(TestBase):
             Query(t).where().project(t.numField).render(),
         )
 
-    def test_where_trivial_predicate(self):
+    def test_where_true_predicate(self):
         self.assertEqual(
             'test_table | where boolField | project numField',
             Query(t).where(t.boolField, True).project(t.numField).render(),
         )
 
-    def test_where_only_trivial_predicate(self):
+    def test_where_only_true_predicate(self):
         self.assertEqual(
             'test_table | project numField',
             Query(t).where(True).project(t.numField).render(),
+        )
+
+    def test_where_false_predicate(self):
+        self.assertEqual(
+            'test_table | where false | project numField',
+            Query(t).where(t.boolField, False).project(t.numField).render(),
+        )
+
+    def test_where_not(self):
+        self.assertEqual(
+            "test_table | where not(boolField)",
+            Query(t).where(f.not_of(t.boolField)).render(),
         )
 
     def test_take(self):

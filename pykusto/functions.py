@@ -7,7 +7,7 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
+    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression, _subexpr_to_kql
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, KustoType
@@ -108,6 +108,28 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bin-autofunction
         """
         return expr.bin_auto()
+
+    @staticmethod
+    def all_of(*predicates: BooleanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
+        return BooleanExpression(KQL(' and '.join(_subexpr_to_kql(c) for c in predicates)))
+
+    @staticmethod
+    def any_of(*predicates: BooleanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
+        return BooleanExpression(KQL(' or '.join(_subexpr_to_kql(c) for c in predicates)))
+
+    @staticmethod
+    def not_of(predicate: BooleanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        Note that using the Python 'not' does not have the desired effect, because unfortunately its behavior cannot be overridden.
+        """
+        return BooleanExpression(KQL(f'not({to_kql(predicate)})'))
 
     # def binary_and(self): return
     #

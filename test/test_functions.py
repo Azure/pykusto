@@ -923,3 +923,15 @@ class TestFunction(TestBase):
             ' | extend ingestionTime = ingestion_time()',
             Query().extend(ingestionTime=f.ingestion_time()).render()
         )
+
+    def test_all_of(self):
+        self.assertEqual(
+            ' | where boolField and (numField > numField2) and (stringField contains "hello")',
+            Query().where(f.all_of(t.boolField, t.numField > t.numField2, t.stringField.contains('hello'))).render()
+        )
+
+    def test_any_of(self):
+        self.assertEqual(
+            ' | where boolField or (numField > numField2) or (stringField contains "hello")',
+            Query().where(f.any_of(t.boolField, t.numField > t.numField2, t.stringField.contains('hello'))).render()
+        )

@@ -24,7 +24,7 @@ def timedelta_to_kql(td: timedelta) -> KQL:
 @kql_converter(KustoType.ARRAY, KustoType.MAPPING)
 def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
     try:
-        query = list(json.dumps(d))
+        return KQL(f"dynamic({json.dumps(d)})")
     except TypeError:
         # Using exceptions as part of normal flow is not best practice, however in this case we have a good reason.
         # The given object might contain a non-primitive object somewhere inside it, and the only way to find it is to go through the entire hierarchy, which is exactly
@@ -32,29 +32,8 @@ def dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
         # Also keep in mind that exception handling in Python has no performance overhead (unlike e.g. Java).
         return build_dynamic(d)
 
-    # Convert square brackets to round brackets (Issue #11)
-    counter = 0
-    prev = ""
-    for i, c in enumerate(query):
-        if counter == 0:
-            if c == "[":
-                query[i] = "("
-            elif c == "]":
-                query[i] = ")"
-            elif c in ['"', '\''] and prev != "\\":
-                counter += 1
-        elif counter > 0:
-            if c in ['"', '\''] and prev != "\\":
-                counter -= 1
-        prev = query[i]
-    assert counter == 0
-    return KQL("".join(query))
-
 
 def build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
-    from pykusto.expressions import BaseExpression
-    if isinstance(d, BaseExpression):
-        return d.kql
     if isinstance(d, Mapping):
         return KQL(f"pack({', '.join(map(build_dynamic, chain(*d.items())))})")
     if isinstance(d, (List, Tuple)):

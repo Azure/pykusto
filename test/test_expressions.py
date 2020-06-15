@@ -35,7 +35,7 @@ class TestExpressions(TestBase):
 
     def test_array_contains(self):
         self.assertEqual(
-            ' | where true in arrayField',
+            ' | where arrayField contains "True"',
             Query().where(t.arrayField.array_contains(True)).render(),
         )
 

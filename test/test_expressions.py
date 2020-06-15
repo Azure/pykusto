@@ -35,8 +35,14 @@ class TestExpressions(TestBase):
 
     def test_array_contains(self):
         self.assertEqual(
-            ' | where true in arrayField',
+            ' | where arrayField contains "true"',
             Query().where(t.arrayField.array_contains(True)).render(),
+        )
+
+    def test_bag_contains(self):
+        self.assertEqual(
+            ' | where mapField contains "2"',
+            Query().where(t.mapField.bag_contains(2)).render(),
         )
 
     def test_not_equals(self):
@@ -333,7 +339,7 @@ class TestExpressions(TestBase):
 
     def test_dynamic(self):
         self.assertEqual(
-            ' | where (mapField["foo"][0].bar[1][2][(tolower(stringField))]) > time(1.0:0:0.0)',
+            ' | where (mapField["foo"][0].bar[1][2][tolower(stringField)]) > time(1.0:0:0.0)',
             Query().where(t.mapField['foo'][0].bar[1][2][t.stringField.lower()] > timedelta(1)).render(),
         )
 
@@ -389,6 +395,12 @@ class TestExpressions(TestBase):
         self.assertRaises(
             NotImplementedError("'in' not supported. Instead use '.is_in()'"),
             lambda: t.stringField in t.stringField2
+        )
+
+    def test_is_in_expression(self):
+        self.assertEqual(
+            ' | where arrayField contains stringField',
+            Query().where(t.stringField.is_in(t.arrayField)).render()
         )
 
     def test_has(self):

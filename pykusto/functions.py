@@ -1,4 +1,3 @@
-import json
 from itertools import chain
 from typing import Union
 
@@ -18,6 +17,7 @@ class Functions:
     Recommended import style:\n
     `from pykusto.functions import Functions as f`
     """
+
     # Scalar functions
 
     @staticmethod
@@ -895,17 +895,11 @@ class Functions:
         return StringExpression(KQL(f"strcat({', '.join(to_kql(s) for s in strings)})"))
 
     @staticmethod
-    def to_literal_dynamic(d: DynamicType) -> KQL:
-        if isinstance(d, BaseExpression):
-            return d.kql
-        return KQL(f'dynamic({json.dumps(d)})')
-
-    @staticmethod
     def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/strcat-arrayfunction
         """
-        return StringExpression(KQL(f'strcat_array({Functions.to_literal_dynamic(expr)}, {to_kql(delimiter)})'))
+        return StringExpression(KQL(f'strcat_array({to_kql(expr)}, {to_kql(delimiter)})'))
 
     @staticmethod
     def strcat_delim(delimiter: StringType, expr1: StringType, expr2: StringType, *expressions: StringType) -> StringExpression:

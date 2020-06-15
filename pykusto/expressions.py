@@ -215,6 +215,7 @@ class BooleanExpression(BaseExpression):
     def __invert__(self) -> 'BooleanExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/notfunction
+        Note that using the Python 'not' does not have the desired effect, because unfortunately its behavior cannot be overridden.
         """
         return BooleanExpression(KQL(f'not({self.kql})'))
 

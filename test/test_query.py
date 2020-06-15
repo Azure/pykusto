@@ -113,6 +113,42 @@ class TestQuery(TestBase):
             Query(t).where(t.numField > 4).render(),
         )
 
+    def test_where_multiple_predicates(self):
+        self.assertEqual(
+            'test_table | where boolField and (numField > numField2) and (stringField contains "hello")',
+            Query(t).where(t.boolField, t.numField > t.numField2, t.stringField.contains('hello')).render(),
+        )
+
+    def test_where_no_predicates(self):
+        self.assertEqual(
+            'test_table | project numField',
+            Query(t).where().project(t.numField).render(),
+        )
+
+    def test_where_true_predicate(self):
+        self.assertEqual(
+            'test_table | where boolField | project numField',
+            Query(t).where(t.boolField, True).project(t.numField).render(),
+        )
+
+    def test_where_only_true_predicate(self):
+        self.assertEqual(
+            'test_table | project numField',
+            Query(t).where(True).project(t.numField).render(),
+        )
+
+    def test_where_false_predicate(self):
+        self.assertEqual(
+            'test_table | where false | project numField',
+            Query(t).where(t.boolField, False).project(t.numField).render(),
+        )
+
+    def test_where_not(self):
+        self.assertEqual(
+            "test_table | where not(boolField)",
+            Query(t).where(f.not_of(t.boolField)).render(),
+        )
+
     def test_take(self):
         self.assertEqual(
             "test_table | take 3",
@@ -127,13 +163,13 @@ class TestQuery(TestBase):
 
     def test_order(self):
         self.assertEqual(
-            "test_table | order by numField desc nulls first",
+            "test_table | sort by numField desc nulls first",
             Query(t).order_by(t.numField, order=Order.DESC, nulls=Nulls.FIRST).render(),
         )
 
     def test_order_expression_in_arg(self):
         self.assertEqual(
-            "test_table | order by strlen(stringField) desc nulls first",
+            "test_table | sort by strlen(stringField) desc nulls first",
             Query(t).order_by(f.strlen(t.stringField), order=Order.DESC, nulls=Nulls.FIRST).render(),
         )
 

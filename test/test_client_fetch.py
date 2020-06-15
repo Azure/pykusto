@@ -1,5 +1,5 @@
 from concurrent.futures import Future
-from threading import Thread
+from threading import Thread, Lock
 
 from pykusto.client import PyKustoClient, Database
 from pykusto.expressions import StringColumn, NumberColumn, AnyTypeColumn, BooleanColumn
@@ -60,10 +60,16 @@ class TestClientFetch(TestBase):
         mock_response_future.returned_queries = []
         mock_response_future.called = False
         mock_response_future.executed = False
+        future_called_lock = Lock()
 
         def upon_execute(query):
-            if not mock_response_future.called:
-                mock_response_future.called = True
+            with future_called_lock:
+                if mock_response_future.called:
+                    first_run = False
+                else:
+                    mock_response_future.called = True
+                    first_run = True
+            if first_run:
                 mock_response_future.result()
                 mock_response_future.executed = True
             mock_response_future.returned_queries.append(query)

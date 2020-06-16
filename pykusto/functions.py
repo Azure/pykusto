@@ -14,7 +14,8 @@ from pykusto.type_utils import plain_expression, KustoType
 
 class Functions:
     """
-    Recommended import style:\n
+    Recommended import style:
+
     `from pykusto.functions import Functions as f`
     """
 
@@ -41,12 +42,6 @@ class Functions:
         """
         return ArrayExpression(expr).array_length()
 
-    # def array_slice(): return
-    #
-    #
-    # def array_split(): return
-    #
-    #
     # def asin(): return
     #
     #

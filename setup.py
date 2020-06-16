@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='pykusto',
     version='dev',  # Versioning is managed in the 'release' branch
-    packages=find_packages(exclude=['test']),
+    packages=find_packages(include=['pykusto']),
     url='https://github.com/Azure/pykusto',
     license='MIT License',
     author='Microsoft Corporation',

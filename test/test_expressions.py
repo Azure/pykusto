@@ -450,3 +450,13 @@ class TestExpressions(TestBase):
             " | where (['100'] * (todouble(numberField))) > 0.2",
             Query().where(col['100'] * f.to_double(t.numberField) > 0.2).render(),
         )
+
+    def test_boolean_operators(self):
+        self.assertRaises(
+            TypeError(
+                "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not. "
+                "Instead either use the bitwise operators '&', '|' and '~' (but note the difference in operator precedence!), "
+                "or the functions 'all_of', 'any_of' and 'not_of'"
+            ),
+            lambda: (t.boolField and t.numField > 10)
+        )

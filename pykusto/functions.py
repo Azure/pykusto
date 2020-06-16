@@ -1189,7 +1189,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-bag-aggfunction
         """
-        if max_size:
+        if max_size is not None:
             return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)}, {to_kql(max_size)})'))
         return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)})'))
 
@@ -1198,7 +1198,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makelist-aggfunction
         """
-        if max_size:
+        if max_size is not None:
             return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)}, {to_kql(max_size)})'))
         return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)})'))
 
@@ -1207,7 +1207,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction
         """
-        if max_size:
+        if max_size is not None:
             return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)}, {to_kql(max_size)})'))
         return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)})'))
 

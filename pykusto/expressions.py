@@ -52,6 +52,13 @@ class BaseExpression:
     def __repr__(self) -> str:
         return str(self.kql)
 
+    def __bool__(self) -> bool:
+        raise TypeError(
+            "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not. "
+            "Instead either use the bitwise operators '&', '|' and '~' (but note the difference in operator precedence!), "
+            "or the functions 'all_of', 'any_of' and 'not_of'"
+        )
+
     def as_subexpression(self) -> KQL:
         return KQL(f'({self.kql})')
 

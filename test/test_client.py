@@ -13,10 +13,10 @@ from test.test_base import TestBase, MockKustoClient, RecordedQuery
 class TestClient(TestBase):
     def test_single_table(self):
         mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table = PyKustoClient(mock_kusto_client)['test_db']['mock_table']
         Query(table).take(5).execute()
         self.assertEqual(
-            [RecordedQuery('test_db', 'test_table | take 5')],
+            [RecordedQuery('test_db', 'mock_table | take 5')],
             mock_kusto_client.recorded_queries
         )
 
@@ -28,7 +28,7 @@ class TestClient(TestBase):
 
     def test_execute_already_bound(self):
         mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table = PyKustoClient(mock_kusto_client)['test_db']['mock_table']
 
         self.assertRaises(
             RuntimeError("This table is already bound to a query"),
@@ -38,19 +38,19 @@ class TestClient(TestBase):
 
     def test_single_table_on_execute(self):
         mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db']['test_table']
+        table = PyKustoClient(mock_kusto_client)['test_db']['mock_table']
         Query().take(5).execute(table)
         self.assertEqual(
-            [RecordedQuery('test_db', 'test_table | take 5')],
+            [RecordedQuery('test_db', 'mock_table | take 5')],
             mock_kusto_client.recorded_queries,
         )
 
     def test_get_table(self):
         mock_kusto_client = MockKustoClient()
-        table = PyKustoClient(mock_kusto_client)['test_db'].get_table('test_table')
+        table = PyKustoClient(mock_kusto_client)['test_db'].get_table('mock_table')
         Query(table).take(5).execute()
         self.assertEqual(
-            [RecordedQuery('test_db', 'test_table | take 5')],
+            [RecordedQuery('test_db', 'mock_table | take 5')],
             mock_kusto_client.recorded_queries,
         )
 
@@ -75,14 +75,14 @@ class TestClient(TestBase):
     def test_default_authentication(self):
         mock_kusto_client = MockKustoClient()
         with patch('pykusto.client.PyKustoClient._get_client_for_cluster', lambda s, cluster: mock_kusto_client):
-            table = PyKustoClient('https://help.kusto.windows.net/')['test_db']['test_table']
+            table = PyKustoClient('https://help.kusto.windows.net/')['test_db']['mock_table']
             Query().take(5).execute(table)
         self.assertIs(
             mock_kusto_client,
             table._Table__database._Database__client._PyKustoClient__client,
         )
         self.assertEqual(
-            [RecordedQuery('test_db', 'test_table | take 5')],
+            [RecordedQuery('test_db', 'mock_table | take 5')],
             mock_kusto_client.recorded_queries,
         )
 

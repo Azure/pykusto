@@ -17,9 +17,10 @@ from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, Mappin
 from pykusto.logger import logger
 from pykusto.type_utils import KustoType
 
+# Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
 # noinspection PyTypeChecker
-test_table = Table(
-    None, "test_table",
+mock_table = Table(
+    None, "mock_table",
     (
         NumberColumn('numField'), NumberColumn('numField2'), NumberColumn('numField3'), NumberColumn('numField4'), NumberColumn('numField5'), NumberColumn('numField6'),
         BooleanColumn('boolField'), ArrayColumn('arrayField'), ArrayColumn('arrayField2'), ArrayColumn('arrayField3'), MappingColumn('mapField'), StringColumn('stringField'),

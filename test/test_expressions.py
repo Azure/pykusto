@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from pykusto.expressions import column_generator as col, AnyTypeColumn
 from pykusto.functions import Functions as f
 from pykusto.query import Query
-from test.test_base import TestBase, test_table as t
+from test.test_base import TestBase, mock_table as t
 
 
 class TestExpressions(TestBase):
@@ -189,7 +189,7 @@ class TestExpressions(TestBase):
 
     def test_le_date(self):
         self.assertEqual(
-            'test_table | where dateField <= datetime(2000-01-01 00:00:00.000000)',
+            'mock_table | where dateField <= datetime(2000-01-01 00:00:00.000000)',
             Query(t).where(t.dateField <= datetime(2000, 1, 1)).render(),
         )
 
@@ -449,4 +449,14 @@ class TestExpressions(TestBase):
         self.assertEqual(
             " | where (['100'] * (todouble(numberField))) > 0.2",
             Query().where(col['100'] * f.to_double(t.numberField) > 0.2).render(),
+        )
+
+    def test_boolean_operators(self):
+        self.assertRaises(
+            TypeError(
+                "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not. "
+                "Instead either use the bitwise operators '&', '|' and '~' (but note the difference in operator precedence!), "
+                "or the functions 'all_of', 'any_of' and 'not_of'"
+            ),
+            lambda: (t.boolField and t.numField > 10)
         )

@@ -6,7 +6,7 @@ from pykusto.functions import Functions as f
 from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase
-from test.test_base import test_table as t
+from test.test_base import mock_table as t
 
 
 class TestFunction(TestBase):

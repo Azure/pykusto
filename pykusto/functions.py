@@ -1,4 +1,3 @@
-import json
 from itertools import chain
 from typing import Union
 
@@ -7,7 +6,7 @@ from pykusto.expressions import AnyTypeColumn, NumberType, NumberExpression, Tim
     DatetimeExpression, TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, StringExpression, BooleanExpression, \
     NumberAggregationExpression, MappingAggregationExpression, ArrayAggregationExpression, to_kql, DynamicExpression, \
-    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression
+    ArrayExpression, ColumnToType, BaseColumn, AnyExpression, AnyAggregationExpression, MappingExpression, _subexpr_to_kql
 from pykusto.kql_converters import KQL
 from pykusto.logger import logger
 from pykusto.type_utils import plain_expression, KustoType
@@ -18,6 +17,7 @@ class Functions:
     Recommended import style:\n
     `from pykusto.functions import Functions as f`
     """
+
     # Scalar functions
 
     @staticmethod
@@ -108,6 +108,28 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bin-autofunction
         """
         return expr.bin_auto()
+
+    @staticmethod
+    def all_of(*predicates: BooleanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
+        return BooleanExpression(KQL(' and '.join(_subexpr_to_kql(c) for c in predicates)))
+
+    @staticmethod
+    def any_of(*predicates: BooleanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        """
+        return BooleanExpression(KQL(' or '.join(_subexpr_to_kql(c) for c in predicates)))
+
+    @staticmethod
+    def not_of(predicate: BooleanType) -> BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/logicaloperators
+        Note that using the Python 'not' does not have the desired effect, because unfortunately its behavior cannot be overridden.
+        """
+        return BooleanExpression(KQL(f'not({to_kql(predicate)})'))
 
     # def binary_and(self): return
     #
@@ -873,17 +895,11 @@ class Functions:
         return StringExpression(KQL(f"strcat({', '.join(to_kql(s) for s in strings)})"))
 
     @staticmethod
-    def to_literal_dynamic(d: DynamicType) -> KQL:
-        if isinstance(d, BaseExpression):
-            return d.kql
-        return KQL(f'dynamic({json.dumps(d)})')
-
-    @staticmethod
     def strcat_array(expr: ArrayType, delimiter: StringType) -> StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/strcat-arrayfunction
         """
-        return StringExpression(KQL(f'strcat_array({Functions.to_literal_dynamic(expr)}, {to_kql(delimiter)})'))
+        return StringExpression(KQL(f'strcat_array({to_kql(expr)}, {to_kql(delimiter)})'))
 
     @staticmethod
     def strcat_delim(delimiter: StringType, expr1: StringType, expr2: StringType, *expressions: StringType) -> StringExpression:
@@ -1173,7 +1189,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-bag-aggfunction
         """
-        if max_size:
+        if max_size is not None:
             return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)}, {to_kql(max_size)})'))
         return MappingAggregationExpression(KQL(f'make_bag({to_kql(expr)})'))
 
@@ -1182,7 +1198,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makelist-aggfunction
         """
-        if max_size:
+        if max_size is not None:
             return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)}, {to_kql(max_size)})'))
         return ArrayAggregationExpression(KQL(f'make_list({to_kql(expr)})'))
 
@@ -1191,7 +1207,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction
         """
-        if max_size:
+        if max_size is not None:
             return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)}, {to_kql(max_size)})'))
         return ArrayAggregationExpression(KQL(f'make_set({to_kql(expr)})'))
 

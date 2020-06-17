@@ -13,8 +13,8 @@ class TestUtils(TestBase):
             "pets": ["Libby", "Panda", "]", "["]
         }
         self.assertEqual(
-            '{"name": "Alan", "age": 21, "address": ("NY", 36), '
-            '"pets": ("Libby", "Panda", "]", "[")}',
+            'dynamic({"name": "Alan", "age": 21, "address": ["NY", 36], '
+            '"pets": ["Libby", "Panda", "]", "["]})',
             to_kql(test_dict)
         )
 
@@ -25,6 +25,7 @@ class TestUtils(TestBase):
         def str_annotated(s: str) -> str:
             return "response to " + s
 
+        # noinspection PyTypeChecker
         self.assertEqual(
             "response to test for_type",
             test_annotation.for_type(str)("test for_type")
@@ -49,6 +50,7 @@ class TestUtils(TestBase):
         def str_annotated(s: str) -> str:
             return "response to " + s
 
+        # noinspection PyTypeChecker
         self.assertRaises(
             ValueError("Test annotation: no registered callable for type bool"),
             lambda: test_annotation.for_type(bool)("test for_type")

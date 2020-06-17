@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from pykusto.expressions import column_generator as col, AnyTypeColumn
 from pykusto.functions import Functions as f
 from pykusto.query import Query
-from test.test_base import TestBase, test_table as t
+from test.test_base import TestBase, mock_table as t
 
 
 class TestExpressions(TestBase):
@@ -35,8 +35,14 @@ class TestExpressions(TestBase):
 
     def test_array_contains(self):
         self.assertEqual(
-            ' | where true in arrayField',
+            ' | where arrayField contains "true"',
             Query().where(t.arrayField.array_contains(True)).render(),
+        )
+
+    def test_bag_contains(self):
+        self.assertEqual(
+            ' | where mapField contains "2"',
+            Query().where(t.mapField.bag_contains(2)).render(),
         )
 
     def test_not_equals(self):
@@ -183,7 +189,7 @@ class TestExpressions(TestBase):
 
     def test_le_date(self):
         self.assertEqual(
-            'test_table | where dateField <= datetime(2000-01-01 00:00:00.000000)',
+            'mock_table | where dateField <= datetime(2000-01-01 00:00:00.000000)',
             Query(t).where(t.dateField <= datetime(2000, 1, 1)).render(),
         )
 
@@ -333,7 +339,7 @@ class TestExpressions(TestBase):
 
     def test_dynamic(self):
         self.assertEqual(
-            ' | where (mapField["foo"][0].bar[1][2][(tolower(stringField))]) > time(1.0:0:0.0)',
+            ' | where (mapField["foo"][0].bar[1][2][tolower(stringField)]) > time(1.0:0:0.0)',
             Query().where(t.mapField['foo'][0].bar[1][2][t.stringField.lower()] > timedelta(1)).render(),
         )
 
@@ -391,6 +397,12 @@ class TestExpressions(TestBase):
             lambda: t.stringField in t.stringField2
         )
 
+    def test_is_in_expression(self):
+        self.assertEqual(
+            ' | where arrayField contains stringField',
+            Query().where(t.stringField.is_in(t.arrayField)).render()
+        )
+
     def test_has(self):
         self.assertEqual(
             ' | where stringField has "test"',
@@ -437,4 +449,14 @@ class TestExpressions(TestBase):
         self.assertEqual(
             " | where (['100'] * (todouble(numberField))) > 0.2",
             Query().where(col['100'] * f.to_double(t.numberField) > 0.2).render(),
+        )
+
+    def test_boolean_operators(self):
+        self.assertRaises(
+            TypeError(
+                "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not. "
+                "Instead either use the bitwise operators '&', '|' and '~' (but note the difference in operator precedence!), "
+                "or the functions 'all_of', 'any_of' and 'not_of'"
+            ),
+            lambda: (t.boolField and t.numField > 10)
         )

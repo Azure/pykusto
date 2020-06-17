@@ -52,6 +52,13 @@ class BaseExpression:
     def __repr__(self) -> str:
         return str(self.kql)
 
+    def __bool__(self) -> bool:
+        raise TypeError(
+            "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not. "
+            "Instead either use the bitwise operators '&', '|' and '~' (but note the difference in operator precedence!), "
+            "or the functions 'all_of', 'any_of' and 'not_of'"
+        )
+
     def as_subexpression(self) -> KQL:
         return KQL(f'({self.kql})')
 
@@ -107,12 +114,18 @@ class BaseExpression:
     def __ne__(self, other: ExpressionType) -> 'BooleanExpression':
         return BooleanExpression.binary_op(self, ' != ', other)
 
-    def is_in(self, other: ArrayType) -> 'BooleanExpression':
+    def is_in(self, other: DynamicType) -> 'BooleanExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
         """
-        return BooleanExpression.binary_op(self, ' in ', other)
+        if isinstance(other, (List, Tuple)):
+            # For a literal array, we can use 'in'
+            # The following RHS is the only place where a literal list does not require being surrounded by 'dynamic()'
+            return BooleanExpression(KQL(f'{self.kql} in ({", ".join(map(to_kql, other))})'))
+        # Otherwise, for some reason Kusto does not accept 'in', and we need to use 'contains' as if 'other' was a string
+        return BooleanExpression.binary_op(other, ' contains ', self)
 
     def is_null(self) -> 'BooleanExpression':
         """
@@ -209,6 +222,7 @@ class BooleanExpression(BaseExpression):
     def __invert__(self) -> 'BooleanExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/notfunction
+        Note that using the Python 'not' does not have the desired effect, because unfortunately its behavior cannot be overridden.
         """
         return BooleanExpression(KQL(f'not({self.kql})'))
 
@@ -677,10 +691,33 @@ class TimespanExpression(BaseExpression):
         return BooleanExpression(KQL(f'{self.kql} between ({_subexpr_to_kql(lower)} .. {_subexpr_to_kql(upper)})'))
 
 
-@plain_expression(KustoType.ARRAY)
-class ArrayExpression(BaseExpression):
-    def __getitem__(self, index: NumberType) -> 'AnyExpression':
+class BaseDynamicExpression(BaseExpression):
+    # We would prefer to use 'abc' to make the class abstract, but this can be done only if there is at least one
+    # abstract method, which we don't have here. Overriding __new___ is the next best solution.
+    def __new__(cls, *args, **kwargs) -> 'BaseDynamicExpression':
+        assert cls is not BaseDynamicExpression, "BaseDynamicExpression is abstract"
+        return object.__new__(cls)
+
+    def __getitem__(self, index: Union[StringType, NumberType]) -> 'AnyExpression':
         return AnyExpression(KQL(f'{self.kql}[{to_kql(index)}]'))
+
+    def contains(self, other: ExpressionType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
+        # For some reason Kusto does not accept 'in', and we need to use 'contains' as if this were a string
+        if not isinstance(other, (BaseExpression, str)):
+            # When 'other' is a literal, it has to be a string, because syntactically 'contains' works only on strings.
+            other = str(to_kql(other))
+        return BooleanExpression.binary_op(self, ' contains ', other)
+
+
+@plain_expression(KustoType.ARRAY)
+class ArrayExpression(BaseDynamicExpression):
+    def __getitem__(self, index: NumberType) -> 'AnyExpression':
+        return super().__getitem__(index)
 
     # We would like to allow using len(), but Python requires it to return an int, so we can't
     def array_length(self) -> NumberExpression:
@@ -693,17 +730,18 @@ class ArrayExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
         """
-        return BooleanExpression.binary_op(other, ' in ', self)
+        return self.contains(other)
 
     def assign_to_multiple_columns(self, *columns: 'AnyTypeColumn') -> 'AssignmentToMultipleColumns':
         return AssignmentToMultipleColumns(columns, self)
 
 
 @plain_expression(KustoType.MAPPING)
-class MappingExpression(BaseExpression):
+class MappingExpression(BaseDynamicExpression):
     def __getitem__(self, index: StringType) -> 'AnyExpression':
-        return AnyExpression(KQL(f'{self.kql}[{to_kql(index)}]'))
+        return super().__getitem__(index)
 
     def __getattr__(self, name: str) -> 'AnyExpression':
         return AnyExpression(KQL(f'{self.kql}.{name}'))
@@ -714,10 +752,18 @@ class MappingExpression(BaseExpression):
         """
         return ArrayExpression(KQL(f'bag_keys({self.kql})'))
 
+    def bag_contains(self, other: ExpressionType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
+        return self.contains(other)
+
 
 class DynamicExpression(ArrayExpression, MappingExpression):
     def __getitem__(self, index: Union[StringType, NumberType]) -> 'AnyExpression':
-        return AnyExpression(KQL(f'{self.kql}[{_subexpr_to_kql(index)}]'))
+        return super().__getitem__(index)
 
 
 class AnyExpression(

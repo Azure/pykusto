@@ -6,7 +6,7 @@ from pykusto.functions import Functions as f
 from pykusto.logger import logger
 from pykusto.query import Query
 from test.test_base import TestBase
-from test.test_base import test_table as t
+from test.test_base import mock_table as t
 
 
 class TestFunction(TestBase):
@@ -922,4 +922,16 @@ class TestFunction(TestBase):
         self.assertEqual(
             ' | extend ingestionTime = ingestion_time()',
             Query().extend(ingestionTime=f.ingestion_time()).render()
+        )
+
+    def test_all_of(self):
+        self.assertEqual(
+            ' | where boolField and (numField > numField2) and (stringField contains "hello")',
+            Query().where(f.all_of(t.boolField, t.numField > t.numField2, t.stringField.contains('hello'))).render()
+        )
+
+    def test_any_of(self):
+        self.assertEqual(
+            ' | where boolField or (numField > numField2) or (stringField contains "hello")',
+            Query().where(f.any_of(t.boolField, t.numField > t.numField2, t.stringField.contains('hello'))).render()
         )

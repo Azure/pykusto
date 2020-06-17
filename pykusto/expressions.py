@@ -762,7 +762,8 @@ class MappingExpression(BaseDynamicExpression):
 
 
 class DynamicExpression(ArrayExpression, MappingExpression):
-    pass
+    def __getitem__(self, index: Union[StringType, NumberType]) -> 'AnyExpression':
+        return super().__getitem__(index)
 
 
 class AnyExpression(

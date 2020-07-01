@@ -7,13 +7,13 @@ from pykusto.kql_converters import KQL
 from pykusto.type_utils import plain_expression, aggregation_expression, PythonTypes, kql_converter, _KustoType, typed_column, _TypeRegistrar, get_base_types, NUMBER_TYPES
 
 ExpressionType = Union[PythonTypes, 'BaseExpression']
-StringType = Union[str, 'StringExpression']
-BooleanType = Union[bool, 'BooleanExpression']
-NumberType = Union[int, float, 'NumberExpression']
-ArrayType = Union[List, Tuple, 'ArrayExpression']
-MappingType = Union[Mapping, 'MappingExpression']
-DatetimeType = Union[datetime, 'DatetimeExpression']
-TimespanType = Union[timedelta, 'TimespanExpression']
+StringType = Union[str, '_StringExpression']
+BooleanType = Union[bool, '_BooleanExpression']
+NumberType = Union[int, float, '_NumberExpression']
+ArrayType = Union[List, Tuple, '_ArrayExpression']
+MappingType = Union[Mapping, '_MappingExpression']
+DatetimeType = Union[datetime, '_DatetimeExpression']
+TimespanType = Union[timedelta, '_TimespanExpression']
 DynamicType = Union[ArrayType, MappingType]
 OrderedType = Union[DatetimeType, TimespanType, NumberType, StringType]
 

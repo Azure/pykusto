@@ -7,7 +7,7 @@ from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from pykusto.expressions import column_generator as col
 from pykusto.functions import Functions as f
 from pykusto.query import Query, JoinException
-from pykusto.type_utils import KustoType
+from pykusto.type_utils import _KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import mock_table as t, mock_columns_response
 from test.udf import func, STRINGIFIED
@@ -47,7 +47,7 @@ class TestQuery(TestBase):
         )
 
     def test_add_queries_with_table(self):
-        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('numField', KustoType.INT)])))['test_db']['mock_table']
+        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('numField', _KustoType.INT)])))['test_db']['mock_table']
         query_a = Query(table).where(table.numField > 4)
         query_b = Query(t).take(5).take(2).sort_by(t.stringField, Order.ASC, Nulls.LAST)
         query = query_a + query_b
@@ -196,7 +196,7 @@ class TestQuery(TestBase):
         )
 
     def test_join_with_table(self):
-        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('tableStringField', KustoType.STRING), ('numField', KustoType.INT)])))['test_db'][
+        table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)])))['test_db'][
             'mock_table']
 
         self.assertEqual(
@@ -209,7 +209,7 @@ class TestQuery(TestBase):
 
     def test_join_with_table_and_query(self):
         table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([
-            ('tableStringField', KustoType.STRING), ('numField', KustoType.INT)
+            ('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)
         ])))['test_db']['mock_table']
 
         self.assertEqual(
@@ -316,7 +316,7 @@ class TestQuery(TestBase):
     def test_mv_expand_to_type(self):
         self.assertEqual(
             "mock_table | mv-expand arrayField to typeof(string), arrayField2 to typeof(int), arrayField3",
-            Query(t).mv_expand(f.to_type(t.arrayField, KustoType.STRING), f.to_type(t.arrayField2, KustoType.INT), t.arrayField3).render(),
+            Query(t).mv_expand(f.to_type(t.arrayField, _KustoType.STRING), f.to_type(t.arrayField2, _KustoType.INT), t.arrayField3).render(),
         )
 
     def test_mv_expand_args(self):
@@ -442,13 +442,13 @@ class TestQuery(TestBase):
     def test_udf(self):
         self.assertEqual(
             f"mock_table | evaluate python(typeof(*, StateZone:string), {STRINGIFIED})",
-            Query(t).evaluate_udf(func, StateZone=KustoType.STRING).render(),
+            Query(t).evaluate_udf(func, StateZone=_KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
         self.assertEqual(
             f"mock_table | evaluate python(typeof(StateZone:string), {STRINGIFIED})",
-            Query(t).evaluate_udf(func, extend=False, StateZone=KustoType.STRING).render(),
+            Query(t).evaluate_udf(func, extend=False, StateZone=_KustoType.STRING).render(),
         )
 
     def test_bag_unpack(self):
@@ -467,7 +467,7 @@ class TestQuery(TestBase):
         rows = (['foo', 10], ['bar', 20], ['baz', 30])
         columns = ('stringField', 'numField')
         client = PyKustoClient(MockKustoClient(
-            databases_response=mock_databases_response([('test_db', [('mock_table', [('stringField', KustoType.STRING), ('numField', KustoType.INT)])])]),
+            databases_response=mock_databases_response([('test_db', [('mock_table', [('stringField', _KustoType.STRING), ('numField', _KustoType.INT)])])]),
             main_response=mock_response(rows, columns),
         ))
         client.wait_for_items()

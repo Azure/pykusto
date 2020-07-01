@@ -9,7 +9,7 @@ from typing import Union, Dict, Any, Iterable, Callable, Generator
 POOL = ThreadPoolExecutor(max_workers=1)
 
 
-class ItemFetcher(metaclass=ABCMeta):
+class _ItemFetcher(metaclass=ABCMeta):
     """
     Abstract class that caches a collection of items, fetching them in certain scenarios.
     """

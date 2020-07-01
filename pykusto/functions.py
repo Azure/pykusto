@@ -504,11 +504,12 @@ class Functions:
         return DatetimeExpression(KQL(res))
 
     @staticmethod
-    def make_string() -> StringExpression:
+    def make_string(*args: Union[NumberType, ArrayType]) -> StringExpression:
         """
+        print str = make_string(dynamic([75, 117, 115]), 116, 111)
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makestringfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return StringExpression(KQL(f"make_string({', '.join(to_kql(arg) for arg in args)})"))
 
     @staticmethod
     def make_timespan() -> TimespanExpression:
@@ -523,11 +524,11 @@ class Functions:
     # def min_of(self): return
 
     @staticmethod
-    def month_of_year() -> NumberExpression:
+    def month_of_year(date: DatetimeType) -> NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/monthofyearfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return NumberExpression(f"monthofyear({to_kql(date)})")
 
     @staticmethod
     def new_guid() -> AnyExpression:
@@ -557,7 +558,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packallfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return MappingExpression("pack_all()")
 
     @staticmethod
     def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
@@ -571,7 +572,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packdictionaryfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return MappingExpression("pack_dictionary()")
 
     #
     #
@@ -988,11 +989,11 @@ class Functions:
         return NumberExpression(KQL(f"todouble({to_kql(expr)})"))
 
     @staticmethod
-    def to_dynamic() -> DynamicExpression:
+    def to_dynamic(json: StringType) -> DynamicExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todynamicfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return DynamicExpression(f"todynamic({to_kql(json)})")
 
     @staticmethod
     def to_guid() -> AnyExpression:
@@ -1044,11 +1045,11 @@ class Functions:
         return expr.to_string()
 
     @staticmethod
-    def to_timespan() -> TimespanExpression:
+    def to_timespan(expr: StringType) -> TimespanExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/totimespanfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return TimespanExpression(f"totimespan({to_kql(expr)})")
 
     @staticmethod
     def to_upper(expr: StringType) -> StringExpression:
@@ -1066,11 +1067,11 @@ class Functions:
     # def treepath(self): return
 
     @staticmethod
-    def trim() -> StringExpression:
+    def trim(regex: StringType, text: StringType) -> StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/trimfunction
         """
-        raise NotImplemented  # pragma: no cover
+        return StringExpression(f"trim({to_kql(regex)}, {to_kql(text)})")
 
     # def trim_end(self): return
     #

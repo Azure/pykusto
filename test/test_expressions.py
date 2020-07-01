@@ -409,6 +409,12 @@ class TestExpressions(TestBase):
             Query().where(t.stringField.has("test")).render()
         )
 
+    def test_has_cs(self):
+        self.assertEqual(
+            ' | where stringField has_cs "test"',
+            Query().where(t.stringField.has_cs("test")).render()
+        )
+
     def test_column_generator(self):
         field1 = col.foo
         field2 = col['foo.bar']

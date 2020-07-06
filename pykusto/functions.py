@@ -528,7 +528,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/monthofyearfunction
         """
-        return NumberExpression(f"monthofyear({to_kql(date)})")
+        return NumberExpression(KQL(f"monthofyear({to_kql(date)})"))
 
     @staticmethod
     def new_guid() -> AnyExpression:
@@ -558,7 +558,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packallfunction
         """
-        return MappingExpression("pack_all()")
+        return MappingExpression(KQL("pack_all()"))
 
     @staticmethod
     def pack_array(*elements: ExpressionType) -> 'ArrayExpression':
@@ -572,7 +572,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packdictionaryfunction
         """
-        return MappingExpression("pack_dictionary()")
+        return MappingExpression(KQL("pack_dictionary()"))
 
     #
     #
@@ -993,7 +993,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todynamicfunction
         """
-        return DynamicExpression(f"todynamic({to_kql(json)})")
+        return DynamicExpression(KQL(f"todynamic({to_kql(json)})"))
 
     @staticmethod
     def to_guid() -> AnyExpression:
@@ -1049,7 +1049,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/totimespanfunction
         """
-        return TimespanExpression(f"totimespan({to_kql(expr)})")
+        return TimespanExpression(KQL(f"totimespan({to_kql(expr)})"))
 
     @staticmethod
     def to_upper(expr: StringType) -> StringExpression:
@@ -1071,7 +1071,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/trimfunction
         """
-        return StringExpression(f"trim({to_kql(regex)}, {to_kql(text)})")
+        return StringExpression(KQL(f"trim({to_kql(regex)}, {to_kql(text)})"))
 
     # def trim_end(self): return
     #

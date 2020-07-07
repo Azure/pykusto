@@ -307,8 +307,8 @@ class TestFunction(TestBase):
 
     def test_pack_dictionary(self):
         self.assertEqual(
-            " | extend packed = pack_dictionary()",
-            Query().extend(packed=f.pack_dictionary()).render()
+            ' | extend foo = pack_dictionary("bar", numField, "baz", stringField)',
+            Query().extend(foo=f.pack_dictionary(bar=t.numField, baz=t.stringField)).render()
         )
 
     def test_parse_json_to_string(self):

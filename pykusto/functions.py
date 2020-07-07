@@ -568,11 +568,11 @@ class Functions:
         return ArrayExpression(KQL(f'pack_array({", ".join(to_kql(e) for e in elements)})'))
 
     @staticmethod
-    def pack_dictionary() -> MappingExpression:
+    def pack_dictionary(**kwargs: ExpressionType) -> MappingExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packdictionaryfunction
         """
-        return MappingExpression(KQL("pack_dictionary()"))
+        return MappingExpression(KQL(f'pack_dictionary({", ".join(f"{to_kql(k)}, {to_kql(v)}" for k, v in kwargs.items())})'))
 
     #
     #

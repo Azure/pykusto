@@ -96,6 +96,13 @@ class BaseExpression:
         # The pattern for the search expression must be a constant string.
         return BooleanExpression(KQL(f'{self.kql} has {to_kql(exp)}'))
 
+    def has_cs(self, exp: StringType) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
+        # The pattern for the search expression must be a constant string.
+        return BooleanExpression(KQL(f'{self.kql} has_cs {to_kql(exp)}'))
+
     @staticmethod
     def base_binary_op(
             left: ExpressionType, operator: str, right: ExpressionType, result_type: Optional[KustoType]

@@ -9,5 +9,5 @@ from ._src.expressions import *
 from ._src.functions import *
 from ._src.query import *
 
-from ._version import __version__
+__version__ = 'dev'  # Version number is managed in the 'release' branch
 name = "pykusto"

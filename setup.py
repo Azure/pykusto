@@ -1,7 +1,14 @@
+import os
+
 from setuptools import setup, find_packages
 
-# noinspection PyProtectedMember
-from pykusto._version import __version__
+__version__ = None
+with open(os.path.join('.', 'pykusto', '__init__.py')) as f:
+    for line in f:
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            __version__ = line.split(delim)[1]
+assert __version__ is not None, 'Unable to determine version'
 
 setup(
     name='pykusto',

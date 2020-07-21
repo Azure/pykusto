@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 import pandas as pd
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 # noinspection PyProtectedMember
-from azure.kusto.data._models import KustoResultRow
+from azure.kusto.data._models import KustoResultRow as _KustoResultRow
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
 # noinspection PyProtectedMember
@@ -27,17 +27,17 @@ class KustoResponse:
     def __init__(self, response: KustoResponseDataSet):
         self.__response = response
 
-    def get_rows(self) -> List[KustoResultRow]:
+    def get_rows(self) -> List[_KustoResultRow]:
         return self.__response.primary_results[0].rows
 
     @staticmethod
-    def is_row_valid(row: KustoResultRow) -> bool:
+    def is_row_valid(row: _KustoResultRow) -> bool:
         for field in row:
             if field is None or (isinstance(field, str) and len(field.strip()) == 0):
                 return False
         return True
 
-    def get_valid_rows(self) -> Generator[KustoResultRow, None, None]:
+    def get_valid_rows(self) -> Generator[_KustoResultRow, None, None]:
         for row in self.get_rows():
             if self.is_row_valid(row):
                 yield row

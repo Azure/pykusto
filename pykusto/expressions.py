@@ -89,20 +89,6 @@ class BaseExpression:
         """
         return BooleanExpression(KQL(f'isnotempty({self.kql})'))
 
-    def has(self, exp: StringType) -> 'BooleanExpression':
-        """
-        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
-        """
-        # The pattern for the search expression must be a constant string.
-        return BooleanExpression(KQL(f'{self.kql} has {to_kql(exp)}'))
-
-    def has_cs(self, exp: StringType) -> 'BooleanExpression':
-        """
-        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
-        """
-        # The pattern for the search expression must be a constant string.
-        return BooleanExpression(KQL(f'{self.kql} has_cs {to_kql(exp)}'))
-
     @staticmethod
     def base_binary_op(
             left: ExpressionType, operator: str, right: ExpressionType, result_type: Optional[KustoType]
@@ -429,6 +415,12 @@ class StringExpression(BaseExpression):
 
     def not_equals(self, other: StringType, case_sensitive: bool = False) -> BooleanExpression:
         return BooleanExpression.binary_op(self, ' != ' if case_sensitive else ' !~ ', other)
+
+    def has(self, exp: StringType, case_sensitive: bool = False) -> 'BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
+        return BooleanExpression(KQL(f'{self.as_subexpression()} {"has_cs" if case_sensitive else "has"} {_subexpr_to_kql(exp)}'))
 
     def matches(self, regex: StringType) -> 'BooleanExpression':
         """

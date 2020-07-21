@@ -268,6 +268,26 @@ class TestFunction(TestBase):
                 f.make_datetime(t.numField, t.numField2, t.numField3, t.numField4, t.numField5, t.numField6) > datetime(2019, 7, 23, 5, 29, 15)).render()
         )
 
+    def test_make_string(self):
+        self.assertEqual(
+            " | where (make_string(75, 117, 115, 116, 111)) == \"Kusto\"",
+            Query().where(f.make_string(75, 117, 115, 116, 111) == 'Kusto').render()
+        )
+        self.assertEqual(
+            " | where (make_string(dynamic([75, 117, 115]), 116, 111)) == \"Kusto\"",
+            Query().where(f.make_string([75, 117, 115], 116, 111) == 'Kusto').render()
+        )
+
+    def test_month_of_year(self):
+        self.assertEqual(
+            " | where (monthofyear(dateField)) == 12",
+            Query().where(f.month_of_year(t.dateField) == 12).render()
+        )
+        self.assertEqual(
+            " | where (monthofyear(datetime(2015-12-14 00:00:00.000000))) == 12",
+            Query().where(f.month_of_year(datetime(2015, 12, 14)) == 12).render()
+        )
+
     def test_now(self):
         self.assertEqual(
             " | where dateField < (now())",
@@ -276,6 +296,18 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | where dateField < (now(time(-3.0:0:0.0)))",
             Query().where(t.dateField < f.now(timedelta(-3))).render()
+        )
+
+    def test_pack_all(self):
+        self.assertEqual(
+            " | extend packed = pack_all()",
+            Query().extend(packed=f.pack_all()).render()
+        )
+
+    def test_pack_dictionary(self):
+        self.assertEqual(
+            ' | extend foo = pack_dictionary("bar", numField, "baz", stringField)',
+            Query().extend(foo=f.pack_dictionary(bar=t.numField, baz=t.stringField)).render()
         )
 
     def test_parse_json_to_string(self):
@@ -465,16 +497,28 @@ class TestFunction(TestBase):
             Query().where(f.to_bool(t.stringField)).render()
         )
 
+    def test_todatetime(self):
+        self.assertEqual(
+            " | extend foo = todatetime(stringField)",
+            Query().extend(foo=f.to_datetime(t.stringField)).render()
+        )
+
+    def test_todecimal(self):
+        self.assertEqual(
+            " | where (todecimal(stringField)) > 0.2",
+            Query().where(f.to_decimal(t.stringField) > 0.2).render()
+        )
+
     def test_todouble(self):
         self.assertEqual(
             " | where (todouble(stringField)) > 0.2",
             Query().where(f.to_double(t.stringField) > 0.2).render()
         )
-        
-    def test_todecimal(self):
+
+    def test_to_dynamic(self):
         self.assertEqual(
-            " | where (todecimal(stringField)) > 0.2",
-            Query().where(f.to_decimal(t.stringField) > 0.2).render()
+            " | extend dyn = todynamic(stringField)",
+            Query().extend(dyn=f.to_dynamic(t.stringField)).render()
         )
 
     def test_toint(self):
@@ -489,12 +533,6 @@ class TestFunction(TestBase):
             Query().where(f.to_long(t.stringField) > 2222222222).render()
         )
 
-    def test_todatetime(self):
-        self.assertEqual(
-            " | extend foo = todatetime(stringField)",
-            Query().extend(foo=f.to_datetime(t.stringField)).render()
-        )
-
     def test_tolower(self):
         self.assertEqual(
             ' | where (tolower(stringField)) == "foo"',
@@ -506,7 +544,13 @@ class TestFunction(TestBase):
             " | where (toreal(stringField)) > 0.2",
             Query().where(f.to_real(t.stringField) > 0.2).render()
         )
-        
+
+    def test_to_timespan(self):
+        self.assertEqual(
+            " | extend t = totimespan(stringField)",
+            Query().extend(t=f.to_timespan(t.stringField)).render()
+        )
+
     def test_toupper(self):
         self.assertEqual(
             ' | where (toupper(stringField)) == "FOO"',
@@ -519,6 +563,11 @@ class TestFunction(TestBase):
             Query().where(f.to_hex(256) == "100").render()
         )
 
+    def test_trim(self):
+        self.assertEqual(
+            ' | where (trim("--", stringField)) == "text"',
+            Query().where(f.trim("--", t.stringField) == "text").render()
+        )
     # ------------------------------------------------------
     # Aggregation Functions
     # ------------------------------------------------------

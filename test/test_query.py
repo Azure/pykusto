@@ -2,12 +2,9 @@ from os import linesep
 
 import pandas as pd
 
-from pykusto.client import PyKustoClient
-from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
-from pykusto.expressions import column_generator as col
-from pykusto.functions import Functions as f
-from pykusto.query import Query, JoinException
-from pykusto.type_utils import _KustoType
+from pykusto import PyKustoClient, Order, Nulls, JoinKind, Distribution, BagExpansion, column_generator as col, Functions as f, Query, JoinException
+# noinspection PyProtectedMember
+from pykusto._src.type_utils import _KustoType
 from test.test_base import TestBase, mock_databases_response, MockKustoClient, mock_response
 from test.test_base import mock_table as t, mock_columns_response
 from test.udf import func, STRINGIFIED

@@ -1,8 +1,9 @@
 from datetime import timedelta, datetime
 
-from pykusto.expressions import column_generator as col, _AnyTypeColumn
-from pykusto.functions import Functions as f
-from pykusto.query import Query
+from pykusto import Functions as f
+from pykusto import column_generator as col, Query
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _AnyTypeColumn
 from test.test_base import TestBase, mock_table as t
 
 

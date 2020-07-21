@@ -5,17 +5,17 @@ from os import linesep
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-from pykusto.client import _Table, KustoResponse
-from pykusto.enums import Order, Nulls, JoinKind, Distribution, BagExpansion
-from pykusto.expressions import _BooleanType, _ExpressionType, AggregationExpression, _OrderedType, \
+from .client import _Table, KustoResponse
+from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
+from .expressions import _BooleanType, _ExpressionType, AggregationExpression, _OrderedType, \
     _StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
     BaseExpression, \
     _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, _NumberType
-from pykusto.functions import Functions as f
-from pykusto.kql_converters import KQL
-from pykusto.logger import _logger
-from pykusto.type_utils import _KustoType, _typed_column, _plain_expression
-from pykusto.udf import _stringify_python_func
+from .functions import Functions as f
+from .kql_converters import KQL
+from .logger import _logger
+from .type_utils import _KustoType, _typed_column, _plain_expression
+from .udf import _stringify_python_func
 
 
 class Query:

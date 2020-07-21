@@ -1,10 +1,13 @@
 from concurrent.futures import Future
 from threading import Thread, Lock
 
-from pykusto.client import PyKustoClient, _Database
-from pykusto.expressions import _StringColumn, _NumberColumn, _AnyTypeColumn, _BooleanColumn
-from pykusto.query import Query
-from pykusto.type_utils import _KustoType
+from pykusto import PyKustoClient, Query
+# noinspection PyProtectedMember
+from pykusto._src.client import _Database
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _StringColumn, _NumberColumn, _AnyTypeColumn, _BooleanColumn
+# noinspection PyProtectedMember
+from pykusto._src.type_utils import _KustoType
 from test.test_base import TestBase, MockKustoClient, mock_columns_response, RecordedQuery, mock_tables_response, mock_getschema_response, mock_databases_response
 
 

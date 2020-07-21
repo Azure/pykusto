@@ -4,7 +4,7 @@ from itertools import chain
 from numbers import Number
 from typing import NewType, Union, Mapping, List, Tuple
 
-from pykusto.type_utils import _kql_converter, _KustoType, _NUMBER_TYPES
+from .type_utils import _kql_converter, _KustoType, _NUMBER_TYPES
 
 KQL = NewType('KQL', str)
 
@@ -38,7 +38,7 @@ def _build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
         return KQL(f"pack({', '.join(map(_build_dynamic, chain(*d.items())))})")
     if isinstance(d, (List, Tuple)):
         return KQL(f"pack_array({', '.join(map(_build_dynamic, d))})")
-    from pykusto.expressions import _to_kql
+    from .expressions import _to_kql
     return _to_kql(d)
 
 

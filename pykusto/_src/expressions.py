@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from typing import Any, List, Tuple, Mapping, Optional
 from typing import Union
 
-from pykusto.keywords import _KUSTO_KEYWORDS
-from pykusto.kql_converters import KQL
-from pykusto.type_utils import _plain_expression, _aggregation_expression, PythonTypes, _kql_converter, _KustoType, _typed_column, _TypeRegistrar, _get_base_types, _NUMBER_TYPES
+from .keywords import _KUSTO_KEYWORDS
+from .kql_converters import KQL
+from .type_utils import _plain_expression, _aggregation_expression, PythonTypes, _kql_converter, _KustoType, _typed_column, _TypeRegistrar, _get_base_types, _NUMBER_TYPES
 
 _ExpressionType = Union[PythonTypes, 'BaseExpression']
 _StringType = Union[str, '_StringExpression']

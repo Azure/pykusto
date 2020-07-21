@@ -1,6 +1,9 @@
-from pykusto.expressions import _to_kql
-from pykusto.kql_converters import KQL
-from pykusto.type_utils import _TypeRegistrar, _KustoType
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _to_kql
+# noinspection PyProtectedMember
+from pykusto._src.kql_converters import KQL
+# noinspection PyProtectedMember
+from pykusto._src.type_utils import _TypeRegistrar, _KustoType
 from test.test_base import TestBase
 
 

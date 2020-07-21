@@ -1,21 +1,21 @@
 from itertools import chain
 from typing import Union
 
-from pykusto.enums import Kind
-from pykusto.expressions import _AnyTypeColumn, _NumberType, _NumberExpression, _TimespanType, \
+from .enums import Kind
+from .expressions import _AnyTypeColumn, _NumberType, _NumberExpression, _TimespanType, \
     _DatetimeExpression, _TimespanExpression, _ArrayType, _DynamicType, _DatetimeType, BaseExpression, _BooleanType, \
     _ExpressionType, _StringType, _StringExpression, _BooleanExpression, \
     _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, _DynamicExpression, \
     _ArrayExpression, _ColumnToType, BaseColumn, AnyExpression, _AnyAggregationExpression, _MappingExpression
-from pykusto.kql_converters import KQL
-from pykusto.logger import _logger
-from pykusto.type_utils import _plain_expression, _KustoType
+from .kql_converters import KQL
+from .logger import _logger
+from .type_utils import _plain_expression, _KustoType
 
 
 class Functions:
     """
     Recommended import style:\n
-    `from pykusto.functions import Functions as f`
+    `from pykusto import Functions as f`
     """
 
     # Scalar functions

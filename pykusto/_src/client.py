@@ -14,11 +14,11 @@ from azure.kusto.data.response import KustoResponseDataSet
 # noinspection PyProtectedMember
 from azure.kusto.data.security import _get_azure_cli_auth_token
 
-from pykusto.expressions import BaseColumn, _AnyTypeColumn
-from pykusto.item_fetcher import _ItemFetcher
-from pykusto.kql_converters import KQL
-from pykusto.logger import _logger
-from pykusto.type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
+from .expressions import BaseColumn, _AnyTypeColumn
+from .item_fetcher import _ItemFetcher
+from .kql_converters import KQL
+from .logger import _logger
+from .type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
 
 
 class KustoResponse:

@@ -12,10 +12,12 @@ from azure.kusto.data import KustoClient, ClientRequestProperties
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
 
-from pykusto.client import _Table
-from pykusto.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
-from pykusto.logger import _logger
-from pykusto.type_utils import _KustoType
+# noinspection PyProtectedMember
+from pykusto._src.client import _Table
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
+# noinspection PyProtectedMember
+from pykusto._src.type_utils import _KustoType
 
 # Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
 # noinspection PyTypeChecker
@@ -40,7 +42,7 @@ class TestBase(TestCase):
         )
 
     def setUp(self) -> None:
-        _logger.info("Running test: " + self._testMethodName)
+        test_logger.info("Running test: " + self._testMethodName)
 
     def assertRaises(self, expected_exception: BaseException, test_callable: Callable, *args, **kwargs):
         """
@@ -191,3 +193,6 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response
+
+
+test_logger = logging.getLogger("pykusto_test")

@@ -504,12 +504,12 @@ class Functions:
         return _DatetimeExpression(KQL(res))
 
     @staticmethod
-    def make_string(*args: Union[NumberType, ArrayType]) -> _StringExpression:
+    def make_string(*args: Union[_NumberType, _ArrayType]) -> _StringExpression:
         """
         print str = make_string(dynamic([75, 117, 115]), 116, 111)
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makestringfunction
         """
-        return StringExpression(KQL(f"make_string({', '.join(to_kql(arg) for arg in args)})"))
+        return _StringExpression(KQL(f"make_string({', '.join(_to_kql(arg) for arg in args)})"))
 
     @staticmethod
     def make_timespan() -> _TimespanExpression:
@@ -524,11 +524,11 @@ class Functions:
     # def min_of(self): return
 
     @staticmethod
-    def month_of_year(date: DatetimeType) -> _NumberExpression:
+    def month_of_year(date: _DatetimeType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/monthofyearfunction
         """
-        return NumberExpression(KQL(f"monthofyear({to_kql(date)})"))
+        return _NumberExpression(KQL(f"monthofyear({_to_kql(date)})"))
 
     @staticmethod
     def new_guid() -> AnyExpression:
@@ -558,7 +558,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packallfunction
         """
-        return MappingExpression(KQL("pack_all()"))
+        return _MappingExpression(KQL("pack_all()"))
 
     @staticmethod
     def pack_array(*elements: _ExpressionType) -> '_ArrayExpression':
@@ -568,11 +568,11 @@ class Functions:
         return _ArrayExpression(KQL(f'pack_array({", ".join(_to_kql(e) for e in elements)})'))
 
     @staticmethod
-    def pack_dictionary(**kwargs: ExpressionType) -> _MappingExpression:
+    def pack_dictionary(**kwargs: _ExpressionType) -> _MappingExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/packdictionaryfunction
         """
-        return MappingExpression(KQL(f'pack_dictionary({", ".join(f"{to_kql(k)}, {to_kql(v)}" for k, v in kwargs.items())})'))
+        return _MappingExpression(KQL(f'pack_dictionary({", ".join(f"{_to_kql(k)}, {_to_kql(v)}" for k, v in kwargs.items())})'))
 
     #
     #
@@ -989,11 +989,11 @@ class Functions:
         return _NumberExpression(KQL(f"todouble({_to_kql(expr)})"))
 
     @staticmethod
-    def to_dynamic(json: StringType) -> _DynamicExpression:
+    def to_dynamic(json: _StringType) -> _DynamicExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todynamicfunction
         """
-        return DynamicExpression(KQL(f"todynamic({to_kql(json)})"))
+        return _DynamicExpression(KQL(f"todynamic({_to_kql(json)})"))
 
     @staticmethod
     def to_guid() -> AnyExpression:
@@ -1045,11 +1045,11 @@ class Functions:
         return expr.to_string()
 
     @staticmethod
-    def to_timespan(expr: StringType) -> _TimespanExpression:
+    def to_timespan(expr: _StringType) -> _TimespanExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/totimespanfunction
         """
-        return TimespanExpression(KQL(f"totimespan({to_kql(expr)})"))
+        return _TimespanExpression(KQL(f"totimespan({_to_kql(expr)})"))
 
     @staticmethod
     def to_upper(expr: _StringType) -> _StringExpression:
@@ -1067,11 +1067,11 @@ class Functions:
     # def treepath(self): return
 
     @staticmethod
-    def trim(regex: StringType, text: StringType) -> _StringExpression:
+    def trim(regex: _StringType, text: _StringType) -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/trimfunction
         """
-        return StringExpression(KQL(f"trim({to_kql(regex)}, {to_kql(text)})"))
+        return _StringExpression(KQL(f"trim({_to_kql(regex)}, {_to_kql(text)})"))
 
     # def trim_end(self): return
     #

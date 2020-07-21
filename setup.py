@@ -1,10 +1,11 @@
 from setuptools import setup, find_packages
 
-import pykusto
+# noinspection PyProtectedMember
+from pykusto._version import __version__
 
 setup(
     name='pykusto',
-    version=pykusto.__version__,
+    version=__version__,
     packages=find_packages(exclude=['test']),
     url='https://github.com/Azure/pykusto',
     license='MIT License',

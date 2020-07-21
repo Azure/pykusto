@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+import pykusto
+
 setup(
     name='pykusto',
-    version='dev',  # Versioning is managed in the 'release' branch
+    version=pykusto.__version__,
     packages=find_packages(exclude=['test']),
     url='https://github.com/Azure/pykusto',
     license='MIT License',

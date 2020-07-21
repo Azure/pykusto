@@ -10,4 +10,4 @@ from ._src.functions import *
 from ._src.query import *
 
 name = "pykusto"
-
+__version__ = 'dev'  # Versioning is managed in the 'release' branch

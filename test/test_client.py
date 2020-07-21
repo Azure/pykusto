@@ -5,7 +5,7 @@ from azure.kusto.data import KustoClient
 
 from pykusto.client import PyKustoClient
 from pykusto.expressions import column_generator as col
-from pykusto.logger import logger
+from pykusto.logger import _logger
 from pykusto.query import Query
 from test.test_base import TestBase, MockKustoClient, RecordedQuery
 
@@ -154,14 +154,14 @@ class TestClient(TestBase):
         )
 
     def test_client_for_cluster_with_azure_cli_auth(self):
-        with patch('pykusto.client._get_azure_cli_auth_token', lambda: "MOCK_TOKEN"), self.assertLogs(logger, logging.INFO) as cm:
+        with patch('pykusto.client._get_azure_cli_auth_token', lambda: "MOCK_TOKEN"), self.assertLogs(_logger, logging.INFO) as cm:
             client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
         self.assertEqual([], cm.output)
 
     def test_client_for_cluster_fallback_to_aad_device_auth(self):
-        with patch('pykusto.client._get_azure_cli_auth_token', lambda: None), self.assertLogs(logger, logging.INFO) as cm:
+        with patch('pykusto.client._get_azure_cli_auth_token', lambda: None), self.assertLogs(_logger, logging.INFO) as cm:
             client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())

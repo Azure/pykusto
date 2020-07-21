@@ -54,10 +54,11 @@ class _KustoType(Enum):
         return False
 
 
-INTERNAL_NAME_TO_TYPE: Dict[str, _KustoType] = {t.internal_name: t for t in _KustoType}
-DOT_NAME_TO_TYPE: Dict[str, _KustoType] = {t.dot_net_name: t for t in _KustoType}
-NUMBER_TYPES: FrozenSet[_KustoType] = frozenset([
-    _KustoType.INT, _KustoType.LONG, _KustoType.REAL, _KustoType.DECIMAL, _KustoType.FLOAT, _KustoType.INT16, _KustoType.UINT16, _KustoType.UINT32, _KustoType.UINT64, _KustoType.UINT8
+_INTERNAL_NAME_TO_TYPE: Dict[str, _KustoType] = {t.internal_name: t for t in _KustoType}
+_DOT_NAME_TO_TYPE: Dict[str, _KustoType] = {t.dot_net_name: t for t in _KustoType}
+_NUMBER_TYPES: FrozenSet[_KustoType] = frozenset([
+    _KustoType.INT, _KustoType.LONG, _KustoType.REAL, _KustoType.DECIMAL, _KustoType.FLOAT,
+    _KustoType.INT16, _KustoType.UINT16, _KustoType.UINT32, _KustoType.UINT64, _KustoType.UINT8
 ])
 
 
@@ -143,13 +144,13 @@ class _TypeRegistrar:
         assert len(missing) == 0, [t.name for t in missing]
 
 
-kql_converter = _TypeRegistrar("KQL Converter")
-typed_column = _TypeRegistrar("Column")
-plain_expression = _TypeRegistrar("Plain expression")
-aggregation_expression = _TypeRegistrar("Aggregation expression")
+_kql_converter = _TypeRegistrar("KQL Converter")
+_typed_column = _TypeRegistrar("Column")
+_plain_expression = _TypeRegistrar("Plain expression")
+_aggregation_expression = _TypeRegistrar("Aggregation expression")
 
 
-def get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
+def _get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
     """
     A registrar-agnostic version of TypeRegistrar.get_base_types
     """
@@ -157,7 +158,7 @@ def get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
         if kusto_type.is_type_of(obj):
             # The object is already a member of Kusto types
             return {kusto_type}
-    for type_registrar in (plain_expression, aggregation_expression, typed_column):
+    for type_registrar in (_plain_expression, _aggregation_expression, _typed_column):
         base_types = type_registrar.inverse(obj)
         if len(base_types) > 0:
             break

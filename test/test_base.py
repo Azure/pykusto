@@ -14,7 +14,7 @@ from azure.kusto.data.response import KustoResponseDataSet
 
 from pykusto.client import _Table
 from pykusto.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
-from pykusto.logger import logger
+from pykusto.logger import _logger
 from pykusto.type_utils import _KustoType
 
 # Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
@@ -40,7 +40,7 @@ class TestBase(TestCase):
         )
 
     def setUp(self) -> None:
-        logger.info("Running test: " + self._testMethodName)
+        _logger.info("Running test: " + self._testMethodName)
 
     def assertRaises(self, expected_exception: BaseException, test_callable: Callable, *args, **kwargs):
         """

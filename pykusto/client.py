@@ -17,8 +17,8 @@ from azure.kusto.data.security import _get_azure_cli_auth_token
 from pykusto.expressions import BaseColumn, _AnyTypeColumn
 from pykusto.item_fetcher import _ItemFetcher
 from pykusto.kql_converters import KQL
-from pykusto.logger import logger
-from pykusto.type_utils import INTERNAL_NAME_TO_TYPE, typed_column, DOT_NAME_TO_TYPE
+from pykusto.logger import _logger
+from pykusto.type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
 
 
 class KustoResponse:
@@ -121,7 +121,7 @@ class PyKustoClient(_ItemFetcher):
         # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
         stored_token = _get_azure_cli_auth_token()
         if stored_token is None:
-            logger.info("Failed to get Azure CLI token, falling back to AAD device authentication")
+            _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication")
             connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
         else:
             connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
@@ -144,7 +144,7 @@ class PyKustoClient(_ItemFetcher):
         database_to_table_to_columns = defaultdict(lambda: defaultdict(list))
         for database_name, table_name, column_name, column_type in res.get_valid_rows():
             database_to_table_to_columns[database_name][table_name].append(
-                typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name)
+                _typed_column.registry[_DOT_NAME_TO_TYPE[column_type]](column_name)
             )
         return {
             # Database instances are provided with all table and column data, preventing them from generating more
@@ -248,7 +248,7 @@ class _Database(_ItemFetcher):
         )
         table_to_columns = defaultdict(list)
         for table_name, column_name, column_type in res.get_valid_rows():
-            table_to_columns[table_name].append(typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name))
+            table_to_columns[table_name].append(_typed_column.registry[_DOT_NAME_TO_TYPE[column_type]](column_name))
         # Table instances are provided with all column data, preventing them from generating more queries. However the
         # "fetch_by_default" behavior is
         # passed on to them for future actions.
@@ -342,7 +342,7 @@ class _Table(_ItemFetcher):
                 KQL(f'.show table {self.get_name()} | project AttributeName, AttributeType | limit 10000')
             )
             return {
-                column_name: typed_column.registry[INTERNAL_NAME_TO_TYPE[column_type]](column_name)
+                column_name: _typed_column.registry[_INTERNAL_NAME_TO_TYPE[column_type]](column_name)
                 for column_name, column_type in res.get_valid_rows()
             }
         # Get Kusto to figure out the schema of the union, especially useful for column name conflict resolution
@@ -350,6 +350,6 @@ class _Table(_ItemFetcher):
             KQL(f'{self.to_query_format()} | getschema | project ColumnName, DataType | limit 10000')
         )
         return {
-            column_name: typed_column.registry[DOT_NAME_TO_TYPE[column_type]](column_name)
+            column_name: _typed_column.registry[_DOT_NAME_TO_TYPE[column_type]](column_name)
             for column_name, column_type in res.get_valid_rows()
         }

@@ -1,4 +1,4 @@
-from pykusto.expressions import to_kql
+from pykusto.expressions import _to_kql
 from pykusto.kql_converters import KQL
 from pykusto.type_utils import _TypeRegistrar, _KustoType
 from test.test_base import TestBase
@@ -15,7 +15,7 @@ class TestUtils(TestBase):
         self.assertEqual(
             'dynamic({"name": "Alan", "age": 21, "address": ["NY", 36], '
             '"pets": ["Libby", "Panda", "]", "["]})',
-            to_kql(test_dict)
+            _to_kql(test_dict)
         )
 
     def test_type_registrar_for_type(self):

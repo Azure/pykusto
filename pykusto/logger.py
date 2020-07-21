@@ -1,3 +1,3 @@
 import logging
 
-logger = logging.getLogger("pykusto")
+_logger = logging.getLogger("pykusto")

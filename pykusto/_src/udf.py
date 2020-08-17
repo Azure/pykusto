@@ -1,7 +1,7 @@
 from types import FunctionType
 
 
-def stringify_python_func(func: FunctionType):
+def _stringify_python_func(func: FunctionType):
     return """from types import CodeType\\ncode=CodeType({},{},{},{},{},{},{},{},{},{},{},{},{},{},{})\\nexec(code)\\n""".format(
         func.__code__.co_argcount,
         func.__code__.co_kwonlyargcount,

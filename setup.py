@@ -1,8 +1,18 @@
+import os
+
 from setuptools import setup, find_packages
+
+__version__ = None
+with open(os.path.join('.', 'pykusto', '__init__.py')) as f:
+    for line in f:
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            __version__ = line.split(delim)[1]
+assert __version__ is not None, 'Unable to determine version'
 
 setup(
     name='pykusto',
-    version='0.0.22',
+    version=__version__,
     packages=find_packages(exclude=['test']),
     url='https://github.com/Azure/pykusto',
     license='MIT License',
@@ -14,7 +24,7 @@ setup(
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
         'azure-kusto-data>=0.0.43,<=0.1.0',  # In 0.0.43 some packages were renamed
-        'pandas>=0.24.1,<=1.0.4',  # azure-kusto-data requires 0.24.1
+        'pandas>=0.24.1,<=1.1.0rc0',  # azure-kusto-data requires 0.24.1
     ],
     tests_require=[
         'pytest',

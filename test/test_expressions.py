@@ -1,8 +1,9 @@
 from datetime import timedelta, datetime
 
-from pykusto.expressions import column_generator as col, AnyTypeColumn
-from pykusto.functions import Functions as f
-from pykusto.query import Query
+from pykusto import Functions as f
+from pykusto import column_generator as col, Query
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _AnyTypeColumn
 from test.test_base import TestBase, mock_table as t
 
 
@@ -53,7 +54,7 @@ class TestExpressions(TestBase):
 
     def test_repr(self):
         self.assertEqual(
-            'StringColumn(stringField)',
+            '_StringColumn(stringField)',
             repr(t.stringField)
         )
         self.assertEqual(
@@ -409,11 +410,17 @@ class TestExpressions(TestBase):
             Query().where(t.stringField.has("test")).render()
         )
 
+    def test_has_cs(self):
+        self.assertEqual(
+            ' | where stringField has_cs "test"',
+            Query().where(t.stringField.has("test", case_sensitive=True)).render()
+        )
+
     def test_column_generator(self):
         field1 = col.foo
         field2 = col['foo.bar']
-        self.assertIsInstance(field1, AnyTypeColumn)
-        self.assertIsInstance(field2, AnyTypeColumn)
+        self.assertIsInstance(field1, _AnyTypeColumn)
+        self.assertIsInstance(field2, _AnyTypeColumn)
         self.assertEqual('foo', field1.get_name())
         self.assertEqual('foo.bar', field2.get_name())
 

@@ -4,7 +4,8 @@ from typing import Union
 
 from .keywords import _KUSTO_KEYWORDS
 from .kql_converters import KQL
-from .type_utils import _plain_expression, _aggregation_expression, PythonTypes, _kql_converter, _KustoType, _typed_column, _TypeRegistrar, _get_base_types, _NUMBER_TYPES
+from .type_utils import _plain_expression, _aggregation_expression, PythonTypes, _kql_converter, _KustoType, \
+    _typed_column, _TypeRegistrar, _get_base_types, _NUMBER_TYPES
 
 _ExpressionType = Union[PythonTypes, 'BaseExpression']
 _StringType = Union[str, '_StringExpression']
@@ -75,20 +76,6 @@ class BaseExpression:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isnotemptyfunction
         """
         return _BooleanExpression(KQL(f'isnotempty({self.kql})'))
-
-    def has(self, exp: _StringType) -> '_BooleanExpression':
-        """
-        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
-        """
-        # The pattern for the search expression must be a constant string.
-        return _BooleanExpression(KQL(f'{self.kql} has {_to_kql(exp)}'))
-
-    def has_cs(self, exp: _StringType) -> '_BooleanExpression':
-        """
-        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
-        """
-        # The pattern for the search expression must be a constant string.
-        return _BooleanExpression(KQL(f'{self.kql} has_cs {_to_kql(exp)}'))
 
     @staticmethod
     def base_binary_op(
@@ -464,6 +451,14 @@ class _StringExpression(BaseExpression):
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/isutf8
         """
         return _BooleanExpression(KQL(f'isutf8({self.kql})'))
+
+    def has(self, exp: _StringType, case_sensitive: bool = False) -> '_BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
+        return _BooleanExpression(KQL(
+            f'{self.as_subexpression()} {"has_cs" if case_sensitive else "has"} {_to_kql(exp, True)}'
+        ))
 
 
 @_plain_expression(_KustoType.DATETIME)

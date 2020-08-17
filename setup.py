@@ -1,8 +1,18 @@
+import os
+
 from setuptools import setup, find_packages
+
+__version__ = None
+with open(os.path.join('.', 'pykusto', '__init__.py')) as f:
+    for line in f:
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            __version__ = line.split(delim)[1]
+assert __version__ is not None, 'Unable to determine version'
 
 setup(
     name='pykusto',
-    version='dev',  # Versioning is managed in the 'release' branch
+    version=__version__,
     packages=find_packages(exclude=['test']),
     url='https://github.com/Azure/pykusto',
     license='MIT License',

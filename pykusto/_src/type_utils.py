@@ -5,7 +5,7 @@ from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set, Froze
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
 
 
-class KustoType(Enum):
+class _KustoType(Enum):
     """
     https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/
     """
@@ -54,21 +54,22 @@ class KustoType(Enum):
         return False
 
 
-INTERNAL_NAME_TO_TYPE: Dict[str, KustoType] = {t.internal_name: t for t in KustoType}
-DOT_NAME_TO_TYPE: Dict[str, KustoType] = {t.dot_net_name: t for t in KustoType}
-NUMBER_TYPES: FrozenSet[KustoType] = frozenset([
-    KustoType.INT, KustoType.LONG, KustoType.REAL, KustoType.DECIMAL, KustoType.FLOAT, KustoType.INT16, KustoType.UINT16, KustoType.UINT32, KustoType.UINT64, KustoType.UINT8
+_INTERNAL_NAME_TO_TYPE: Dict[str, _KustoType] = {t.internal_name: t for t in _KustoType}
+_DOT_NAME_TO_TYPE: Dict[str, _KustoType] = {t.dot_net_name: t for t in _KustoType}
+_NUMBER_TYPES: FrozenSet[_KustoType] = frozenset([
+    _KustoType.INT, _KustoType.LONG, _KustoType.REAL, _KustoType.DECIMAL, _KustoType.FLOAT,
+    _KustoType.INT16, _KustoType.UINT16, _KustoType.UINT32, _KustoType.UINT64, _KustoType.UINT8
 ])
 
 
-class TypeRegistrar:
+class _TypeRegistrar:
     """
     A factory for annotations that are used to create a mapping between Kusto types and python types / functions.
     Each annotation must be called with a Kusto type as a parameter. The `for_obj` and `for_type` methods
     can then be used to retrieve the python type or function corresponding to a given Kusto type.
     """
     name: str
-    registry: Dict[KustoType, Union[Type, Callable]]
+    registry: Dict[_KustoType, Union[Type, Callable]]
 
     def __init__(self, name: str) -> None:
         """
@@ -80,7 +81,7 @@ class TypeRegistrar:
     def __repr__(self) -> str:
         return self.name
 
-    def __call__(self, *types: KustoType) -> Callable[[Union[Type, Callable]], Union[Type, Callable]]:
+    def __call__(self, *types: _KustoType) -> Callable[[Union[Type, Callable]], Union[Type, Callable]]:
         def inner(wrapped: Union[Type, Callable]) -> Union[Type, Callable]:
             for t in types:
                 previous = self.registry.setdefault(t, wrapped)
@@ -115,49 +116,49 @@ class TypeRegistrar:
                 return registered_callable
         raise ValueError(f"{self}: no registered callable for type {t.__name__}")
 
-    def inverse(self, target_callable: Union[Type, Callable]) -> Set[KustoType]:
-        result: Set[KustoType] = set()
+    def inverse(self, target_callable: Union[Type, Callable]) -> Set[_KustoType]:
+        result: Set[_KustoType] = set()
         for kusto_type, associated_callable in self.registry.items():
             if isinstance(target_callable, associated_callable):
                 result.add(kusto_type)
         return result
 
-    def get_base_types(self, obj: Union[Type, Callable]) -> Set[KustoType]:
+    def get_base_types(self, obj: Union[Type, Callable]) -> Set[_KustoType]:
         """
         For a given object, return the associated basic type, which is a member of :class:`KustoType`
 
         :param obj: The given object for which the type is resolved
         :return: A type which is a member of `KustoType`
         """
-        for kusto_type in KustoType:
+        for kusto_type in _KustoType:
             if kusto_type.is_type_of(obj):
                 # The object is already a member of Kusto types
                 return {kusto_type}
         # The object is one of the expression types decorated with a TypeRegistrar, therefore the original types are
-        base_types: Set[KustoType] = self.inverse(obj)
+        base_types: Set[_KustoType] = self.inverse(obj)
         assert len(base_types) > 0, f"get_base_types called for unsupported type: {type(obj).__name__}"
         return base_types
 
     def assert_all_types_covered(self) -> None:
-        missing = set(t for t in KustoType if len(t.python_types) > 0) - set(self.registry.keys())
+        missing = set(t for t in _KustoType if len(t.python_types) > 0) - set(self.registry.keys())
         assert len(missing) == 0, [t.name for t in missing]
 
 
-kql_converter = TypeRegistrar("KQL Converter")
-typed_column = TypeRegistrar("Column")
-plain_expression = TypeRegistrar("Plain expression")
-aggregation_expression = TypeRegistrar("Aggregation expression")
+_kql_converter = _TypeRegistrar("KQL Converter")
+_typed_column = _TypeRegistrar("Column")
+_plain_expression = _TypeRegistrar("Plain expression")
+_aggregation_expression = _TypeRegistrar("Aggregation expression")
 
 
-def get_base_types(obj: Union[Type, Callable]) -> Set[KustoType]:
+def _get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
     """
     A registrar-agnostic version of TypeRegistrar.get_base_types
     """
-    for kusto_type in KustoType:
+    for kusto_type in _KustoType:
         if kusto_type.is_type_of(obj):
             # The object is already a member of Kusto types
             return {kusto_type}
-    for type_registrar in (plain_expression, aggregation_expression, typed_column):
+    for type_registrar in (_plain_expression, _aggregation_expression, _typed_column):
         base_types = type_registrar.inverse(obj)
         if len(base_types) > 0:
             break

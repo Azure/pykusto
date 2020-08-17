@@ -1,5 +1,5 @@
 # noinspection SpellCheckingInspection
-KUSTO_KEYWORDS = frozenset([
+_KUSTO_KEYWORDS = frozenset([
     'abs',
     'accumulate',
     'acos',

@@ -14,8 +14,7 @@ pip install pykusto
 ### Usage
 ```python
 from datetime import timedelta
-from pykusto.client import PyKustoClient
-from pykusto.query import Query
+from pykusto import PyKustoClient, Query
 
 # Connect to cluster with AAD device authentication
 # Databases, tables, and columns are auto-retrieved

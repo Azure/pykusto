@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 
-from pykusto.expressions import column_generator as col
-from pykusto.functions import Functions as f
-from pykusto.logger import logger
-from pykusto.query import Query
-from test.test_base import TestBase
+from pykusto import column_generator as col, Functions as f, Query
+# noinspection PyProtectedMember
+from pykusto._src.logger import _logger
+from test.test_base import TestBase, test_logger
 from test.test_base import mock_table as t
 
 
@@ -845,7 +844,7 @@ class TestFunction(TestBase):
         )
 
     def test_iff_different_types(self):
-        with self.assertLogs(logger, logging.WARN) as cm:
+        with self.assertLogs(_logger, logging.WARN) as cm:
             self.assertEqual(
                 ' | project foo = iff(dateField > (ago(time(2.0:0:0.0))), time(3.0:0:0.0), "hello")',
                 Query().project(foo=f.iff(t.dateField > f.ago(timedelta(2)), timedelta(3), "hello")).render()
@@ -863,7 +862,7 @@ class TestFunction(TestBase):
         )
 
     def test_iff_ambiguous_type(self):
-        with self.assertLogs(logger, logging.WARN) as cm:
+        with self.assertLogs(test_logger, logging.WARN) as cm:
             self.assertEqual(
                 " | project foo = iff(boolField, time(3.0:0:0.0), foo - bar)",
                 Query().project(foo=f.iff(t.boolField, timedelta(3), col.foo - col.bar)).render()

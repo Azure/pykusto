@@ -12,20 +12,22 @@ from azure.kusto.data import KustoClient, ClientRequestProperties
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
 
-from pykusto.client import Table
-from pykusto.expressions import NumberColumn, BooleanColumn, ArrayColumn, MappingColumn, StringColumn, DatetimeColumn, TimespanColumn, DynamicColumn
-from pykusto.logger import logger
-from pykusto.type_utils import KustoType
+# noinspection PyProtectedMember
+from pykusto._src.client import _Table
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
+# noinspection PyProtectedMember
+from pykusto._src.type_utils import _KustoType
 
 # Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
 # noinspection PyTypeChecker
-mock_table = Table(
+mock_table = _Table(
     None, "mock_table",
     (
-        NumberColumn('numField'), NumberColumn('numField2'), NumberColumn('numField3'), NumberColumn('numField4'), NumberColumn('numField5'), NumberColumn('numField6'),
-        BooleanColumn('boolField'), ArrayColumn('arrayField'), ArrayColumn('arrayField2'), ArrayColumn('arrayField3'), MappingColumn('mapField'), StringColumn('stringField'),
-        StringColumn('stringField2'), DatetimeColumn('dateField'), DatetimeColumn('dateField2'), DatetimeColumn('dateField3'), TimespanColumn('timespanField'),
-        DynamicColumn('dynamicField')
+        _NumberColumn('numField'), _NumberColumn('numField2'), _NumberColumn('numField3'), _NumberColumn('numField4'), _NumberColumn('numField5'), _NumberColumn('numField6'),
+        _BooleanColumn('boolField'), _ArrayColumn('arrayField'), _ArrayColumn('arrayField2'), _ArrayColumn('arrayField3'), _MappingColumn('mapField'), _StringColumn('stringField'),
+        _StringColumn('stringField2'), _DatetimeColumn('dateField'), _DatetimeColumn('dateField2'), _DatetimeColumn('dateField3'), _TimespanColumn('timespanField'),
+        _DynamicColumn('dynamicField')
     )
 )
 
@@ -40,7 +42,7 @@ class TestBase(TestCase):
         )
 
     def setUp(self) -> None:
-        logger.info("Running test: " + self._testMethodName)
+        test_logger.info("Running test: " + self._testMethodName)
 
     def assertRaises(self, expected_exception: BaseException, test_callable: Callable, *args, **kwargs):
         """
@@ -94,18 +96,18 @@ def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> 
     )
 
 
-def mock_columns_response(columns: List[Tuple[str, KustoType]] = tuple()) -> KustoResponseDataSet:
+def mock_columns_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> KustoResponseDataSet:
     return mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns), ('ColumnName', 'ColumnType'))
 
 
-def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, KustoType]]]] = tuple()) -> KustoResponseDataSet:
+def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, _KustoType]]]] = tuple()) -> KustoResponseDataSet:
     return mock_response(
         tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns),
         ('TableName', 'ColumnName', 'ColumnType')
     )
 
 
-def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, KustoType]]]]]] = tuple()) -> KustoResponseDataSet:
+def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, _KustoType]]]]]] = tuple()) -> KustoResponseDataSet:
     return mock_response(
         tuple(
             (d_name, t_name, c_name, c_type.dot_net_name)
@@ -117,7 +119,7 @@ def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tupl
     )
 
 
-def mock_getschema_response(columns: List[Tuple[str, KustoType]] = tuple()) -> KustoResponseDataSet:
+def mock_getschema_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> KustoResponseDataSet:
     return mock_response(tuple((c_name, c_type.dot_net_name) for c_name, c_type in columns), ('ColumnName', 'DataType'))
 
 
@@ -191,3 +193,6 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response
+
+
+test_logger = logging.getLogger("pykusto_test")

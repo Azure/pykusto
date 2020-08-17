@@ -6,10 +6,10 @@ from typing import Union, Dict, Any, Iterable, Callable, Generator
 
 # Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
 # Also, this makes it easy to use more than one thread, if the need ever arises.
-POOL = ThreadPoolExecutor(max_workers=1)
+_POOL = ThreadPoolExecutor(max_workers=1)
 
 
-class ItemFetcher(metaclass=ABCMeta):
+class _ItemFetcher(metaclass=ABCMeta):
     """
     Abstract class that caches a collection of items, fetching them in certain scenarios.
     """
@@ -99,7 +99,7 @@ class ItemFetcher(metaclass=ABCMeta):
         Fetches all items in a separate thread, making them available after the tread finishes executing. The 'wait_for_items' method can be used to wait for that to happen.
         The specific logic for fetching is defined in concrete subclasses.
         """
-        self.__future = POOL.submit(self.__fetch_items)
+        self.__future = _POOL.submit(self.__fetch_items)
         self.__future.add_done_callback(self._set_items)
 
     def wait_for_items(self) -> None:

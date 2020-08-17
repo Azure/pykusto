@@ -413,7 +413,7 @@ class TestExpressions(TestBase):
     def test_has_cs(self):
         self.assertEqual(
             ' | where stringField has_cs "test"',
-            Query().where(t.stringField.has_cs("test")).render()
+            Query().where(t.stringField.has("test", case_sensitive=True)).render()
         )
 
     def test_column_generator(self):

@@ -169,6 +169,10 @@ class TestFunction(TestBase):
             " | where (hash(stringField)) == 3",
             Query().where(f.hash(t.stringField) == 3).render()
         )
+        self.assertEqual(
+            " | where (hash(stringField, 100)) == 3",
+            Query().where(f.hash(t.stringField, 100) == 3).render()
+        )
 
     def test_hash_sha256(self):
         self.assertEqual(

@@ -53,10 +53,12 @@ class BaseExpression:
     def get_type(self) -> '_StringExpression':
         return _StringExpression(KQL(f'gettype({self.kql})'))
 
-    def __hash__(self) -> '_StringExpression':
+    def __hash__(self, mod: int = None) -> '_StringExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/hashfunction
         """
+        if mod:
+            return _StringExpression(KQL(f'hash({self.kql}, {mod})'))
         return _StringExpression(KQL(f'hash({self.kql})'))
 
     def hash_sha256(self) -> '_StringExpression':

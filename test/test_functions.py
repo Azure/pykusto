@@ -173,10 +173,6 @@ class TestFunction(TestBase):
             " | where (hash(stringField, 100)) == 3",
             Query().where(f.hash(t.stringField, 100) == 3).render()
         )
-        self.assertRaises(
-            ValueError("'mod' argument must be an integer"),
-            lambda: Query().where(f.hash(t.stringField, 1.5) == 3).render()
-        )
         self.assertEqual(
             " | where (hash(stringField, numField)) == 3",
             Query().where(f.hash(t.stringField, t.numField) == 3).render()

@@ -53,13 +53,11 @@ class BaseExpression:
     def get_type(self) -> '_StringExpression':
         return _StringExpression(KQL(f'gettype({self.kql})'))
 
-    def __hash__(self, mod: _NumberType = None) -> '_StringExpression':
+    def __hash__(self, mod: Union['_NumberExpression', int] = None) -> '_StringExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/hashfunction
         """
         if mod is not None:
-            if not isinstance(mod, (_NumberExpression, int)):
-                raise ValueError("'mod' argument must be an integer")
             return _StringExpression(KQL(f'hash({self.kql}, {_to_kql(mod)})'))
         return _StringExpression(KQL(f'hash({self.kql})'))
 

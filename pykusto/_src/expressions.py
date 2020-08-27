@@ -42,7 +42,7 @@ class BaseExpression:
 
     def __bool__(self) -> bool:
         raise TypeError(
-            "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not. "
+            "Conversion of expression to boolean is not allowed, to prevent accidental use of the logical operators: 'and', 'or', and 'not'. "
             "Instead either use the bitwise operators '&', '|' and '~' (but note the difference in operator precedence!), "
             "or the functions 'all_of', 'any_of' and 'not_of'"
         )
@@ -53,12 +53,14 @@ class BaseExpression:
     def get_type(self) -> '_StringExpression':
         return _StringExpression(KQL(f'gettype({self.kql})'))
 
-    def __hash__(self, mod: int = None) -> '_StringExpression':
+    def __hash__(self, mod: _NumberType = None) -> '_StringExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/hashfunction
         """
-        if mod:
-            return _StringExpression(KQL(f'hash({self.kql}, {mod})'))
+        if mod is not None:
+            if not isinstance(mod, (_NumberExpression, int)):
+                raise ValueError("'mod' argument must be an integer")
+            return _StringExpression(KQL(f'hash({self.kql}, {_to_kql(mod)})'))
         return _StringExpression(KQL(f'hash({self.kql})'))
 
     def hash_sha256(self) -> '_StringExpression':

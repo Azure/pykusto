@@ -484,12 +484,18 @@ class _StringExpression(BaseExpression):
     def lower(self) -> '_StringExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolowerfunction
+
+        Don't user this method for case-insensitive comparisons. Instead use the `equals` method with `case_sensitive=False`
+        (see `best practices <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_).
         """
         return _StringExpression(KQL(f'tolower({self.kql})'))
 
     def upper(self) -> '_StringExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toupperfunction
+
+        Don't user this method for case-insensitive comparisons. Instead use the `equals` method with `case_sensitive=False`
+        (see `best practices <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_).
         """
         return _StringExpression(KQL(f'toupper({self.kql})'))
 

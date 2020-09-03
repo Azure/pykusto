@@ -97,18 +97,39 @@ class BaseExpression:
     def __ne__(self, other: _ExpressionType) -> '_BooleanExpression':
         return _BooleanExpression.binary_op(self, ' != ', other)
 
-    def is_in(self, other: _DynamicType) -> '_BooleanExpression':
+    def is_in(self, other: _DynamicType, case_sensitive: bool = False) -> '_BooleanExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * Use `case_sensitive=True` when possible
         """
         if isinstance(other, (List, Tuple)):
             # For a literal array, we can use 'in'
             # The following RHS is the only place where a literal list does not require being surrounded by 'dynamic()'
-            return _BooleanExpression(KQL(f'{self.kql} in ({", ".join(map(_to_kql, other))})'))
+            return _BooleanExpression(KQL(f'{self.kql} {"in" if case_sensitive else "in~"} ({", ".join(map(_to_kql, other))})'))
         # Otherwise, for some reason Kusto does not accept 'in', and we need to use 'contains' as if 'other' was a string
-        return _BooleanExpression.binary_op(other, ' contains ', self)
+        return _BooleanExpression.binary_op(other, ' contains_cs ' if case_sensitive else ' contains ', self)
+
+    def not_in(self, other: _DynamicType, case_sensitive: bool = False) -> '_BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * Use `case_sensitive=True` when possible
+        """
+        if isinstance(other, (List, Tuple)):
+            # For a literal array, we can use 'in'
+            # The following RHS is the only place where a literal list does not require being surrounded by 'dynamic()'
+            return _BooleanExpression(KQL(f'{self.kql} {"!in" if case_sensitive else "!in~"} ({", ".join(map(_to_kql, other))})'))
+        # Otherwise, for some reason Kusto does not accept 'in', and we need to use 'contains' as if 'other' was a string
+        return _BooleanExpression.binary_op(other, ' !contains_cs ' if case_sensitive else ' !contains ', self)
 
     def is_null(self) -> '_BooleanExpression':
         """
@@ -401,9 +422,23 @@ class _StringExpression(BaseExpression):
         return _ArrayExpression(KQL(f'split({self.kql}, {_to_kql(delimiter)}, {_to_kql(requested_index)})'))
 
     def equals(self, other: _StringType, case_sensitive: bool = False) -> _BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * Use `case_sensitive=True` when possible
+        """
         return _BooleanExpression.binary_op(self, ' == ' if case_sensitive else ' =~ ', other)
 
     def not_equals(self, other: _StringType, case_sensitive: bool = False) -> _BooleanExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * Use `case_sensitive=True` when possible
+        """
         return _BooleanExpression.binary_op(self, ' != ' if case_sensitive else ' !~ ', other)
 
     def matches(self, regex: _StringType) -> '_BooleanExpression':
@@ -415,12 +450,22 @@ class _StringExpression(BaseExpression):
     def contains(self, other: _StringType, case_sensitive: bool = False) -> _BooleanExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * When looking for full tokens, `has` works better, since it doesn't look for substrings.
+        * Use `case_sensitive=True` when possible
         """
         return _BooleanExpression.binary_op(self, ' contains_cs ' if case_sensitive else ' contains ', other)
 
     def not_contains(self, other: _StringType, case_sensitive: bool = False) -> _BooleanExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * When looking for full tokens, `not_has` works better, since it doesn't look for substrings.
+        * Use `case_sensitive=True` when possible
         """
         return _BooleanExpression.binary_op(self, ' !contains_cs ' if case_sensitive else ' !contains ', other)
 
@@ -460,6 +505,14 @@ class _StringExpression(BaseExpression):
         """
         return _BooleanExpression(KQL(
             f'{self.as_subexpression()} {"has_cs" if case_sensitive else "has"} {_to_kql(exp, True)}'
+        ))
+
+    def not_has(self, exp: _StringType, case_sensitive: bool = False) -> '_BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        """
+        return _BooleanExpression(KQL(
+            f'{self.as_subexpression()} {"!has_cs" if case_sensitive else "!has"} {_to_kql(exp, True)}'
         ))
 
 

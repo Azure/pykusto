@@ -131,7 +131,7 @@ class Query:
         * Select the table with the fewer rows to be the first one ("left" side).
         * Across clusters, run the query on the "right" side of the join, where most of the data is located.
 
-        Best practices once `hint.strategy` is supported (see `here <https://github.com/Azure/pykusto/issues/122>`_):
+        Best practices once `hint.strategy` is supported (see `here <https://github.com/Azure/pykusto/issues/104>`_):
 
         * When left side is small (up to ~100,000 records) and right side is large use `hint.strategy=broadcast`.
         * When both sides are too large	use `hint.strategy=shuffle`.

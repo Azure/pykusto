@@ -62,6 +62,7 @@ class Query:
 
         * Whenever possible, use time filters first.
         * Prefer filtering on table columns, and not on calculated columns.
+        * Simplest terms first: If you have multiple clauses conjoined with and, put first the clauses that involve just one column.
 
         Warning: to apply a logical 'not', do not use the Python 'not' operator, it will simply produce a 'False' boolean value. Use either the `~` operator or `f.not_of()`.
         """

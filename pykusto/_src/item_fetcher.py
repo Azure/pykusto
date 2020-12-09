@@ -22,8 +22,8 @@ class _ItemFetcher(metaclass=ABCMeta):
     def __init__(self, items: Union[None, Dict[str, Any]], fetch_by_default: bool) -> None:
         """
         :param items: Initial items. If not None, items will not be fetched until the "refresh" method is explicitly called.
-        :param fetch_by_default: When true, items will be fetched in the constructor, but only if they were not supplied as a parameter. Subclasses are encouraged to pass
-                                    on the value of "fetch_by_default" to child ItemFetchers.
+        :param fetch_by_default: When true, items will be fetched even if not explicitly requested, but only if they were not supplied as a parameter. Subclasses are encouraged
+                                to pass on the value of "fetch_by_default" to child ItemFetchers.
         """
         self._fetch_by_default = fetch_by_default
         self.__items = items
@@ -55,34 +55,23 @@ class _ItemFetcher(metaclass=ABCMeta):
         Convenience function for obtaining an item using dot notation.
         Often dot notation is used for other purposes, and sometimes that happens implicitly. For example Jupyter notebooks automatically run dot-notation code in the background
         on objects. For this reason, to avoid undesired erroneous queries sent to Kusto, an item is returned only if one already exists, and a new item is not generated otherwise
-        (in contrast to bracket notation). If items have not been fetched yet, a time-restricted attempt will be made to fetch them.
+        (in contrast to bracket notation).
 
         :param name: Name of item to return
         :return: The item with the given name
         :raises AttributeError: If there is no such item
         """
-        return self._get_item(
-            name,
-            lambda: _raise(AttributeError(f"{self} has no attribute '{name}'")),
-            fetch_if_needed=True,
-            timeout_seconds=3,
-        )
+        return self._get_item(name, lambda: _raise(AttributeError(f"{self} has no attribute '{name}'")))
 
     def __getitem__(self, name: str) -> Any:
         """
         Convenience function for obtaining an item using bracket notation.
-        Since bracket notation is only used explicitly, a new item is generated if needed (in contrast to dot notation). If items have not been fetched yet,
-        a time-restricted attempt will be made to fetch them.
+        Since bracket notation is only used explicitly, a new item is generated if needed (in contrast to dot notation).
 
         :param name: Name of item to return
         :return: The item with the given name
         """
-        return self._get_item(
-            name,
-            lambda: self.__generate_and_save_new_item(name),
-            fetch_if_needed=True,
-            timeout_seconds=3,
-        )
+        return self._get_item(name, lambda: self.__generate_and_save_new_item(name))
 
     def __generate_and_save_new_item(self, name: str) -> Any:
         with self.__items_lock:
@@ -94,9 +83,9 @@ class _ItemFetcher(metaclass=ABCMeta):
                 self.__items[name] = item
             return item
 
-    def _get_item(self, name: str, fallback: Callable[[], Any], fetch_if_needed: bool = False, timeout_seconds: Union[None, float] = None) -> Any:
+    def _get_item(self, name: str, fallback: Callable[[], Any], timeout_seconds: Union[None, float] = 3) -> Any:
         if not self.__fetched:
-            if fetch_if_needed:
+            if self._fetch_by_default:
                 self.blocking_refresh(timeout_seconds)
             else:
                 return fallback()

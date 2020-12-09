@@ -39,11 +39,13 @@ class _ItemFetcher(metaclass=ABCMeta):
             self.refresh()
 
     def _get_item_names(self) -> Generator[str, None, None]:
-        self.blocking_refresh_if_needed()
+        if not self.__fetched:
+            self.blocking_refresh()
         yield from self.__items.keys()
 
     def _get_items(self) -> Generator[Any, None, None]:
-        self.blocking_refresh_if_needed()
+        if not self.__fetched:
+            self.blocking_refresh()
         yield from self.__items.values()
 
     @abstractmethod
@@ -99,7 +101,9 @@ class _ItemFetcher(metaclass=ABCMeta):
         """
         Used by Jupyter for autocomplete
         """
-        self.blocking_refresh_if_needed(3)
+        if not self.__fetched and self._fetch_by_default:
+            self.refresh()
+            self.wait_for_items(3)
         return sorted(chain(super().__dir__(), tuple() if self.__items is None else filter(lambda name: '.' not in name, self.__items.keys())))
 
     def refresh(self) -> None:
@@ -120,11 +124,6 @@ class _ItemFetcher(metaclass=ABCMeta):
     def blocking_refresh(self, timeout_seconds: Union[None, float] = None) -> None:
         self.refresh()
         self.wait_for_items(timeout_seconds)
-
-    def blocking_refresh_if_needed(self, timeout_seconds: Union[None, float] = None) -> None:
-        if not self.__fetched and self._fetch_by_default:
-            self.refresh()
-            self.wait_for_items(timeout_seconds)
 
     @abstractmethod
     def _internal_get_items(self) -> Dict[str, Any]:

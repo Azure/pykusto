@@ -513,7 +513,7 @@ class _StringExpression(BaseExpression):
             f'{self.as_subexpression()} {"has_cs" if case_sensitive else "has"} {_to_kql(exp, True)}'
         ))
 
-    def not_has(self, exp: _StringType, case_sensitive: bool = False) -> '_BooleanExpression':
+    def has_not(self, exp: _StringType, case_sensitive: bool = False) -> '_BooleanExpression':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
         """

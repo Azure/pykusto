@@ -134,6 +134,7 @@ class _ItemFetcher(metaclass=ABCMeta):
         with self.__items_lock:
             self.__items = self._internal_get_items()
             assert self.__items is not None
+            self.__fetched = True
 
 
 def _raise(e: BaseException):

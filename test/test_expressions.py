@@ -432,10 +432,16 @@ class TestExpressions(TestBase):
             Query().where(t.stringField.has("test")).render()
         )
 
-    def test_not_has(self):
+    def test_has_not(self):
         self.assertEqual(
             ' | where stringField !has "test"',
             Query().where(t.stringField.has_not("test")).render()
+        )
+
+    def test_has_not_cs(self):
+        self.assertEqual(
+            ' | where stringField !has_cs "test"',
+            Query().where(t.stringField.has_not("test", True)).render()
         )
 
     def test_has_cs(self):

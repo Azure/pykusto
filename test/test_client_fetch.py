@@ -42,7 +42,10 @@ class TestClientFetch(TestBase):
             mock_response_future.executed = True
 
         try:
-            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
+            mock_kusto_client = MockKustoClient(
+                databases_response=mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])])]),
+                upon_execute=upon_execute, record_metadata=True,
+            )
             client = PyKustoClient(mock_kusto_client)
             # Executing a query in a separate thread, because it is supposed to block until the fetch returns
             result_database_names = []

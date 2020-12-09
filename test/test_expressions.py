@@ -416,6 +416,12 @@ class TestExpressions(TestBase):
 
     def test_not_in_expression(self):
         self.assertEqual(
+            ' | where arrayField !contains stringField',
+            Query().where(t.stringField.not_in(t.arrayField, False)).render()
+        )
+
+    def test_not_in_cs_expression(self):
+        self.assertEqual(
             ' | where arrayField !contains_cs stringField',
             Query().where(t.stringField.not_in(t.arrayField, True)).render()
         )

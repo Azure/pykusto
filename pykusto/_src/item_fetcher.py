@@ -130,9 +130,10 @@ class _ItemFetcher(metaclass=ABCMeta):
         raise NotImplementedError()  # pragma: no cover
 
     def __fetch_items(self) -> None:
+        fetched_items = self._internal_get_items()
+        assert fetched_items is not None
         with self.__items_lock:
-            self.__items = self._internal_get_items()
-            assert self.__items is not None
+            self.__items = fetched_items
             self.__fetched = True
 
 

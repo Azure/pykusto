@@ -296,7 +296,26 @@ class TestClientFetch(TestBase):
         )
         self.assertEqual(type(client.test_db.mock_table.foo), _StringColumn)
 
-    def test_client_not_fetched(self):
-        client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
-        self.assertEqual(frozenset(), set(client.get_databases_names()))
-        self.assertEqual(frozenset(), set(client.get_databases()))
+    def test_client_database_names_not_fetched(self):
+        client = PyKustoClient(
+            MockKustoClient(
+                databases_response=mock_databases_response([
+                    ('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])]),
+                    ('', [('test_table1', [('foo1', _KustoType.STRING), ('bar1', _KustoType.INT)])])
+                ]),
+            ),
+            fetch_by_default=False,
+        )
+        self.assertEqual(frozenset(['test_db']), set(client.get_databases_names()))
+
+    def test_client_databases_not_fetched(self):
+        client = PyKustoClient(
+            MockKustoClient(
+                databases_response=mock_databases_response([
+                    ('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])]),
+                    ('', [('test_table1', [('foo1', _KustoType.STRING), ('bar1', _KustoType.INT)])])
+                ]),
+            ),
+            fetch_by_default=False,
+        )
+        self.assertEqual(frozenset(['test_db']), set(db.get_name() for db in client.get_databases()))

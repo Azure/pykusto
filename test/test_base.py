@@ -1,7 +1,8 @@
 import json
 import logging
 import sys
-from typing import Callable, Tuple, Any, List, Optional
+from concurrent.futures import Future
+from typing import Callable, Tuple, Any, List, Optional, Union
 from unittest import TestCase
 # noinspection PyProtectedMember
 from unittest.case import _AssertLogsContext
@@ -152,6 +153,7 @@ class MockKustoClient(KustoClient):
     main_response: KustoResponseDataSet
     upon_execute: Callable[[RecordedQuery], None]
     record_metadata: bool
+    query_future: Union[None, Future]
 
     def __init__(
             self,
@@ -165,7 +167,8 @@ class MockKustoClient(KustoClient):
             getschema_response: KustoResponseDataSet = mock_getschema_response([]),
             main_response: KustoResponseDataSet = mock_response(tuple()),
             upon_execute: Callable[[RecordedQuery], None] = None,
-            record_metadata: bool = False
+            record_metadata: bool = False,
+            block: bool = False,
     ):
         self.recorded_queries = []
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
@@ -176,9 +179,22 @@ class MockKustoClient(KustoClient):
         self.main_response = main_response
         self.upon_execute = upon_execute
         self.record_metadata = record_metadata
+        if block:
+            self.query_future = Future()
+        else:
+            self.query_future = None
+
+    def release(self):
+        if self.query_future is not None:
+            self.query_future.set_result(None)
+
+    def blocked(self):
+        return self.query_future is not None and not self.query_future.done()
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         recorded_query = RecordedQuery(database, rendered_query, properties)
+        if self.query_future is not None:
+            self.query_future.result()
         if self.upon_execute is not None:
             self.upon_execute(recorded_query)
         metadata_query = True

@@ -156,9 +156,12 @@ class MockKustoClient(KustoClient):
     def __init__(
             self,
             cluster="https://test_cluster.kusto.windows.net",
-            columns_response: KustoResponseDataSet = mock_columns_response([]),
-            tables_response: KustoResponseDataSet = mock_tables_response([]),
-            databases_response: KustoResponseDataSet = mock_databases_response([]),
+            columns_response: KustoResponseDataSet = mock_columns_response([('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
+            tables_response: KustoResponseDataSet = mock_tables_response([
+                ('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
+                ('mock_table_2', [('baz', _KustoType.BOOL)]),
+            ]),
+            databases_response: KustoResponseDataSet = mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])])]),
             getschema_response: KustoResponseDataSet = mock_getschema_response([]),
             main_response: KustoResponseDataSet = mock_response(tuple()),
             upon_execute: Callable[[RecordedQuery], None] = None,

@@ -1,6 +1,6 @@
 from concurrent.futures import Future
 from threading import Thread, Lock
-from typing import Any, Type
+from typing import Any, Type, Callable, List
 
 from pykusto import PyKustoClient, Query
 # noinspection PyProtectedMember
@@ -11,11 +11,32 @@ from pykusto._src.expressions import _StringColumn, _NumberColumn, _AnyTypeColum
 from pykusto._src.type_utils import _KustoType
 from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_tables_response, mock_getschema_response, mock_databases_response
 
+background_query_lock = Lock()
+
 
 class TestClientFetch(TestBase):
+    query_thread: Thread = None
+    query_results: List = []
+
     def assertType(self, obj: Any, expected_type: Type):
         self.assertEqual(type(obj), expected_type)
-    
+
+    @staticmethod
+    def query_in_background(query: Callable[[], Any]):
+        with background_query_lock:
+            assert TestClientFetch.query_thread is None
+            TestClientFetch.query_results.clear()
+            TestClientFetch.query_thread = Thread(target=lambda: TestClientFetch.query_results.extend(query()))
+            TestClientFetch.query_thread.start()
+
+    @staticmethod
+    def get_background_query_result():
+        with background_query_lock:
+            assert TestClientFetch.query_thread is not None
+            TestClientFetch.query_thread.join()
+            TestClientFetch.query_thread = None
+            return tuple(TestClientFetch.query_results)
+
     def test_column_fetch(self):
         mock_kusto_client = MockKustoClient(record_metadata=True)
         table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['mock_table']
@@ -36,26 +57,19 @@ class TestClientFetch(TestBase):
     def test_block_until_fetch_is_done(self):
         mock_client = MockKustoClient(block=True, record_metadata=True)
         client = PyKustoClient(mock_client)
-        # Executing a query in a separate thread, because it is supposed to block until the fetch returns
-        result_database_names = []
-        query_thread = Thread(target=lambda: result_database_names.extend(client.get_databases_names()))
-        query_thread.start()
+        self.query_in_background(client.get_databases_names)
         # Make sure above lines were called while the fetch query was still waiting
         assert mock_client.blocked()
         mock_client.release()
         client.wait_for_items()
         # Make sure the fetch query was indeed called
         assert not mock_client.blocked()
-        query_thread.join()
-        self.assertEqual(result_database_names, ['test_db'])
+        self.assertEqual(self.get_background_query_result(), ('test_db', ))
 
     def test_dir_before_fetch_is_done(self):
         mock_client = MockKustoClient(block=True, record_metadata=True)
         client = PyKustoClient(mock_client)
-        # Executing a query in a separate thread, because it is supposed to block until the fetch returns
-        dir_result = []
-        query_thread = Thread(target=lambda: dir_result.extend(dir(client)))
-        query_thread.start()
+        self.query_in_background(lambda: dir(client))
         # Make sure above lines were called while the fetch query was still waiting
         assert mock_client.blocked()
         # Return the fetch
@@ -63,8 +77,7 @@ class TestClientFetch(TestBase):
         client.wait_for_items()
         # Make sure the fetch query was indeed called
         assert not mock_client.blocked()
-        query_thread.join()
-        self.assertIn('test_db', dir_result)
+        self.assertIn('test_db', self.get_background_query_result())
 
     def test_column_fetch_slow(self):
         mock_client = MockKustoClient(block=True, record_metadata=True)
@@ -105,9 +118,7 @@ class TestClientFetch(TestBase):
             table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['mock_table']
             table.refresh()
 
-            # Executing a query in a separate thread, because it is supposed to block until the fetch returns
-            query_thread = Thread(target=Query(table).take(5).execute)
-            query_thread.start()
+            self.query_in_background(Query(table).take(5).execute)
 
             # Make sure above lines were called while the fetch query was still waiting
             assert not mock_response_future.executed
@@ -116,7 +127,7 @@ class TestClientFetch(TestBase):
             mock_response_future.set_result(None)
 
         table.wait_for_items()
-        query_thread.join()
+        self.get_background_query_result()
         # Make sure the fetch query was indeed called
         assert mock_response_future.executed
         # Before the fix the order of returned query was reversed

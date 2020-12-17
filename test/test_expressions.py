@@ -410,7 +410,7 @@ class TestExpressions(TestBase):
 
     def test_is_in_expression(self):
         self.assertEqual(
-            ' | where arrayField contains_cs stringField',
+            ' | where set_has_element(arrayField, stringField)',
             Query().where(t.stringField.is_in(t.arrayField, True)).render()
         )
 

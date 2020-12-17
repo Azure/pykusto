@@ -102,6 +102,7 @@ class BaseExpression:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/dynamic#operators-and-functions-over-dynamic-types
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/inoperator
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datatypes-string-operators
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sethaselementfunction
 
         Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
 
@@ -111,8 +112,9 @@ class BaseExpression:
             # For a literal array, we can use 'in'
             # The following RHS is the only place where a literal list does not require being surrounded by 'dynamic()'
             return _BooleanExpression(KQL(f'{self.kql} {"in" if case_sensitive else "in~"} ({", ".join(map(_to_kql, other))})'))
-        # Otherwise, for some reason Kusto does not accept 'in', and we need to use 'contains' as if 'other' was a string
-        return _BooleanExpression.binary_op(other, ' contains_cs ' if case_sensitive else ' contains ', self)
+        # Otherwise, Kusto does not accept 'in', and we need to use 'set_has_element', which is always case-sensitive
+        assert case_sensitive, "Member test for non-literal array cannot be case insensitive"
+        return _BooleanExpression(KQL(f'set_has_element({_to_kql(other)}, {self.kql})'))
 
     def not_in(self, other: _DynamicType, case_sensitive: bool = False) -> '_BooleanExpression':
         """

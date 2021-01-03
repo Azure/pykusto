@@ -1,7 +1,9 @@
 import json
 import logging
 import sys
-from typing import Callable, Tuple, Any, List, Optional
+from concurrent.futures import Future
+from threading import Event
+from typing import Callable, Tuple, Any, List, Optional, Union
 from unittest import TestCase
 # noinspection PyProtectedMember
 from unittest.case import _AssertLogsContext
@@ -150,19 +152,24 @@ class MockKustoClient(KustoClient):
     databases_response: KustoResponseDataSet
     getschema_response: KustoResponseDataSet
     main_response: KustoResponseDataSet
-    upon_execute: Callable[[RecordedQuery], None]
     record_metadata: bool
+    block: bool
+    query_future: Union[None, Future]
+    blocked_event: Event
 
     def __init__(
             self,
             cluster="https://test_cluster.kusto.windows.net",
-            columns_response: KustoResponseDataSet = mock_columns_response([]),
-            tables_response: KustoResponseDataSet = mock_tables_response([]),
-            databases_response: KustoResponseDataSet = mock_databases_response([]),
+            columns_response: KustoResponseDataSet = mock_columns_response([('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
+            tables_response: KustoResponseDataSet = mock_tables_response([
+                ('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
+                ('mock_table_2', [('baz', _KustoType.BOOL)]),
+            ]),
+            databases_response: KustoResponseDataSet = mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])])]),
             getschema_response: KustoResponseDataSet = mock_getschema_response([]),
             main_response: KustoResponseDataSet = mock_response(tuple()),
-            upon_execute: Callable[[RecordedQuery], None] = None,
-            record_metadata: bool = False
+            record_metadata: bool = False,
+            block: bool = False,
     ):
         self.recorded_queries = []
         self._query_endpoint = urljoin(cluster, "/v2/rest/query")
@@ -171,13 +178,35 @@ class MockKustoClient(KustoClient):
         self.databases_response = databases_response
         self.getschema_response = getschema_response
         self.main_response = main_response
-        self.upon_execute = upon_execute
         self.record_metadata = record_metadata
+        if block:
+            self.block = True
+            self.query_future = Future()
+        else:
+            self.block = False
+            self.query_future = None
+        self.blocked_event = Event()
+
+    def release(self):
+        assert self.blocked()
+        if self.query_future is not None:
+            self.query_future.set_result(None)
+
+    def blocked(self):
+        return self.blocked_event.is_set()
+
+    def wait_until_blocked(self):
+        self.blocked_event.wait()
+
+    def dont_block_next_requests(self):
+        self.block = False
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
         recorded_query = RecordedQuery(database, rendered_query, properties)
-        if self.upon_execute is not None:
-            self.upon_execute(recorded_query)
+        if self.block:
+            self.blocked_event.set()
+            self.query_future.result()
+            self.blocked_event.clear()
         metadata_query = True
         if rendered_query == '.show database schema | project TableName, ColumnName, ColumnType | limit 10000':
             response = self.tables_response

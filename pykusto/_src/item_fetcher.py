@@ -14,39 +14,38 @@ class _ItemFetcher(metaclass=ABCMeta):
     Abstract class that caches a collection of items, fetching them in certain scenarios.
     """
     _fetch_by_default: bool
+    __fetched: bool
     __items: Union[None, Dict[str, Any]]
     __future: Union[None, Future]
-    __item_write_lock: Lock
-    __item_fetch_lock: Lock
+    __items_lock: Lock
 
     def __init__(self, items: Union[None, Dict[str, Any]], fetch_by_default: bool) -> None:
         """
         :param items: Initial items. If not None, items will not be fetched until the "refresh" method is explicitly called.
-        :param fetch_by_default: When true, items will be fetched in the constructor, but only if they were not supplied as a parameter. Subclasses are encouraged to pass
-                                    on the value of "fetch_by_default" to child ItemFetchers.
+        :param fetch_by_default: When true, items will be fetched even if not explicitly requested, but only if they were not supplied as a parameter. Subclasses are encouraged
+                                to pass on the value of "fetch_by_default" to child ItemFetchers.
         """
         self._fetch_by_default = fetch_by_default
         self.__items = items
+        self.__fetched = self.__items is not None
         self.__future = None
-        self.__item_write_lock = Lock()
-        self.__item_fetch_lock = Lock()
+        self.__items_lock = Lock()
 
     def _items_fetched(self) -> bool:
-        return self.__items is not None
+        return self.__fetched
 
     def _refresh_if_needed(self) -> None:
-        if self.__items is None and self._fetch_by_default:
+        if not self.__fetched and self._fetch_by_default:
             self.refresh()
 
     def _get_item_names(self) -> Generator[str, None, None]:
-        if self.__items is None:
-            return
-        # No race condition because once fetched self.__items will never go back to being None
+        if not self.__fetched:
+            self.blocking_refresh()
         yield from self.__items.keys()
 
     def _get_items(self) -> Generator[Any, None, None]:
-        if self.__items is None:
-            return
+        if not self.__fetched:
+            self.blocking_refresh()
         yield from self.__items.values()
 
     @abstractmethod
@@ -77,21 +76,34 @@ class _ItemFetcher(metaclass=ABCMeta):
         return self._get_item(name, lambda: self.__generate_and_save_new_item(name))
 
     def __generate_and_save_new_item(self, name: str) -> Any:
-        item = self._new_item(name)
-        with self.__item_write_lock:
+        with self.__items_lock:
             if self.__items is None:
                 self.__items = {}
-            self.__items[name] = item
-        return item
+            item = self.__items.get(name)
+            if item is None:
+                item = self._new_item(name)
+                self.__items[name] = item
+            return item
 
-    def _get_item(self, name: str, fallback: Callable[[], Any]) -> Any:
-        if self.__items is not None:
-            resolved_item = self.__items.get(name)
-            if resolved_item is not None:
-                return resolved_item
-        return fallback()
+    def _get_item(self, name: str, fallback: Callable[[], Any], timeout_seconds: Union[None, float] = 3) -> Any:
+        if not self.__fetched:
+            if self._fetch_by_default:
+                self.blocking_refresh(timeout_seconds)
+            else:
+                return fallback()
+
+        resolved_item = self.__items.get(name)
+        if resolved_item is None:
+            return fallback()
+        return resolved_item
 
     def __dir__(self) -> Iterable[str]:
+        """
+        Used by Jupyter for autocomplete
+        """
+        if not self.__fetched and self._fetch_by_default:
+            self.refresh()
+            self.wait_for_items(3)
         return sorted(chain(super().__dir__(), tuple() if self.__items is None else filter(lambda name: '.' not in name, self.__items.keys())))
 
     def refresh(self) -> None:
@@ -100,31 +112,29 @@ class _ItemFetcher(metaclass=ABCMeta):
         The specific logic for fetching is defined in concrete subclasses.
         """
         self.__future = _POOL.submit(self.__fetch_items)
-        self.__future.add_done_callback(self._set_items)
 
-    def wait_for_items(self) -> None:
+    def wait_for_items(self, timeout_seconds: Union[None, float] = None) -> None:
         """
         If item fetching is currently in progress, wait until it is done and return, otherwise return immediately.
         If several fetching threads are in progress, wait for the most recent one.
         """
         if self.__future is not None:
-            wait((self.__future,))
+            wait((self.__future,), timeout=timeout_seconds)
 
-    def blocking_refresh(self) -> None:
+    def blocking_refresh(self, timeout_seconds: Union[None, float] = None) -> None:
         self.refresh()
-        self.wait_for_items()
-
-    def _set_items(self, future: Future):
-        with self.__item_write_lock:
-            self.__items = future.result()
+        self.wait_for_items(timeout_seconds)
 
     @abstractmethod
     def _internal_get_items(self) -> Dict[str, Any]:
         raise NotImplementedError()  # pragma: no cover
 
-    def __fetch_items(self) -> Dict[str, Any]:
-        with self.__item_fetch_lock:
-            return self._internal_get_items()
+    def __fetch_items(self) -> None:
+        fetched_items = self._internal_get_items()
+        assert fetched_items is not None
+        with self.__items_lock:
+            self.__items = fetched_items
+            self.__fetched = True
 
 
 def _raise(e: BaseException):

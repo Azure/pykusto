@@ -1,5 +1,5 @@
-from concurrent.futures import Future
 from threading import Thread, Lock
+from typing import Any, Type, Callable, List
 
 from pykusto import PyKustoClient, Query
 # noinspection PyProtectedMember
@@ -8,121 +8,123 @@ from pykusto._src.client import _Database
 from pykusto._src.expressions import _StringColumn, _NumberColumn, _AnyTypeColumn, _BooleanColumn
 # noinspection PyProtectedMember
 from pykusto._src.type_utils import _KustoType
-from test.test_base import TestBase, MockKustoClient, mock_columns_response, RecordedQuery, mock_tables_response, mock_getschema_response, mock_databases_response
+from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_tables_response, mock_getschema_response, mock_databases_response
+
+background_query_lock = Lock()
 
 
 class TestClientFetch(TestBase):
+    query_thread: Thread = None
+    query_results: List = []
+
+    def assertType(self, obj: Any, expected_type: Type):
+        self.assertEqual(type(obj), expected_type)
+
+    @staticmethod
+    def query_in_background(query: Callable[[], Any]):
+        with background_query_lock:
+            assert TestClientFetch.query_thread is None
+            TestClientFetch.query_results.clear()
+            TestClientFetch.query_thread = Thread(target=lambda: TestClientFetch.query_results.extend(query()))
+            TestClientFetch.query_thread.start()
+
+    @staticmethod
+    def get_background_query_result():
+        with background_query_lock:
+            assert TestClientFetch.query_thread is not None
+            TestClientFetch.query_thread.join()
+            TestClientFetch.query_thread = None
+            return tuple(TestClientFetch.query_results)
+
     def test_column_fetch(self):
-        mock_kusto_client = MockKustoClient(
-            columns_response=mock_columns_response([('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
-            record_metadata=True,
-        )
-        table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['mock_table']
+        mock_client = MockKustoClient(record_metadata=True)
+        table = PyKustoClient(mock_client, fetch_by_default=False)['test_db']['mock_table']
         table.blocking_refresh()
         # Fetch query
         self.assertEqual(
             [RecordedQuery('test_db', '.show table mock_table | project AttributeName, AttributeType | limit 10000')],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
         # Dot notation
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
+        self.assertType(table.foo, _StringColumn)
+        self.assertType(table.bar, _NumberColumn)
         # Bracket notation
-        self.assertEqual(type(table['foo']), _StringColumn)
-        self.assertEqual(type(table['bar']), _NumberColumn)
-        self.assertEqual(type(table['baz']), _AnyTypeColumn)
+        self.assertType(table['foo'], _StringColumn)
+        self.assertType(table['bar'], _NumberColumn)
+        self.assertType(table['baz'], _AnyTypeColumn)
+
+    def test_block_until_fetch_is_done(self):
+        mock_client = MockKustoClient(block=True, record_metadata=True)
+        client = PyKustoClient(mock_client)
+        self.query_in_background(client.get_databases_names)
+        mock_client.release()
+        client.wait_for_items()
+        # Make sure the fetch query was indeed called
+        assert not mock_client.blocked()
+        self.assertEqual(self.get_background_query_result(), ('test_db', ))
+
+    def test_dir_before_fetch_is_done(self):
+        mock_client = MockKustoClient(block=True, record_metadata=True)
+        client = PyKustoClient(mock_client)
+        self.query_in_background(lambda: dir(client))
+        # Return the fetch
+        mock_client.release()
+        client.wait_for_items()
+        # Make sure the fetch query was indeed called
+        assert not mock_client.blocked()
+        self.assertIn('test_db', self.get_background_query_result())
 
     def test_column_fetch_slow(self):
-        mock_response_future = Future()
-        mock_response_future.executed = False
-
-        # noinspection PyUnusedLocal
-        def upon_execute(query):  # Parameter required since function is passed as Callable[[RecordedQuery], None]
-            mock_response_future.result()
-            mock_response_future.executed = True
-
-        try:
-            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
-            table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['mock_table']
-            table.refresh()
-            self.assertEqual(type(table['foo']), _AnyTypeColumn)
-            self.assertEqual(type(table['bar']), _AnyTypeColumn)
-            self.assertEqual(type(table['baz']), _AnyTypeColumn)
-            # Make sure above lines were called while the fetch query was still waiting
-            assert not mock_response_future.executed
-        finally:
-            # Return the fetch
-            mock_response_future.set_result(None)
-
+        mock_client = MockKustoClient(block=True, record_metadata=True)
+        table = PyKustoClient(mock_client, fetch_by_default=False)['test_db']['mock_table']
+        table.refresh()
+        mock_client.wait_until_blocked()
+        self.assertType(table['foo'], _AnyTypeColumn)
+        self.assertType(table['bar'], _AnyTypeColumn)
+        self.assertType(table['baz'], _AnyTypeColumn)
+        # Return the fetch
+        mock_client.release()
         table.wait_for_items()
         # Make sure the fetch query was indeed called
-        assert mock_response_future.executed
+        assert not mock_client.blocked()
 
     def test_query_before_fetch_returned(self):
-        mock_response_future = Future()
-        mock_response_future.returned_queries = []
-        mock_response_future.called = False
-        mock_response_future.executed = False
-        future_called_lock = Lock()
-
-        def upon_execute(query):
-            with future_called_lock:
-                if mock_response_future.called:
-                    first_run = False
-                else:
-                    mock_response_future.called = True
-                    first_run = True
-            if first_run:
-                mock_response_future.result()
-                mock_response_future.executed = True
-            mock_response_future.returned_queries.append(query)
-
-        try:
-            mock_kusto_client = MockKustoClient(upon_execute=upon_execute, record_metadata=True)
-            table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['mock_table']
-            table.refresh()
-
-            # Executing a query in a separate thread, because it is supposed to block until the fetch returns
-            query_thread = Thread(target=Query(table).take(5).execute)
-            query_thread.start()
-
-            # Make sure above lines were called while the fetch query was still waiting
-            assert not mock_response_future.executed
-        finally:
-            # Return the fetch
-            mock_response_future.set_result(None)
-
+        mock_client = MockKustoClient(block=True, record_metadata=True)
+        table = PyKustoClient(mock_client, fetch_by_default=False)['test_db']['mock_table']
+        table.refresh()
+        mock_client.wait_until_blocked()
+        mock_client.dont_block_next_requests()
+        self.query_in_background(Query(table).take(5).execute)
+        # Return the fetch
+        mock_client.release()
         table.wait_for_items()
-        query_thread.join()
+        self.get_background_query_result()
         # Make sure the fetch query was indeed called
-        assert mock_response_future.executed
+        assert not mock_client.blocked()
         # Before the fix the order of returned query was reversed
         self.assertEqual(
             [
                 RecordedQuery('test_db', '.show table mock_table | project AttributeName, AttributeType | limit 10000'),
                 RecordedQuery('test_db', 'mock_table | take 5'),
             ],
-            mock_response_future.returned_queries,
+            mock_client.recorded_queries,
         )
 
     def test_table_fetch(self):
-        mock_kusto_client = MockKustoClient(
-            tables_response=mock_tables_response([('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])]),
-            record_metadata=True,
-        )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
+        mock_client = MockKustoClient(record_metadata=True)
+        db = PyKustoClient(mock_client, fetch_by_default=False)['test_db']
         db.blocking_refresh()
         self.assertEqual(
             [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
         table = db.mock_table
         # Table columns
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
-        self.assertEqual(type(table['baz']), _AnyTypeColumn)
+        self.assertType(table.foo, _StringColumn)
+        self.assertType(table.bar, _NumberColumn)
+        self.assertType(table['baz'], _AnyTypeColumn)
         # Bracket notation
-        self.assertEqual(type(db['other_table']['foo']), _AnyTypeColumn)
+        self.assertType(db['other_table']['foo'], _AnyTypeColumn)
         # Dot notation error
         self.assertRaises(
             AttributeError("PyKustoClient(test_cluster.kusto.windows.net).Database(test_db) has no attribute 'test_table_1'"),
@@ -130,37 +132,31 @@ class TestClientFetch(TestBase):
         )
 
     def test_two_tables_fetch(self):
-        mock_kusto_client = MockKustoClient(
-            tables_response=mock_tables_response([
-                ('test_table_1', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
-                ('test_table_2', [('baz', _KustoType.BOOL)])
-            ]),
-            record_metadata=True,
-        )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
+        mock_client = MockKustoClient(record_metadata=True)
+        db = PyKustoClient(mock_client, fetch_by_default=False)['test_db']
         db.blocking_refresh()
         self.assertEqual(
             [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
         # Table columns
-        self.assertEqual(type(db.test_table_1.foo), _StringColumn)
-        self.assertEqual(type(db.test_table_1.bar), _NumberColumn)
-        self.assertEqual(type(db.test_table_2['baz']), _BooleanColumn)
-        self.assertEqual(type(db['other_table']['foo']), _AnyTypeColumn)
+        self.assertType(db.mock_table.foo, _StringColumn)
+        self.assertType(db.mock_table.bar, _NumberColumn)
+        self.assertType(db.mock_table_2['baz'], _BooleanColumn)
+        self.assertType(db['other_table']['foo'], _AnyTypeColumn)
         # Union
-        table = db.get_table('test_table_1', 'test_table_2')
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
-        self.assertEqual(type(table.baz), _BooleanColumn)
+        table = db.get_table('mock_table', 'mock_table_2')
+        self.assertType(table.foo, _StringColumn)
+        self.assertType(table.bar, _NumberColumn)
+        self.assertType(table.baz, _BooleanColumn)
         # Wildcard
-        table = db.get_table('test_table_*')
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
-        self.assertEqual(type(table.baz), _BooleanColumn)
+        table = db.get_table('mock_*')
+        self.assertType(table.foo, _StringColumn)
+        self.assertType(table.bar, _NumberColumn)
+        self.assertType(table.baz, _BooleanColumn)
 
     def test_union_column_name_conflict(self):
-        mock_kusto_client = MockKustoClient(
+        mock_client = MockKustoClient(
             tables_response=mock_tables_response([
                 ('test_table_1', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
                 ('test_table_2', [('foo', _KustoType.BOOL)])
@@ -170,7 +166,7 @@ class TestClientFetch(TestBase):
             ]),
             record_metadata=True,
         )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
+        db = PyKustoClient(mock_client, fetch_by_default=False)['test_db']
         db.blocking_refresh()
         table = db.get_table('test_table_*')
         table.blocking_refresh()  # To trigger name conflict resolution
@@ -181,51 +177,42 @@ class TestClientFetch(TestBase):
                 # Fallback for name conflict resolution
                 RecordedQuery('test_db', 'union test_table_* | getschema | project ColumnName, DataType | limit 10000')
             ],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
-        self.assertEqual(type(table.foo_string), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
-        self.assertEqual(type(table.foo_bool), _BooleanColumn)
+        self.assertType(table.foo_string, _StringColumn)
+        self.assertType(table.bar, _NumberColumn)
+        self.assertType(table.foo_bool, _BooleanColumn)
 
     def test_union_wildcard_one_table(self):
-        mock_kusto_client = MockKustoClient(
-            tables_response=mock_tables_response([
-                ('test_table_1', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
-                ('other_table_2', [('baz', _KustoType.BOOL)])
-            ]),
-            record_metadata=True,
-        )
-        db = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']
+        mock_client = MockKustoClient(record_metadata=True)
+        db = PyKustoClient(mock_client, fetch_by_default=False)['test_db']
         db.blocking_refresh()
         self.assertEqual(
             [RecordedQuery('test_db', '.show database schema | project TableName, ColumnName, ColumnType | limit 10000')],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
-        table = db.get_table('test_table_*')
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
-        self.assertEqual(type(table['baz']), _AnyTypeColumn)
+        table = db.get_table('mock_table_*')
+        self.assertType(table.foo, _AnyTypeColumn)
+        self.assertType(table.bar, _AnyTypeColumn)
+        self.assertType(table['baz'], _BooleanColumn)
 
     def test_database_fetch(self):
-        mock_kusto_client = MockKustoClient(
-            databases_response=mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])])]),
-            record_metadata=True,
-        )
-        client = PyKustoClient(mock_kusto_client)
+        mock_client = MockKustoClient(record_metadata=True)
+        client = PyKustoClient(mock_client)
         client.wait_for_items()
         self.assertEqual(
             [RecordedQuery('', '.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000')],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
         # Table columns
         table = client.test_db.mock_table
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _NumberColumn)
-        self.assertEqual(type(table['baz']), _AnyTypeColumn)
-        self.assertEqual(type(client.test_db['other_table']['foo']), _AnyTypeColumn)
+        self.assertType(table.foo, _StringColumn)
+        self.assertType(table.bar, _NumberColumn)
+        self.assertType(table['baz'], _AnyTypeColumn)
+        self.assertType(client.test_db['other_table']['foo'], _AnyTypeColumn)
         # Various utility methods
         db = client.get_database('test_db')
-        self.assertEqual(type(db), _Database)
+        self.assertType(db, _Database)
         self.assertEqual('test_db', db.get_name())
         self.assertEqual(('test_db',), tuple(client.get_databases_names()))
         self.assertEqual(('mock_table', 'other_table'), tuple(client.test_db.get_table_names()))
@@ -234,38 +221,41 @@ class TestClientFetch(TestBase):
         self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(mock_table)', repr(client.test_db.mock_table))
 
     def test_autocomplete_with_dot(self):
-        mock_kusto_client = MockKustoClient(
+        mock_client = MockKustoClient(
             databases_response=mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar.baz', _KustoType.INT)])])]),
             record_metadata=True,
         )
-        client = PyKustoClient(mock_kusto_client)
+        client = PyKustoClient(mock_client)
         client.wait_for_items()
         # Table columns
         table = client.test_db.mock_table
-        self.assertEqual(type(table.foo), _StringColumn)
-        self.assertEqual(type(table.bar), _AnyTypeColumn)
-        self.assertEqual(type(table['bar.baz']), _NumberColumn)
+        self.assertType(table.foo, _StringColumn)
+        self.assertType(table.bar, _AnyTypeColumn)
+        self.assertType(table['bar.baz'], _NumberColumn)
         autocomplete_list = set(dir(client.test_db.mock_table))
         self.assertIn('foo', autocomplete_list)
         self.assertNotIn('bar.baz', autocomplete_list)
 
     def test_empty_database(self):
-        mock_kusto_client = MockKustoClient(
+        mock_client = MockKustoClient(
             databases_response=mock_databases_response([
                 ('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])]),
                 ('', [('test_table1', [('foo1', _KustoType.STRING), ('bar1', _KustoType.INT)])])
             ]),
             record_metadata=True,
         )
-        client = PyKustoClient(mock_kusto_client)
+        client = PyKustoClient(mock_client)
         client.wait_for_items()
         self.assertEqual(
             [RecordedQuery('', '.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000')],
-            mock_kusto_client.recorded_queries,
+            mock_client.recorded_queries,
         )
-        self.assertEqual(type(client.test_db.mock_table.foo), _StringColumn)
+        self.assertType(client.test_db.mock_table.foo, _StringColumn)
 
-    def test_client_not_fetched(self):
+    def test_client_database_names_not_fetched(self):
         client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
-        self.assertEqual(frozenset(), set(client.get_databases_names()))
-        self.assertEqual(frozenset(), set(client.get_databases()))
+        self.assertEqual(frozenset(['test_db']), set(client.get_databases_names()))
+
+    def test_client_databases_not_fetched(self):
+        client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
+        self.assertEqual(frozenset(['test_db']), set(db.get_name() for db in client.get_databases()))

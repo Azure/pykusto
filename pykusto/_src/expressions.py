@@ -487,7 +487,7 @@ class _StringExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolowerfunction
 
-        Don't user this method for case-insensitive comparisons. Instead use the `equals` method with `case_sensitive=False`
+        Don't use this method for case-insensitive comparisons. Instead use the `equals` method with `case_sensitive=False`
         (see `best practices <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_).
         """
         return _StringExpression(KQL(f'tolower({self.kql})'))
@@ -496,7 +496,7 @@ class _StringExpression(BaseExpression):
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toupperfunction
 
-        Don't user this method for case-insensitive comparisons. Instead use the `equals` method with `case_sensitive=False`
+        Don't use this method for case-insensitive comparisons. Instead use the `equals` method with `case_sensitive=False`
         (see `best practices <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_).
         """
         return _StringExpression(KQL(f'toupper({self.kql})'))

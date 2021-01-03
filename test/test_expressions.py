@@ -387,10 +387,10 @@ class TestExpressions(TestBase):
     def test_is_in(self):
         self.assertEqual(
             ' | where stringField in ("A", "B", "C")',
-            Query().where(t.stringField.is_in(["A", "B", "C"])).render()
+            Query().where(t.stringField.is_in(["A", "B", "C"], True)).render()
         )
         self.assertEqual(
-            ' | where stringField in ("[", "[[", "]")',
+            ' | where stringField in~ ("[", "[[", "]")',
             Query().where(t.stringField.is_in(['[', "[[", "]"])).render()
         )
         self.assertRaises(
@@ -398,16 +398,50 @@ class TestExpressions(TestBase):
             lambda: t.stringField in t.stringField2
         )
 
+    def test_not_in(self):
+        self.assertEqual(
+            ' | where stringField !in ("A", "B", "C")',
+            Query().where(t.stringField.not_in(["A", "B", "C"], True)).render()
+        )
+        self.assertEqual(
+            ' | where stringField !in~ ("[", "[[", "]")',
+            Query().where(t.stringField.not_in(['[', "[[", "]"])).render()
+        )
+
     def test_is_in_expression(self):
         self.assertEqual(
-            ' | where arrayField contains stringField',
-            Query().where(t.stringField.is_in(t.arrayField)).render()
+            ' | where set_has_element(arrayField, stringField)',
+            Query().where(t.stringField.is_in(t.arrayField, True)).render()
+        )
+
+    def test_not_in_expression(self):
+        self.assertEqual(
+            ' | where arrayField !contains stringField',
+            Query().where(t.stringField.not_in(t.arrayField, False)).render()
+        )
+
+    def test_not_in_cs_expression(self):
+        self.assertEqual(
+            ' | where arrayField !contains_cs stringField',
+            Query().where(t.stringField.not_in(t.arrayField, True)).render()
         )
 
     def test_has(self):
         self.assertEqual(
             ' | where stringField has "test"',
             Query().where(t.stringField.has("test")).render()
+        )
+
+    def test_has_not(self):
+        self.assertEqual(
+            ' | where stringField !has "test"',
+            Query().where(t.stringField.has_not("test")).render()
+        )
+
+    def test_has_not_cs(self):
+        self.assertEqual(
+            ' | where stringField !has_cs "test"',
+            Query().where(t.stringField.has_not("test", True)).render()
         )
 
     def test_has_cs(self):

@@ -24,6 +24,10 @@ class Query:
     _table_name: Optional[str]
 
     def __init__(self, head=None) -> None:
+        """
+        When building the query, try and use the query best practices:
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices
+        """
         self._head = head if isinstance(head, Query) else None
         self._table = head if isinstance(head, _Table) else None
         self._table_name = head if isinstance(head, str) else None
@@ -53,6 +57,12 @@ class Query:
         Implicitly apply conjunction if multiple predicates are provided. You can use predicates which are calculated at runtime and result in boolean values, which are
         pre-processed: 'True' values ignored, and 'False' values cause all other predicates to be ignored. If the result of pre-processing is a single 'True' predicate, no 'where'
         clause will be generated.
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * Whenever possible, use time filters first.
+        * Prefer filtering on table columns, and not on calculated columns.
+        * Simplest terms first: If you have multiple clauses conjoined with and, put first the clauses that involve just one column.
 
         Warning: to apply a logical 'not', do not use the Python 'not' operator, it will simply produce a 'False' boolean value. Use either the `~` operator or `f.not_of()`.
         """
@@ -116,6 +126,16 @@ class Query:
     def join(self, query: 'Query', kind: JoinKind = None) -> '_JoinQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/joinoperator
+
+        Best practices (`full list <https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices>`_):
+
+        * Select the table with the fewer rows to be the first one ("left" side).
+        * Across clusters, run the query on the "right" side of the join, where most of the data is located.
+
+        Best practices once `hint.strategy` is supported (see `here <https://github.com/Azure/pykusto/issues/104>`_):
+
+        * When left side is small (up to ~100,000 records) and right side is large use `hint.strategy=broadcast`.
+        * When both sides are too large	use `hint.strategy=shuffle`.
         """
         return _JoinQuery(self, query, kind)
 

@@ -339,11 +339,11 @@ class Functions:
         return expr.get_year()
 
     @staticmethod
-    def hash(expr: _ExpressionType) -> _StringExpression:
+    def hash(expr: BaseExpression, mod: Union['_NumberExpression', int] = None) -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/hashfunction
         """
-        return expr.__hash__()
+        return expr.__hash__(mod)
 
     @staticmethod
     def hash_sha256(expr: _ExpressionType) -> _StringExpression:

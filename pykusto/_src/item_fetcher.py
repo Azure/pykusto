@@ -91,10 +91,11 @@ class _ItemFetcher(metaclass=ABCMeta):
     def _get_item(self, name: str, fallback: Callable[[], Any], timeout_seconds: Union[None, float] = None) -> Any:
         if timeout_seconds is None:
             timeout_seconds = _DEFAULT_GET_ITEM_TIMEOUT_SECONDS
+
         if not self.__fetched:
             if self._fetch_by_default:
                 self.blocking_refresh(timeout_seconds)
-            else:
+            if not self.__fetched:
                 return fallback()
 
         resolved_item = self.__items.get(name)

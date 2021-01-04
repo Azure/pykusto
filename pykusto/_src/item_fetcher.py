@@ -8,6 +8,9 @@ from typing import Union, Dict, Any, Iterable, Callable, Generator
 # Also, this makes it easy to use more than one thread, if the need ever arises.
 _POOL = ThreadPoolExecutor(max_workers=1)
 
+_DEFAULT_GET_ITEM_TIMEOUT_SECONDS = 3
+_DEFAULT_DIR_TIMEOUT_SECONDS = 3
+
 
 class _ItemFetcher(metaclass=ABCMeta):
     """
@@ -85,7 +88,9 @@ class _ItemFetcher(metaclass=ABCMeta):
                 self.__items[name] = item
             return item
 
-    def _get_item(self, name: str, fallback: Callable[[], Any], timeout_seconds: Union[None, float] = 3) -> Any:
+    def _get_item(self, name: str, fallback: Callable[[], Any], timeout_seconds: Union[None, float] = None) -> Any:
+        if timeout_seconds is None:
+            timeout_seconds = _DEFAULT_GET_ITEM_TIMEOUT_SECONDS
         if not self.__fetched:
             if self._fetch_by_default:
                 self.blocking_refresh(timeout_seconds)
@@ -103,7 +108,7 @@ class _ItemFetcher(metaclass=ABCMeta):
         """
         if not self.__fetched and self._fetch_by_default:
             self.refresh()
-            self.wait_for_items(3)
+            self.wait_for_items(_DEFAULT_DIR_TIMEOUT_SECONDS)
         return sorted(chain(super().__dir__(), tuple() if self.__items is None else filter(lambda name: '.' not in name, self.__items.keys())))
 
     def refresh(self) -> None:

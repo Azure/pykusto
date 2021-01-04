@@ -75,7 +75,7 @@ class TestClientFetch(TestBase):
         self.assertIn('test_db', self.get_background_query_result())
 
     def test_column_fetch_slow(self):
-        mock_client = MockKustoClient(block=True, record_metadata=True)
+        mock_client = MockKustoClient(block=True)
         table = PyKustoClient(mock_client, fetch_by_default=False)['test_db']['mock_table']
         table.refresh()
         mock_client.wait_until_blocked()
@@ -223,7 +223,6 @@ class TestClientFetch(TestBase):
     def test_autocomplete_with_dot(self):
         mock_client = MockKustoClient(
             databases_response=mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar.baz', _KustoType.INT)])])]),
-            record_metadata=True,
         )
         client = PyKustoClient(mock_client)
         client.wait_for_items()

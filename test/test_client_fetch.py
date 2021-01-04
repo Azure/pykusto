@@ -89,8 +89,7 @@ class TestClientFetch(TestBase):
         # Make sure the fetch query was indeed called
         assert not mock_client.blocked()
 
-    # TODO: Tests that run after this one hang
-    @patch("pykusto._src.item_fetcher._DEFAULT_GET_ITEM_TIMEOUT_SECONDS", 0)
+    @patch("pykusto._src.item_fetcher._DEFAULT_GET_ITEM_TIMEOUT_SECONDS", 0.0001)
     def test_table_fetch_slower_than_timeout(self):
         mock_client = MockKustoClient(block=True)
         try:

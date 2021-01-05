@@ -1,5 +1,6 @@
 from threading import Thread, Lock
 from typing import Any, Type, Callable, List
+from unittest.mock import patch
 
 from pykusto import PyKustoClient, Query
 # noinspection PyProtectedMember
@@ -75,7 +76,7 @@ class TestClientFetch(TestBase):
         self.assertIn('test_db', self.get_background_query_result())
 
     def test_column_fetch_slow(self):
-        mock_client = MockKustoClient(block=True, record_metadata=True)
+        mock_client = MockKustoClient(block=True)
         table = PyKustoClient(mock_client, fetch_by_default=False)['test_db']['mock_table']
         table.refresh()
         mock_client.wait_until_blocked()
@@ -87,6 +88,15 @@ class TestClientFetch(TestBase):
         table.wait_for_items()
         # Make sure the fetch query was indeed called
         assert not mock_client.blocked()
+
+    @patch("pykusto._src.item_fetcher._DEFAULT_GET_ITEM_TIMEOUT_SECONDS", 0.0001)
+    def test_table_fetch_slower_than_timeout(self):
+        mock_client = MockKustoClient(block=True)
+        try:
+            PyKustoClient(mock_client, fetch_by_default=True)['test_db']['mock_table']
+        finally:
+            # # Return the fetch
+            mock_client.release()
 
     def test_query_before_fetch_returned(self):
         mock_client = MockKustoClient(block=True, record_metadata=True)
@@ -223,7 +233,6 @@ class TestClientFetch(TestBase):
     def test_autocomplete_with_dot(self):
         mock_client = MockKustoClient(
             databases_response=mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar.baz', _KustoType.INT)])])]),
-            record_metadata=True,
         )
         client = PyKustoClient(mock_client)
         client.wait_for_items()

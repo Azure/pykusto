@@ -1,8 +1,10 @@
 from abc import ABCMeta, abstractmethod
-from concurrent.futures import Future, ThreadPoolExecutor, wait
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from itertools import chain
 from threading import Lock
 from typing import Union, Dict, Any, Iterable, Callable, Generator
+
+from .logger import _logger
 
 # Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
 # Also, this makes it easy to use more than one thread, if the need ever arises.
@@ -108,8 +110,13 @@ class _ItemFetcher(metaclass=ABCMeta):
         Used by Jupyter for autocomplete
         """
         if not self.__fetched and self._fetch_by_default:
-            self.refresh()
-            self.wait_for_items(_DEFAULT_DIR_TIMEOUT_SECONDS)
+            # noinspection PyBroadException
+            try:
+                self.refresh()
+                self.wait_for_items(_DEFAULT_DIR_TIMEOUT_SECONDS)
+            except Exception:
+                # Since this method is often called in the background, we don't want to raise exceptions
+                _logger.exception("Exception while fetching items for __dir__ method")
         return sorted(chain(super().__dir__(), tuple() if self.__items is None else filter(lambda name: '.' not in name, self.__items.keys())))
 
     def refresh(self) -> None:
@@ -125,7 +132,11 @@ class _ItemFetcher(metaclass=ABCMeta):
         If several fetching threads are in progress, wait for the most recent one.
         """
         if self.__future is not None:
-            wait((self.__future,), timeout=timeout_seconds)
+            try:
+                # If an exception is raised in the future thread, it is re-raised here
+                self.__future.result(timeout=timeout_seconds)
+            except TimeoutError:
+                _logger.warn("Timeout while waiting for response from Kusto")
 
     def blocking_refresh(self, timeout_seconds: Union[None, float] = None) -> None:
         self.refresh()

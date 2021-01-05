@@ -71,6 +71,10 @@ class TestBase(TestCase):
         # noinspection PyArgumentList
         return CustomAssertLogsContext(self, logger_to_watch, level)
 
+    @staticmethod
+    def raise_mock_exception():
+        raise Exception("Mock exception")
+
 
 class CustomAssertLogsContext(_AssertLogsContext):
     # noinspection PyUnresolvedReferences
@@ -224,6 +228,7 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response()
+
 
 
 test_logger = logging.getLogger("pykusto_test")

@@ -93,7 +93,7 @@ class TestClientFetch(TestBase):
     def test_table_fetch_slower_than_timeout(self):
         mock_client = MockKustoClient(block=True)
         try:
-            PyKustoClient(mock_client, fetch_by_default=True)['test_db']['mock_table']
+            PyKustoClient(mock_client)['test_db']['mock_table']
         finally:
             # # Return the fetch
             mock_client.release()
@@ -245,6 +245,12 @@ class TestClientFetch(TestBase):
         self.assertIn('foo', autocomplete_list)
         self.assertNotIn('bar.baz', autocomplete_list)
 
+    def test_exception_from_autocomplete(self):
+        mock_client = MockKustoClient(databases_response=self.raise_mock_exception)
+        client = PyKustoClient(mock_client, fetch_by_default=True)
+        autocomplete_list = set(dir(client))
+        self.assertNotIn('test_db', autocomplete_list)
+
     def test_empty_database(self):
         mock_client = MockKustoClient(
             databases_response=mock_databases_response([
@@ -270,8 +276,8 @@ class TestClientFetch(TestBase):
         self.assertEqual(frozenset(['test_db']), set(db.get_name() for db in client.get_databases()))
 
     def test_exception_while_fetching(self):
-        def raise_mock_exception():
-            raise Exception("Mock exception")
-
-        client = PyKustoClient(MockKustoClient(databases_response=raise_mock_exception), fetch_by_default=True)
-        self.assertEqual(frozenset([]), set(client.get_databases_names()))
+        client = PyKustoClient(MockKustoClient(databases_response=self.raise_mock_exception))
+        self.assertRaises(
+            Exception("Mock exception"),
+            lambda: set(client.get_databases_names()),
+        )

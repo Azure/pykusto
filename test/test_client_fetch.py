@@ -103,7 +103,7 @@ class TestClientFetch(TestBase):
         table = PyKustoClient(mock_client, fetch_by_default=False)['test_db']['mock_table']
         table.refresh()
         mock_client.wait_until_blocked()
-        mock_client.dont_block_next_requests()
+        mock_client.do_not_block_next_requests()
         self.query_in_background(Query(table).take(5).execute)
         # Return the fetch
         mock_client.release()
@@ -268,3 +268,10 @@ class TestClientFetch(TestBase):
     def test_client_databases_not_fetched(self):
         client = PyKustoClient(MockKustoClient(), fetch_by_default=False)
         self.assertEqual(frozenset(['test_db']), set(db.get_name() for db in client.get_databases()))
+
+    def test_exception_while_fetching(self):
+        def raise_mock_exception():
+            raise Exception("Mock exception")
+
+        client = PyKustoClient(MockKustoClient(databases_response=raise_mock_exception), fetch_by_default=True)
+        self.assertEqual(frozenset([]), set(client.get_databases_names()))

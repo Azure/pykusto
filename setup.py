@@ -18,7 +18,7 @@ setup(
     license='MIT License',
     author='Microsoft Corporation',
     author_email='yomost@microsoft.com',
-    description='Advanced python SDK for Azure Data Explorer',
+    description='Advanced Python SDK for Azure Data Explorer',
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",

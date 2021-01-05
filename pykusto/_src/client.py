@@ -2,7 +2,7 @@ from collections import defaultdict
 from fnmatch import fnmatch
 from functools import lru_cache
 from threading import Lock
-from typing import Union, List, Tuple, Dict, Generator, Optional, Set
+from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Callable
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -11,13 +11,10 @@ from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRe
 from azure.kusto.data._models import KustoResultRow as _KustoResultRow
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
-# noinspection PyProtectedMember
-from azure.kusto.data.security import _get_azure_cli_auth_token
 
 from .expressions import BaseColumn, _AnyTypeColumn
 from .item_fetcher import _ItemFetcher
 from .kql_converters import KQL
-from .logger import _logger
 from .type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
 
 
@@ -57,7 +54,10 @@ class PyKustoClient(_ItemFetcher):
     __first_execution: bool
     __first_execution_lock: Lock
 
-    def __init__(self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False) -> None:
+    def __init__(
+            self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False,
+            connection_string_builder: Callable[[str], KustoConnectionStringBuilder] = None
+    ) -> None:
         """
         Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
@@ -73,9 +73,11 @@ class PyKustoClient(_ItemFetcher):
             # noinspection PyProtectedMember
             self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
+            assert connection_string_builder is None, "Connection string builder not allowed when providing your own client instance"
         else:
-
-            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster)
+            if connection_string_builder is None:
+                connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication
+            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster, connection_string_builder)
             self.__cluster_name = client_or_cluster
         self._refresh_if_needed()
 
@@ -115,25 +117,16 @@ class PyKustoClient(_ItemFetcher):
         return self.__cluster_name
 
     @staticmethod
-    def _get_client_for_cluster(cluster: str) -> KustoClient:
-        # If we call 'with_az_cli_authentication' directly, in case of failure we will get an un-informative exception.
-        # As a workaround, we first attempt to manually get the Azure CLI token, and see if it works.
-        # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
-        stored_token = _get_azure_cli_auth_token()
-        if stored_token is None:
-            _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication")
-            connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
-        else:
-            connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
-        return KustoClient(connection_string_builder)
+    def _get_client_for_cluster(cluster: str, connection_string_builder: Callable[[str], KustoConnectionStringBuilder]) -> KustoClient:
+        return KustoClient(connection_string_builder(cluster))
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
+    def _cached_get_client_for_cluster(cluster: str, connection_string_builder: Callable[[str], KustoConnectionStringBuilder]) -> KustoClient:
         """
         Provided for convenience during development, not recommended for general use.
         """
-        return PyKustoClient._get_client_for_cluster(cluster)
+        return PyKustoClient._get_client_for_cluster(cluster, connection_string_builder)
 
     def _internal_get_items(self) -> Dict[str, '_Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

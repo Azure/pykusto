@@ -71,6 +71,10 @@ class TestBase(TestCase):
         # noinspection PyArgumentList
         return CustomAssertLogsContext(self, logger_to_watch, level)
 
+    @staticmethod
+    def raise_mock_exception():
+        raise Exception("Mock exception")
+
 
 class CustomAssertLogsContext(_AssertLogsContext):
     # noinspection PyUnresolvedReferences
@@ -90,26 +94,26 @@ class MockKustoResultTable(KustoResultTable):
 
 
 # noinspection PyTypeChecker
-def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> KustoResponseDataSet:
-    return type(
+def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> Callable[[], KustoResponseDataSet]:
+    return lambda: type(
         'MockKustoResponseDataSet',
         (KustoResponseDataSet,),
         {'primary_results': (MockKustoResultTable(rows, columns),)}
     )
 
 
-def mock_columns_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> KustoResponseDataSet:
+def mock_columns_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> Callable[[], KustoResponseDataSet]:
     return mock_response(tuple((c_name, c_type.internal_name) for c_name, c_type in columns), ('ColumnName', 'ColumnType'))
 
 
-def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, _KustoType]]]] = tuple()) -> KustoResponseDataSet:
+def mock_tables_response(tables: List[Tuple[str, List[Tuple[str, _KustoType]]]] = tuple()) -> Callable[[], KustoResponseDataSet]:
     return mock_response(
         tuple((t_name, c_name, c_type.dot_net_name) for t_name, columns in tables for c_name, c_type in columns),
         ('TableName', 'ColumnName', 'ColumnType')
     )
 
 
-def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, _KustoType]]]]]] = tuple()) -> KustoResponseDataSet:
+def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tuple[str, _KustoType]]]]]] = tuple()) -> Callable[[], KustoResponseDataSet]:
     return mock_response(
         tuple(
             (d_name, t_name, c_name, c_type.dot_net_name)
@@ -121,7 +125,7 @@ def mock_databases_response(databases: List[Tuple[str, List[Tuple[str, List[Tupl
     )
 
 
-def mock_getschema_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> KustoResponseDataSet:
+def mock_getschema_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> Callable[[], KustoResponseDataSet]:
     return mock_response(tuple((c_name, c_type.dot_net_name) for c_name, c_type in columns), ('ColumnName', 'DataType'))
 
 
@@ -147,11 +151,11 @@ class RecordedQuery:
 # noinspection PyMissingConstructor
 class MockKustoClient(KustoClient):
     recorded_queries: List[RecordedQuery]
-    columns_response: KustoResponseDataSet
-    tables_response: KustoResponseDataSet
-    databases_response: KustoResponseDataSet
-    getschema_response: KustoResponseDataSet
-    main_response: KustoResponseDataSet
+    columns_response: Callable[[], KustoResponseDataSet]
+    tables_response: Callable[[], KustoResponseDataSet]
+    databases_response: Callable[[], KustoResponseDataSet]
+    getschema_response: Callable[[], KustoResponseDataSet]
+    main_response: Callable[[], KustoResponseDataSet]
     record_metadata: bool
     block: bool
     query_future: Union[None, Future]
@@ -160,14 +164,16 @@ class MockKustoClient(KustoClient):
     def __init__(
             self,
             cluster="https://test_cluster.kusto.windows.net",
-            columns_response: KustoResponseDataSet = mock_columns_response([('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
-            tables_response: KustoResponseDataSet = mock_tables_response([
+            columns_response: Callable[[], KustoResponseDataSet] = mock_columns_response([('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
+            tables_response: Callable[[], KustoResponseDataSet] = mock_tables_response([
                 ('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)]),
                 ('mock_table_2', [('baz', _KustoType.BOOL)]),
             ]),
-            databases_response: KustoResponseDataSet = mock_databases_response([('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])])]),
-            getschema_response: KustoResponseDataSet = mock_getschema_response([]),
-            main_response: KustoResponseDataSet = mock_response(tuple()),
+            databases_response: Callable[[], KustoResponseDataSet] = mock_databases_response(
+                [('test_db', [('mock_table', [('foo', _KustoType.STRING), ('bar', _KustoType.INT)])])]
+            ),
+            getschema_response: Callable[[], KustoResponseDataSet] = mock_getschema_response([]),
+            main_response: Callable[[], KustoResponseDataSet] = mock_response(tuple()),
             record_metadata: bool = False,
             block: bool = False,
     ):
@@ -198,7 +204,7 @@ class MockKustoClient(KustoClient):
     def wait_until_blocked(self):
         self.blocked_event.wait()
 
-    def dont_block_next_requests(self):
+    def do_not_block_next_requests(self):
         self.block = False
 
     def execute(self, database: str, rendered_query: str, properties: ClientRequestProperties = None) -> KustoResponseDataSet:
@@ -221,7 +227,8 @@ class MockKustoClient(KustoClient):
             response = self.main_response
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
-        return response
+        return response()
+
 
 
 test_logger = logging.getLogger("pykusto_test")

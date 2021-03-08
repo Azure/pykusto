@@ -2,8 +2,9 @@ import logging
 from unittest.mock import patch
 
 from azure.kusto.data import KustoClient
+from azure.kusto.data.exceptions import KustoError
 
-from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig
+from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger
 from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response
@@ -169,7 +170,7 @@ class TestClient(TestBase):
             cm.output
         )
 
-    def test_retries(self):
+    def test_1_retry(self):
         TestClient.attempt = 1
 
         def main_response():
@@ -179,7 +180,7 @@ class TestClient(TestBase):
             return mock_response(tuple())()
 
         mock_kusto_client = MockKustoClient(main_response=main_response)
-        table = PyKustoClient(mock_kusto_client, retry_config=RetryConfig(2, sleep_time=0.1, jitter=0.02))['test_db']['mock_table']
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False, retry_config=RetryConfig(2, sleep_time=0.1, jitter=0))['test_db']['mock_table']
         with self.assertLogs(_logger, logging.INFO) as cm:
             Query(table).take(5).execute()
         self.assertEqual(
@@ -190,8 +191,67 @@ class TestClient(TestBase):
             mock_kusto_client.recorded_queries
         )
         self.assertEqual(
-            ["INFO:pykusto:Attempt number 1 out of 2 failed, sleeping for 0.1 seconds. Exception: (KustoServiceError(...), 'Mock exception for test')"],
+            ["INFO:pykusto:Attempt number 1 out of 2 failed, previous sleep time was 0.1 seconds. Exception: (KustoServiceError(...), 'Mock exception for test')"],
             cm.output
         )
 
-    # TODO: Fail when no retries, more than one retry
+    def test_3_retries(self):
+        TestClient.attempt = 1
+
+        def main_response():
+            if TestClient.attempt <= 2:
+                TestClient.attempt += 1
+                raise KustoServiceError("Mock exception for test", None)
+            return mock_response(tuple())()
+
+        mock_kusto_client = MockKustoClient(main_response=main_response)
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False, retry_config=RetryConfig(3, sleep_time=0.1, jitter=0))['test_db']['mock_table']
+        with self.assertLogs(_logger, logging.INFO) as cm:
+            Query(table).take(5).execute()
+        self.assertEqual(
+            [
+                RecordedQuery('test_db', 'mock_table | take 5'),
+                RecordedQuery('test_db', 'mock_table | take 5'),
+                RecordedQuery('test_db', 'mock_table | take 5'),
+            ],
+            mock_kusto_client.recorded_queries
+        )
+        self.assertEqual(
+            [
+                "INFO:pykusto:Attempt number 1 out of 3 failed, previous sleep time was 0.1 seconds. Exception: (KustoServiceError(...), 'Mock exception for test')",
+                "INFO:pykusto:Attempt number 2 out of 3 failed, previous sleep time was 0.1 seconds. Exception: (KustoServiceError(...), 'Mock exception for test')",
+            ],
+            cm.output
+        )
+
+    def test_missing_retries(self):
+        TestClient.attempt = 1
+
+        def main_response():
+            if TestClient.attempt == 1:
+                TestClient.attempt += 1
+                raise KustoServiceError("Mock exception for test", None)
+            return mock_response(tuple())()
+
+        mock_kusto_client = MockKustoClient(main_response=main_response)
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False, retry_config=NO_RETRIES)['test_db']['mock_table']
+        self.assertRaises(
+            KustoServiceError("Mock exception for test", None),
+            lambda: Query(table).take(5).execute(),
+        )
+
+    def test_non_transient_exception(self):
+        TestClient.attempt = 1
+
+        def main_response():
+            if TestClient.attempt == 1:
+                TestClient.attempt += 1
+                raise KustoError("Mock exception for test", None)
+            return mock_response(tuple())()
+
+        mock_kusto_client = MockKustoClient(main_response=main_response)
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False, retry_config=RetryConfig(2, sleep_time=0.1, jitter=0))['test_db']['mock_table']
+        self.assertRaises(
+            KustoError("Mock exception for test", None),
+            lambda: Query(table).take(5).execute(),
+        )

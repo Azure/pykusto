@@ -25,6 +25,7 @@ setup(
     install_requires=[
         'azure-kusto-data>=0.0.43,<=0.1.0',  # In 0.0.43 some packages were renamed
         'pandas>=0.24.1,<=1.1.0rc0',  # azure-kusto-data requires 0.24.1
+        'redo==2.0.4',
     ],
     tests_require=[
         'pytest',

@@ -54,7 +54,7 @@ client = PyKustoClient(
 
 # Override retry config for specific query 
 Query(client.Samples.StormEvents).take(5).to_dataframe(
-    retry_config=RetryConfig(attempts=3,, sleep_time=1, max_sleep_time=600, sleep_scale=2, jitter=3)
+    retry_config=RetryConfig(attempts=3, sleep_time=1, max_sleep_time=600, sleep_scale=2, jitter=3)
 )
 ```
 

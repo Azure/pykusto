@@ -5,7 +5,7 @@ from os import linesep
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-from .client import _Table, KustoResponse
+from .client import _Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from .expressions import _BooleanType, _ExpressionType, AggregationExpression, _OrderedType, \
     _StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
@@ -279,7 +279,7 @@ class Query:
             kql = KQL(kql.replace(" |", linesep + "|"))
         return kql
 
-    def execute(self, table: _Table = None) -> KustoResponse:
+    def execute(self, table: _Table = None, retry_config: RetryConfig = None) -> KustoResponse:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
@@ -291,10 +291,10 @@ class Query:
             rendered_query = self.render()
 
         _logger.debug("Running query: " + rendered_query)
-        return table.execute(rendered_query)
+        return table.execute(rendered_query, retry_config)
 
-    def to_dataframe(self, table: _Table = None):
-        return self.execute(table).to_dataframe()
+    def to_dataframe(self, table: _Table = None, retry_config: RetryConfig = None):
+        return self.execute(table, retry_config).to_dataframe()
 
     @staticmethod
     def _extract_assignments(*args: Union[_AssignmentBase, BaseExpression], **kwargs: _ExpressionType) -> List[_AssignmentBase]:

@@ -1,12 +1,14 @@
 import logging
+from typing import Type
 from unittest.mock import patch
 
 from azure.kusto.data import KustoClient
+from azure.kusto.data.exceptions import KustoError
 
-from pykusto import PyKustoClient, column_generator as col, Query
+from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger
-from test.test_base import TestBase, MockKustoClient, RecordedQuery
+from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response
 
 
 class TestClient(TestBase):
@@ -167,4 +169,58 @@ class TestClient(TestBase):
         self.assertEqual(
             ['INFO:pykusto:Failed to get Azure CLI token, falling back to AAD device authentication'],
             cm.output
+        )
+
+    @staticmethod
+    def unreliable_mock_kusto_client(number_of_failures: int, exception_type: Type[Exception] = KustoServiceError):
+        TestClient.attempt = 1
+
+        def main_response():
+            if TestClient.attempt <= number_of_failures:
+                TestClient.attempt += 1
+                raise exception_type("Mock exception for test", None)
+            return mock_response(tuple())()
+
+        return MockKustoClient(main_response=main_response)
+
+    def retries_base(self, number_of_retries: int):
+        mock_kusto_client = self.unreliable_mock_kusto_client(number_of_retries - 1)
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False, retry_config=RetryConfig(number_of_retries, sleep_time=0.1, jitter=0))['test_db']['mock_table']
+        with self.assertLogs(_logger, logging.INFO) as cm:
+            Query(table).take(5).execute()
+        self.assertEqual(
+            [RecordedQuery('test_db', 'mock_table | take 5')] * number_of_retries,
+            mock_kusto_client.recorded_queries
+        )
+        self.assertEqual(
+            [
+                f"INFO:pykusto:Attempt number {i} out of {number_of_retries} failed, "
+                f"previous sleep time was 0.1 seconds. Exception: (KustoServiceError(...), 'Mock exception for test')"
+                for i in range(1, number_of_retries)
+            ],
+            cm.output
+        )
+
+    def test_2_retry(self):
+        self.retries_base(2)
+
+    def test_3_retries(self):
+        self.retries_base(3)
+
+    def test_missing_retries(self):
+        mock_kusto_client = self.unreliable_mock_kusto_client(1)
+        table = PyKustoClient(
+            mock_kusto_client, fetch_by_default=False, retry_config=NO_RETRIES
+        )['test_db']['mock_table']
+        self.assertRaises(
+            KustoServiceError("Mock exception for test", None),
+            lambda: Query(table).take(5).execute(),
+        )
+
+    def test_non_transient_exception(self):
+        mock_kusto_client = self.unreliable_mock_kusto_client(1, KustoError)
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False, retry_config=RetryConfig(2, sleep_time=0.1, jitter=0))['test_db']['mock_table']
+        self.assertRaises(
+            KustoError("Mock exception for test", None),
+            lambda: Query(table).take(5).execute(),
         )

@@ -11,7 +11,7 @@ Started as a project in the 2019 Microsoft Hackathon.
 pip install pykusto
 ```
 
-### Usage
+### Basic usage
 ```python
 from datetime import timedelta
 from pykusto import PyKustoClient, Query
@@ -42,6 +42,20 @@ t = client.Samples.StormEvents
         # Output to pandas dataframe
         .to_dataframe()
 ) 
+```
+
+### Retrying failed queries
+```python
+# Turn on retrying for all queries 
+client = PyKustoClient(
+    'https://help.kusto.windows.net',
+    retry_config=RetryConfig()  # Use default retry config 
+)
+
+# Override retry config for specific query 
+Query(client.Samples.StormEvents).take(5).to_dataframe(
+    retry_config=RetryConfig(attempts=3, sleep_time=1, max_sleep_time=600, sleep_scale=2, jitter=3)
+)
 ```
 
 # Contributing

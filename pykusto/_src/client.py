@@ -2,23 +2,61 @@ from collections import defaultdict
 from fnmatch import fnmatch
 from functools import lru_cache
 from threading import Lock
-from typing import Union, List, Tuple, Dict, Generator, Optional, Set
+from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable
 from urllib.parse import urlparse
 
 import pandas as pd
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultRow as _KustoResultRow
+from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
 # noinspection PyProtectedMember
 from azure.kusto.data.security import _get_azure_cli_auth_token
+from redo import retrier
 
 from .expressions import BaseColumn, _AnyTypeColumn
 from .item_fetcher import _ItemFetcher
 from .kql_converters import KQL
 from .logger import _logger
 from .type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
+
+
+class RetryConfig:
+    def __init__(
+            self, attempts: int = 5, sleep_time: float = 60, max_sleep_time: float = 300, sleep_scale: float = 1.5, jitter: float = 1,
+            retry_exceptions: Tuple[Type[Exception], ...] = (KustoServiceError,)
+    ) -> None:
+        """
+        All time parameters are in seconds
+        """
+        self.attempts = attempts
+        self.sleep_time = sleep_time
+        self.max_sleep_time = max_sleep_time
+        self.sleep_scale = sleep_scale
+        self.jitter = jitter
+        self.retry_exceptions = retry_exceptions
+
+    def retry(self, action: Callable):
+        attempt = 1
+        for sleep_time in retrier(attempts=self.attempts, sleeptime=self.sleep_time, max_sleeptime=self.max_sleep_time, sleepscale=self.sleep_scale, jitter=self.jitter):
+            try:
+                return action()
+            except Exception as e:
+                for exception_to_check in self.retry_exceptions:
+                    if isinstance(e, exception_to_check):
+                        if attempt == self.attempts:
+                            _logger.warn(f"Reached maximum number of attempts ({self.attempts}), raising exception")
+                            raise
+                        _logger.info(f"Attempt number {attempt} out of {self.attempts} failed, previous sleep time was {sleep_time} seconds. Exception: {e}")
+                        break
+                else:
+                    raise
+            attempt += 1
+
+
+NO_RETRIES = RetryConfig(1)
 
 
 class KustoResponse:
@@ -56,8 +94,12 @@ class PyKustoClient(_ItemFetcher):
     __cluster_name: str
     __first_execution: bool
     __first_execution_lock: Lock
+    __retry_config: RetryConfig
 
-    def __init__(self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False) -> None:
+    def __init__(
+            self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False,
+            retry_config: RetryConfig = NO_RETRIES
+    ) -> None:
         """
         Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
@@ -68,6 +110,7 @@ class PyKustoClient(_ItemFetcher):
         super().__init__(None, fetch_by_default)
         self.__first_execution = True
         self.__first_execution_lock = Lock()
+        self.__retry_config = retry_config
         if isinstance(client_or_cluster, KustoClient):
             self.__client = client_or_cluster
             # noinspection PyProtectedMember
@@ -93,17 +136,18 @@ class PyKustoClient(_ItemFetcher):
     def get_database(self, name: str) -> '_Database':
         return self[name]
 
-    def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
+    def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
         # The first execution usually triggers an authentication flow. We block all subsequent executions to prevent redundant authentications.
         # Remove the below block once this is resolved: https://github.com/Azure/azure-kusto-python/issues/208
         with self.__first_execution_lock:
             if self.__first_execution:
                 self.__first_execution = False
-                return self.__internal_execute(database, query, properties)
-        return self.__internal_execute(database, query, properties)
+                return self.__internal_execute(database, query, properties, retry_config)
+        return self.__internal_execute(database, query, properties, retry_config)
 
-    def __internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
-        return KustoResponse(self.__client.execute(database, query, properties))
+    def __internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
+        resolved_retry_config = self.__retry_config if retry_config is None else retry_config
+        return KustoResponse(resolved_retry_config.retry(lambda: self.__client.execute(database, query, properties)))
 
     def get_databases_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
@@ -207,8 +251,8 @@ class _Database(_ItemFetcher):
         # Kusto table
         return _Table(self, name, fetch_by_default=False)
 
-    def execute(self, query: KQL, properties: ClientRequestProperties = None) -> KustoResponse:
-        return self.__client.execute(self.__name, query, properties)
+    def execute(self, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
+        return self.__client.execute(self.__name, query, properties, retry_config)
 
     def get_table_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
@@ -326,8 +370,8 @@ class _Table(_ItemFetcher):
             return KQL('union ' + ', '.join(table_names))
         return KQL(table_names[0])
 
-    def execute(self, query: KQL) -> KustoResponse:
-        return self.__database.execute(query)
+    def execute(self, query: KQL, retry_config: RetryConfig = None) -> KustoResponse:
+        return self.__database.execute(query, retry_config)
 
     def get_columns_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()

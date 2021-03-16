@@ -9,5 +9,5 @@ from ._src.expressions import *
 from ._src.functions import *
 from ._src.query import *
 
-__version__ = '0.0.25'
+__version__ = '0.0.26'
 name = "pykusto"

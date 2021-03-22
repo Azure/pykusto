@@ -5,7 +5,7 @@ from os import linesep
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-from .client import _Table, KustoResponse, RetryConfig
+from .client import Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from .expressions import _BooleanType, _ExpressionType, AggregationExpression, _OrderedType, \
     _StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
@@ -20,7 +20,7 @@ from .udf import _stringify_python_func
 
 class Query:
     _head: Optional['Query']
-    _table: Optional[_Table]
+    _table: Optional[Table]
     _table_name: Optional[str]
 
     def __init__(self, head=None) -> None:
@@ -29,7 +29,7 @@ class Query:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices
         """
         self._head = head if isinstance(head, Query) else None
-        self._table = head if isinstance(head, _Table) else None
+        self._table = head if isinstance(head, Table) else None
         self._table_name = head if isinstance(head, str) else None
 
     def __add__(self, other: 'Query') -> 'Query':
@@ -256,7 +256,7 @@ class Query:
         else:
             return KQL(f"{self._head._compile_all(use_full_table_name)} | {self._compile()}")
 
-    def get_table(self) -> _Table:
+    def get_table(self) -> Table:
         if self._head is None:
             return self._table
         else:
@@ -279,7 +279,7 @@ class Query:
             kql = KQL(kql.replace(" |", linesep + "|"))
         return kql
 
-    def execute(self, table: _Table = None, retry_config: RetryConfig = None) -> KustoResponse:
+    def execute(self, table: Table = None, retry_config: RetryConfig = None) -> KustoResponse:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
@@ -293,7 +293,7 @@ class Query:
         _logger.debug("Running query: " + rendered_query)
         return table.execute(rendered_query, retry_config)
 
-    def to_dataframe(self, table: _Table = None, retry_config: RetryConfig = None):
+    def to_dataframe(self, table: Table = None, retry_config: RetryConfig = None):
         return self.execute(table, retry_config).to_dataframe()
 
     @staticmethod

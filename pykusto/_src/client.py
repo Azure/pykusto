@@ -128,12 +128,12 @@ class PyKustoClient(_ItemFetcher):
     def to_query_format(self) -> KQL:
         return KQL(f'cluster("{self.__cluster_name}")')
 
-    def _new_item(self, name: str) -> '_Database':
+    def _new_item(self, name: str) -> 'Database':
         # "fetch_by_default" set to false because often a database generated this way is not represented by an actual
         # Kusto database
-        return _Database(self, name, fetch_by_default=False)
+        return Database(self, name, fetch_by_default=False)
 
-    def get_database(self, name: str) -> '_Database':
+    def get_database(self, name: str) -> 'Database':
         return self[name]
 
     def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
@@ -152,7 +152,7 @@ class PyKustoClient(_ItemFetcher):
     def get_databases_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
 
-    def get_databases(self) -> Generator['_Database', None, None]:
+    def get_databases(self) -> Generator['Database', None, None]:
         yield from self._get_items()
 
     def get_cluster_name(self) -> str:
@@ -179,7 +179,7 @@ class PyKustoClient(_ItemFetcher):
         """
         return PyKustoClient._get_client_for_cluster(cluster)
 
-    def _internal_get_items(self) -> Dict[str, '_Database']:
+    def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required
         # by the "execute" method, but is ignored for this query
         res: KustoResponse = self.execute(
@@ -193,7 +193,7 @@ class PyKustoClient(_ItemFetcher):
         return {
             # Database instances are provided with all table and column data, preventing them from generating more
             # queries. However the "fetch_by_default" behavior is passed on to them for future actions.
-            database_name: _Database(
+            database_name: Database(
                 self, database_name,
                 {table_name: tuple(columns) for table_name, columns in table_to_columns.items()},
                 fetch_by_default=self._fetch_by_default
@@ -202,7 +202,7 @@ class PyKustoClient(_ItemFetcher):
         }
 
 
-class _Database(_ItemFetcher):
+class Database(_ItemFetcher):
     """
     Handle to a Kusto database.
     Uses :class:`ItemFetcher` to fetch and cache the full database schema, including all tables, columns and their
@@ -228,7 +228,7 @@ class _Database(_ItemFetcher):
             # Providing the items to ItemFetcher prevents further queries until the "refresh" method is explicitly
             # called
             None if tables is None else {
-                table_name: _Table(self, table_name, columns, fetch_by_default=fetch_by_default)
+                table_name: Table(self, table_name, columns, fetch_by_default=fetch_by_default)
                 for table_name, columns in tables.items()
             },
             fetch_by_default
@@ -246,10 +246,10 @@ class _Database(_ItemFetcher):
     def get_name(self) -> str:
         return self.__name
 
-    def _new_item(self, name: str) -> '_Table':
+    def _new_item(self, name: str) -> 'Table':
         # "fetch_by_default" set to false because often a table generated this way is not represented by an actual
         # Kusto table
-        return _Table(self, name, fetch_by_default=False)
+        return Table(self, name, fetch_by_default=False)
 
     def execute(self, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
         return self.__client.execute(self.__name, query, properties, retry_config)
@@ -257,13 +257,13 @@ class _Database(_ItemFetcher):
     def get_table_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
 
-    def get_table(self, *tables: str) -> '_Table':
+    def get_table(self, *tables: str) -> 'Table':
         assert len(tables) > 0
-        if not _Table.static_is_union(*tables):
+        if not Table.static_is_union(*tables):
             return self[tables[0]]
         columns: Optional[Tuple[BaseColumn, ...]] = None
         if self._items_fetched():
-            resolved_tables: Set[_Table] = set()
+            resolved_tables: Set[Table] = set()
             for table_pattern in tables:
                 if '*' in table_pattern:
                     resolved_tables.update(table for table in self._get_items() if fnmatch(table.get_name(), table_pattern))
@@ -272,10 +272,10 @@ class _Database(_ItemFetcher):
             if len(resolved_tables) == 1:
                 return next(iter(resolved_tables))
             columns = self.__try_to_resolve_union_columns(*resolved_tables)
-        return _Table(self, tables, columns, fetch_by_default=self._fetch_by_default)
+        return Table(self, tables, columns, fetch_by_default=self._fetch_by_default)
 
     @staticmethod
-    def __try_to_resolve_union_columns(*resolved_tables: '_Table') -> Optional[Tuple[BaseColumn, ...]]:
+    def __try_to_resolve_union_columns(*resolved_tables: 'Table') -> Optional[Tuple[BaseColumn, ...]]:
         column_by_name: Dict[str, BaseColumn] = {}
         for table in resolved_tables:
             for column in table.get_columns():
@@ -284,7 +284,7 @@ class _Database(_ItemFetcher):
                     return None  # Fallback to Kusto query for column name conflict resolution
         return tuple(column_by_name.values())
 
-    def _internal_get_items(self) -> Dict[str, '_Table']:
+    def _internal_get_items(self) -> Dict[str, 'Table']:
         # Retrieves table names, column names and types for this database only (the database name is added in the
         # "execute" method)
         res: KustoResponse = self.execute(
@@ -297,21 +297,21 @@ class _Database(_ItemFetcher):
         # "fetch_by_default" behavior is
         # passed on to them for future actions.
         return {
-            table_name: _Table(self, table_name, tuple(columns), fetch_by_default=self._fetch_by_default)
+            table_name: Table(self, table_name, tuple(columns), fetch_by_default=self._fetch_by_default)
             for table_name, columns in table_to_columns.items()
         }
 
 
-class _Table(_ItemFetcher):
+class Table(_ItemFetcher):
     """
     Handle to a Kusto table.
     Uses :class:`ItemFetcher` to fetch and cache the table schema of columns and their types.
     """
-    __database: _Database
+    __database: Database
     __tables: Tuple[str, ...]
 
     def __init__(
-            self, database: _Database, tables: Union[str, List[str], Tuple[str, ...]],
+            self, database: Database, tables: Union[str, List[str], Tuple[str, ...]],
             columns: Tuple[BaseColumn, ...] = None, fetch_by_default: bool = True
     ) -> None:
         """

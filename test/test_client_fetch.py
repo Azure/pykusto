@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from pykusto import PyKustoClient, Query
 # noinspection PyProtectedMember
-from pykusto._src.client import _Database
+from pykusto._src.client import Database
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _StringColumn, _NumberColumn, _AnyTypeColumn, _BooleanColumn
 # noinspection PyProtectedMember
@@ -222,7 +222,7 @@ class TestClientFetch(TestBase):
         self.assertType(client.test_db['other_table']['foo'], _AnyTypeColumn)
         # Various utility methods
         db = client.get_database('test_db')
-        self.assertType(db, _Database)
+        self.assertType(db, Database)
         self.assertEqual('test_db', db.get_name())
         self.assertEqual(('test_db',), tuple(client.get_databases_names()))
         self.assertEqual(('mock_table', 'other_table'), tuple(client.test_db.get_table_names()))

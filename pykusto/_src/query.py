@@ -5,12 +5,12 @@ from os import linesep
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-from .client import _Table, KustoResponse, RetryConfig
+from .client import Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
-from .expressions import _BooleanType, _ExpressionType, AggregationExpression, _OrderedType, \
-    _StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
+from .expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
+    StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
     BaseExpression, \
-    _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, _NumberType
+    _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType
 from .functions import Functions as f
 from .kql_converters import KQL
 from .logger import _logger
@@ -20,7 +20,7 @@ from .udf import _stringify_python_func
 
 class Query:
     _head: Optional['Query']
-    _table: Optional[_Table]
+    _table: Optional[Table]
     _table_name: Optional[str]
 
     def __init__(self, head=None) -> None:
@@ -29,7 +29,7 @@ class Query:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/best-practices
         """
         self._head = head if isinstance(head, Query) else None
-        self._table = head if isinstance(head, _Table) else None
+        self._table = head if isinstance(head, Table) else None
         self._table_name = head if isinstance(head, str) else None
 
     def __add__(self, other: 'Query') -> 'Query':
@@ -50,7 +50,7 @@ class Query:
             new_object._head = self._head.__deepcopy__(memo)
         return new_object
 
-    def where(self, *predicates: _BooleanType) -> 'Query':
+    def where(self, *predicates: BooleanType) -> 'Query':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/whereoperator
 
@@ -105,13 +105,13 @@ class Query:
         """
         return _CountQuery(self)
 
-    def sort_by(self, col: _OrderedType, order: Order = None, nulls: Nulls = None) -> '_SortQuery':
+    def sort_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> '_SortQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sortoperator
         """
         return _SortQuery(self, col, order, nulls)
 
-    def order_by(self, col: _OrderedType, order: Order = None, nulls: Nulls = None) -> '_SortQuery':
+    def order_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None) -> '_SortQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/orderoperator
         """
@@ -139,7 +139,7 @@ class Query:
         """
         return _JoinQuery(self, query, kind)
 
-    def project(self, *args: Union[_AssignmentBase, BaseExpression], **kwargs: _ExpressionType) -> '_ProjectQuery':
+    def project(self, *args: Union[_AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> '_ProjectQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectoperator
         """
@@ -154,7 +154,7 @@ class Query:
             assignments.append(_AssignmentFromColumnToColumn(_AnyTypeColumn(column_name), column))
         return _ProjectRenameQuery(self, assignments)
 
-    def project_away(self, *columns: _StringType) -> '_ProjectAwayQuery':
+    def project_away(self, *columns: StringType) -> '_ProjectAwayQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectawayoperator
         """
@@ -172,7 +172,7 @@ class Query:
         """
         return _DistinctQuery(self, (_AnyTypeColumn(KQL("*")),))
 
-    def extend(self, *args: Union[BaseExpression, _AssignmentBase], **kwargs: _ExpressionType) -> '_ExtendQuery':
+    def extend(self, *args: Union[BaseExpression, _AssignmentBase], **kwargs: ExpressionType) -> '_ExtendQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extendoperator
         """
@@ -196,7 +196,7 @@ class Query:
 
     def mv_expand(
             self, *args: Union[BaseExpression, _AssignmentBase], bag_expansion: BagExpansion = None,
-            with_item_index: BaseColumn = None, limit: int = None, **kwargs: _ExpressionType
+            with_item_index: BaseColumn = None, limit: int = None, **kwargs: ExpressionType
     ) -> '_MvExpandQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/mvexpandoperator
@@ -209,7 +209,7 @@ class Query:
     def custom(self, custom_query: str) -> '_CustomQuery':
         return _CustomQuery(self, custom_query)
 
-    def evaluate(self, plugin_name, *args: _ExpressionType, distribution: Distribution = None) -> '_EvaluateQuery':
+    def evaluate(self, plugin_name, *args: ExpressionType, distribution: Distribution = None) -> '_EvaluateQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/evaluateoperator
         """
@@ -256,7 +256,7 @@ class Query:
         else:
             return KQL(f"{self._head._compile_all(use_full_table_name)} | {self._compile()}")
 
-    def get_table(self) -> _Table:
+    def get_table(self) -> Table:
         if self._head is None:
             return self._table
         else:
@@ -279,7 +279,7 @@ class Query:
             kql = KQL(kql.replace(" |", linesep + "|"))
         return kql
 
-    def execute(self, table: _Table = None, retry_config: RetryConfig = None) -> KustoResponse:
+    def execute(self, table: Table = None, retry_config: RetryConfig = None) -> KustoResponse:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
@@ -293,11 +293,11 @@ class Query:
         _logger.debug("Running query: " + rendered_query)
         return table.execute(rendered_query, retry_config)
 
-    def to_dataframe(self, table: _Table = None, retry_config: RetryConfig = None):
+    def to_dataframe(self, table: Table = None, retry_config: RetryConfig = None):
         return self.execute(table, retry_config).to_dataframe()
 
     @staticmethod
-    def _extract_assignments(*args: Union[_AssignmentBase, BaseExpression], **kwargs: _ExpressionType) -> List[_AssignmentBase]:
+    def _extract_assignments(*args: Union[_AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> List[_AssignmentBase]:
         assignments: List[_AssignmentBase] = []
         for arg in args:
             if isinstance(arg, BaseExpression):
@@ -338,9 +338,9 @@ class _ProjectRenameQuery(Query):
 
 
 class _ProjectAwayQuery(Query):
-    _columns: Tuple[_StringType, ...]
+    _columns: Tuple[StringType, ...]
 
-    def __init__(self, head: 'Query', columns: Tuple[_StringType]) -> None:
+    def __init__(self, head: 'Query', columns: Tuple[StringType]) -> None:
         super().__init__(head)
         self._columns = columns
 
@@ -355,14 +355,14 @@ class _DistinctQuery(Query):
         super().__init__(head)
         self._columns = columns
 
-    def sample(self, number_of_values: _NumberType) -> '_SampleDistinctQuery':
+    def sample(self, number_of_values: NumberType) -> '_SampleDistinctQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/sampledistinctoperator
         """
         assert len(self._columns) == 1, "sample-distinct supports only one column"
         return _SampleDistinctQuery(self._head, self._columns[0], number_of_values)
 
-    def top_hitters(self, number_of_values: _NumberType) -> '_TopHittersQuery':
+    def top_hitters(self, number_of_values: NumberType) -> '_TopHittersQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tophittersoperator
         """
@@ -374,10 +374,10 @@ class _DistinctQuery(Query):
 
 
 class _SampleDistinctQuery(Query):
-    _number_of_values: _NumberType
+    _number_of_values: NumberType
     _column: BaseColumn
 
-    def __init__(self, head: 'Query', column: BaseColumn, number_of_values: _NumberType) -> None:
+    def __init__(self, head: 'Query', column: BaseColumn, number_of_values: NumberType) -> None:
         super().__init__(head)
         self._column = column
         self._number_of_values = number_of_values
@@ -387,17 +387,17 @@ class _SampleDistinctQuery(Query):
 
 
 class _TopHittersQuery(Query):
-    _number_of_values: _NumberType
+    _number_of_values: NumberType
     _column: BaseColumn
-    _by_expression: Optional[_NumberType]
+    _by_expression: Optional[NumberType]
 
-    def __init__(self, head: 'Query', column: BaseColumn, number_of_values: _NumberType, by_expression: Optional[_NumberType] = None) -> None:
+    def __init__(self, head: 'Query', column: BaseColumn, number_of_values: NumberType, by_expression: Optional[NumberType] = None) -> None:
         super().__init__(head)
         self._column = column
         self._number_of_values = number_of_values
         self._by_expression = by_expression
 
-    def by(self, by_expression: _NumberType) -> '_TopHittersQuery':
+    def by(self, by_expression: NumberType) -> '_TopHittersQuery':
         assert self._by_expression is None, "duplicate 'by' clause"
         return _TopHittersQuery(self._head, self._column, self._number_of_values, by_expression)
 
@@ -417,9 +417,9 @@ class _ExtendQuery(Query):
 
 
 class _WhereQuery(Query):
-    _predicates: Tuple[_BooleanType, ...]
+    _predicates: Tuple[BooleanType, ...]
 
-    def __init__(self, head: Query, *predicates: _BooleanType):
+    def __init__(self, head: Query, *predicates: BooleanType):
         super(_WhereQuery, self).__init__(head)
         self._predicates = predicates
 
@@ -475,11 +475,11 @@ class _CountQuery(Query):
 
 class _OrderQueryBase(Query):
     class OrderSpec:
-        col: _OrderedType
+        col: OrderedType
         order: Order
         nulls: Nulls
 
-        def __init__(self, col: _OrderedType, order: Order, nulls: Nulls):
+        def __init__(self, col: OrderedType, order: Order, nulls: Nulls):
             self.col = col
             self.order = order
             self.nulls = nulls
@@ -487,13 +487,13 @@ class _OrderQueryBase(Query):
     _query_name: str
     _order_specs: List[OrderSpec]
 
-    def __init__(self, head: Query, query_name: str, col: _OrderedType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, query_name: str, col: OrderedType, order: Order, nulls: Nulls):
         super(_OrderQueryBase, self).__init__(head)
         self._query_name = query_name
         self._order_specs = []
         self.then_by(col, order, nulls)
 
-    def then_by(self, col: _OrderedType, order: Order = None, nulls: Nulls = None):
+    def then_by(self, col: OrderedType, order: Order = None, nulls: Nulls = None):
         self._order_specs.append(_OrderQueryBase.OrderSpec(col, order, nulls))
         return self
 
@@ -511,7 +511,7 @@ class _OrderQueryBase(Query):
 
 
 class _SortQuery(_OrderQueryBase):
-    def __init__(self, head: Query, col: _OrderedType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, col: OrderedType, order: Order, nulls: Nulls):
         super(_SortQuery, self).__init__(head, "sort", col, order, nulls)
 
 
@@ -637,10 +637,10 @@ class _CustomQuery(Query):
 
 class _EvaluateQuery(Query):
     _plugin_name: str
-    _args: Tuple[_ExpressionType]
+    _args: Tuple[ExpressionType]
     _distribution: Distribution
 
-    def __init__(self, head: Query, plugin_name: str, *args: _ExpressionType, distribution: Distribution = None):
+    def __init__(self, head: Query, plugin_name: str, *args: ExpressionType, distribution: Distribution = None):
         super().__init__(head)
         self._plugin_name = plugin_name
         self._args = args

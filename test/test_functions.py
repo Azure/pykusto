@@ -634,7 +634,6 @@ class TestFunction(TestBase):
             Query().summarize(f.arg_min(t.stringField, t.numField, t.boolField)).render()
         )
 
-
     def test_arg_min_wildcard(self):
         self.assertEqual(
             " | summarize arg_min(stringField, *)",

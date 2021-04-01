@@ -1130,24 +1130,24 @@ class Functions:
         return _AnyAggregationExpression(KQL(f"anyif({_to_kql(expr)}, {_to_kql(predicate)})"))
 
     @staticmethod
-    def arg_max(*args: ExpressionType) -> _AnyAggregationExpression:
+    def arg_max(expr_to_maximize: ExpressionType, *args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-max-aggfunction
         to use wildcard simply put only one column.
         """
-        if len(args) == 1:
-            return _AnyAggregationExpression(KQL(f"arg_max({args[0]}, *)"))
-        return _AnyAggregationExpression(KQL(f"arg_max({', '.join(arg.kql for arg in args)})"))
+        if len(args) == 0:
+            return _AnyAggregationExpression(KQL(f"arg_max({expr_to_maximize}, *)"))
+        return _AnyAggregationExpression(KQL(f"arg_max({expr_to_maximize}, {', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
-    def arg_min(*args: ExpressionType) -> _AnyAggregationExpression:
+    def arg_min(expr_to_minimize: ExpressionType, *args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-min-aggfunction
         to use wildcard simply put only one column.
         """
-        if len(args) == 1:
-            return _AnyAggregationExpression(KQL(f"arg_min({args[0]}, *)"))
-        return _AnyAggregationExpression(KQL(f"arg_min({', '.join(arg.kql for arg in args)})"))
+        if len(args) == 0:
+            return _AnyAggregationExpression(KQL(f"arg_min({expr_to_minimize}, *)"))
+        return _AnyAggregationExpression(KQL(f"arg_min({expr_to_minimize}, {', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
     def avg(expr: ExpressionType) -> _NumberAggregationExpression:

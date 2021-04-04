@@ -586,6 +586,12 @@ class TestFunction(TestBase):
             Query().summarize(f.any(t.stringField, t.numField, t.boolField)).render()
         )
 
+    def test_any_wildcard(self):
+        self.assertEqual(
+            " | summarize any(*)",
+            Query().summarize(f.any()).render()
+        )
+
     def test_any_if(self):
         self.assertEqual(
             " | summarize anyif(stringField, boolField)",
@@ -616,10 +622,22 @@ class TestFunction(TestBase):
             Query().summarize(f.arg_max(t.stringField, t.numField, t.boolField)).render()
         )
 
+    def test_arg_max_wildcard(self):
+        self.assertEqual(
+            " | summarize arg_max(stringField, *)",
+            Query().summarize(f.arg_max(t.stringField)).render()
+        )
+
     def test_arg_min(self):
         self.assertEqual(
             " | summarize arg_min(stringField, numField, boolField)",
             Query().summarize(f.arg_min(t.stringField, t.numField, t.boolField)).render()
+        )
+
+    def test_arg_min_wildcard(self):
+        self.assertEqual(
+            " | summarize arg_min(stringField, *)",
+            Query().summarize(f.arg_min(t.stringField)).render()
         )
 
     def test_avg(self):

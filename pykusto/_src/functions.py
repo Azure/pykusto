@@ -1116,7 +1116,7 @@ class Functions:
     def any(*args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/any-aggfunction
-        to use wildcard simply put no columns.
+        :param args: The expressions to return for the chosen record. An empty list will cause all columns to be returned.
         """
         if len(args) == 0:
             return _AnyAggregationExpression(KQL("any(*)"))
@@ -1133,7 +1133,8 @@ class Functions:
     def arg_max(expr_to_maximize: ExpressionType, *args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-max-aggfunction
-        to use wildcard simply put only one column.
+        :param expr_to_maximize: The expression to maximize.
+        :param args: The expressions to return for the chosen record. An empty list will cause all columns to be returned.
         """
         if len(args) == 0:
             return _AnyAggregationExpression(KQL(f"arg_max({expr_to_maximize}, *)"))
@@ -1143,7 +1144,8 @@ class Functions:
     def arg_min(expr_to_minimize: ExpressionType, *args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-min-aggfunction
-        to use wildcard simply put only one column.
+        :param expr_to_minimize: The expression to minimize.
+        :param args: The expressions to return for the chosen record. An empty list will cause all columns to be returned.
         """
         if len(args) == 0:
             return _AnyAggregationExpression(KQL(f"arg_min({expr_to_minimize}, *)"))

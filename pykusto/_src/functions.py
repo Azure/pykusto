@@ -1116,7 +1116,10 @@ class Functions:
     def any(*args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/any-aggfunction
+        :param args: The expressions to return for the chosen record. An empty list will cause all columns to be returned.
         """
+        if len(args) == 0:
+            return _AnyAggregationExpression(KQL("any(*)"))
         return _AnyAggregationExpression(KQL(f"any({', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
@@ -1127,18 +1130,26 @@ class Functions:
         return _AnyAggregationExpression(KQL(f"anyif({_to_kql(expr)}, {_to_kql(predicate)})"))
 
     @staticmethod
-    def arg_max(*args: ExpressionType) -> _AnyAggregationExpression:
+    def arg_max(expr_to_maximize: ExpressionType, *args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-max-aggfunction
+        :param expr_to_maximize: The expression to maximize.
+        :param args: The expressions to return for the chosen record. An empty list will cause all columns to be returned.
         """
-        return _AnyAggregationExpression(KQL(f"arg_max({', '.join(arg.kql for arg in args)})"))
+        if len(args) == 0:
+            return _AnyAggregationExpression(KQL(f"arg_max({expr_to_maximize}, *)"))
+        return _AnyAggregationExpression(KQL(f"arg_max({expr_to_maximize}, {', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
-    def arg_min(*args: ExpressionType) -> _AnyAggregationExpression:
+    def arg_min(expr_to_minimize: ExpressionType, *args: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arg-min-aggfunction
+        :param expr_to_minimize: The expression to minimize.
+        :param args: The expressions to return for the chosen record. An empty list will cause all columns to be returned.
         """
-        return _AnyAggregationExpression(KQL(f"arg_min({', '.join(arg.kql for arg in args)})"))
+        if len(args) == 0:
+            return _AnyAggregationExpression(KQL(f"arg_min({expr_to_minimize}, *)"))
+        return _AnyAggregationExpression(KQL(f"arg_min({expr_to_minimize}, {', '.join(arg.kql for arg in args)})"))
 
     @staticmethod
     def avg(expr: ExpressionType) -> _NumberAggregationExpression:

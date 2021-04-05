@@ -2,8 +2,6 @@ import logging
 import re
 from datetime import datetime, timedelta
 
-from pykusto._src.type_utils import _KustoType
-
 from pykusto import column_generator as col, Functions as f, Query
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger

@@ -117,26 +117,32 @@ class TestFunction(TestBase):
 
     def test_extract(self):
         self.assertEqual(
-            " | extend extract(\"Duration=([0-9.]+)\", 1, stringField)",
+            " | extend extract(@\"Duration=([0-9.]+)\", 1, stringField)",
             Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField)).render()
         )
 
     def test_extract_type_literal(self):
         self.assertEqual(
-            " | extend extract(\"Duration=([0-9.]+)\", 1, stringField, typeof(real))",
+            r' | extend extract(@"Duration=([0-9.]+)", 1, stringField, typeof(real))',
             Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField, _KustoType.REAL)).render()
         )
 
     def test_extract_all(self):
         self.assertEqual(
-            " | extend extract_all(@\"([\da-f]{2})\", stringField)",
+            r' | extend extract_all(@"([\da-f]{2})", stringField)',
             Query().extend(f.extract_all(r"([\da-f]{2})", t.stringField)).render()
         )
 
     def test_extract_all_capture_group(self):
         self.assertEqual(
-            " | extend extract_all(@\"([\da-f]{2})\", dynamic([1, 3]), stringField)",
+            r' | extend extract_all(@"([\da-f]{2})", dynamic([1, 3]), stringField)',
             Query().extend(f.extract_all(r"([\da-f]{2})", t.stringField, [1, 3])).render()
+        )
+
+    def test_extract_all_named_capture_group(self):
+        self.assertEqual(
+            r' | extend extract_all(@"(?P<first>[\da-f]{2})", dynamic(["first", 3]), stringField)',
+            Query().extend(f.extract_all(r"(?P<first>[\da-f]{2})", t.stringField, ["first", 3])).render()
         )
 
     def test_floor(self):

@@ -287,18 +287,18 @@ class Functions:
     # def extent_tags(self): return
 
     @staticmethod
-    def extract(regex: StringType, capture_group: int, text: StringType, type_literal: _KustoType = None) -> _StringExpression:
+    def extract(regex: str, capture_group: int, text: StringType, type_literal: _KustoType = None) -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractfunction
         """
         if type_literal is None:
-            return _StringExpression(KQL(f'extract({_to_kql(regex)}, {capture_group}, {_to_kql(text)})'))
+            return _StringExpression(KQL(f'extract(@{_to_kql(regex)}, {capture_group}, {_to_kql(text)})'))
         return _StringExpression(KQL(
-            f'extract({_to_kql(regex)}, {capture_group}, {_to_kql(text)}, typeof({type_literal.primary_name}))'
+            f'extract(@{_to_kql(regex)}, {capture_group}, {_to_kql(text)}, typeof({type_literal.primary_name}))'
         ))
 
     @staticmethod
-    def extract_all(regex: StringType, text: StringType, capture_group: List[int] = None) -> _DynamicExpression:
+    def extract_all(regex: str, text: StringType, capture_group: List[Union[int, str]] = None) -> _ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractallfunction
         Please note that the order of parameters has changed and that capture group must all be ints (['second'] is illegal)

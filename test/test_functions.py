@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime, timedelta
 
 from pykusto._src.type_utils import _KustoType
@@ -127,6 +128,13 @@ class TestFunction(TestBase):
             Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField, _KustoType.REAL)).render()
         )
 
+    def test_extract_compiled_pattern(self):
+        pat = re.compile(r"Duration=([0-9.]+)")
+        self.assertEqual(
+            r' | extend extract(@"Duration=([0-9.]+)", 1, stringField)',
+            Query().extend(f.extract(pat, 1, t.stringField)).render()
+        )
+
     def test_extract_all(self):
         self.assertEqual(
             r' | extend extract_all(@"([\da-f]{2})", stringField)',
@@ -143,6 +151,13 @@ class TestFunction(TestBase):
         self.assertEqual(
             r' | extend extract_all(@"(?P<first>[\da-f]{2})", dynamic(["first", 3]), stringField)',
             Query().extend(f.extract_all(r"(?P<first>[\da-f]{2})", t.stringField, ["first", 3])).render()
+        )
+
+    def test_extract_all_compiled_pattern(self):
+        pat = re.compile(r"([\da-f]{2})")
+        self.assertEqual(
+            r' | extend extract_all(@"([\da-f]{2})", stringField)',
+            Query().extend(f.extract_all(pat, t.stringField)).render()
         )
 
     def test_floor(self):

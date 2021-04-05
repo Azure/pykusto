@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime, timedelta
 
+from pykusto._src.type_utils import _KustoType
+
 from pykusto import column_generator as col, Functions as f, Query
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger
@@ -111,6 +113,30 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | where (exp2(numField)) > 4",
             Query().where(f.exp2(t.numField) > 4).render()
+        )
+
+    def test_extract(self):
+        self.assertEqual(
+            " | extend extract(\"Duration=([0-9.]+)\", 1, stringField)",
+            Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField)).render()
+        )
+
+    def test_extract_type_literal(self):
+        self.assertEqual(
+            " | extend extract(\"Duration=([0-9.]+)\", 1, stringField, typeof(real))",
+            Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField, _KustoType.REAL)).render()
+        )
+
+    def test_extract_all(self):
+        self.assertEqual(
+            " | extend extract_all(@\"([\da-f]{2})\", stringField)",
+            Query().extend(f.extract_all(r"([\da-f]{2})", t.stringField)).render()
+        )
+
+    def test_extract_all_capture_group(self):
+        self.assertEqual(
+            " | extend extract_all(@\"([\da-f]{2})\", dynamic([1, 3]), stringField)",
+            Query().extend(f.extract_all(r"([\da-f]{2})", t.stringField, [1, 3])).render()
         )
 
     def test_floor(self):

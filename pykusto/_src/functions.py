@@ -1,5 +1,7 @@
 from itertools import chain
-from typing import Union
+from typing import Union, List
+
+import re
 
 from .enums import Kind
 from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, TimespanType, \
@@ -283,14 +285,30 @@ class Functions:
     #
     #
     # def extent_tags(self): return
-    #
-    #
-    # def extract(self): return
-    #
-    #
-    # def extract_all(self): return
-    #
-    #
+
+    @staticmethod
+    def extract(regex: StringType, capture_group: int, text: StringType, type_literal: _KustoType = None) -> _StringExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractfunction
+        """
+        if type_literal is None:
+            return _StringExpression(KQL(f'extract({_to_kql(regex)}, {capture_group}, {_to_kql(text)})'))
+        return _StringExpression(KQL(
+            f'extract({_to_kql(regex)}, {capture_group}, {_to_kql(text)}, typeof({type_literal.primary_name}))'
+        ))
+
+    @staticmethod
+    def extract_all(regex: StringType, text: StringType, capture_group: List[int] = None) -> _DynamicExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractallfunction
+        Please note that the order of parameters has changed and that capture group must all be ints (['second'] is illegal)
+        """
+        if capture_group is None:
+            return _DynamicExpression(KQL(f'extract_all(@{_to_kql(regex)}, {_to_kql(text)})'))
+        return _DynamicExpression(KQL(
+            f'extract_all(@{_to_kql(regex)}, {_to_kql(capture_group)}, {_to_kql(text)})'
+        ))
+
     # def extractjson(self): return
 
     @staticmethod

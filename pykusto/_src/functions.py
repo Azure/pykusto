@@ -301,7 +301,6 @@ class Functions:
     def extract_all(regex: str, text: StringType, capture_group: List[Union[int, str]] = None) -> _ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractallfunction
-        Please note that the order of parameters has changed and that capture group must all be ints (['second'] is illegal)
         """
         if capture_group is None:
             return _DynamicExpression(KQL(f'extract_all(@{_to_kql(regex)}, {_to_kql(text)})'))

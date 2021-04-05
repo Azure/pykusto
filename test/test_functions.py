@@ -125,7 +125,7 @@ class TestFunction(TestBase):
     def test_extract_type_literal(self):
         self.assertEqual(
             r' | extend extract(@"Duration=([0-9.]+)", 1, stringField, typeof(real))',
-            Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField, _KustoType.REAL)).render()
+            Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField, float)).render()
         )
 
     def test_extract_compiled_pattern(self):

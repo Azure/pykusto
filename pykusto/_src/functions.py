@@ -1,7 +1,5 @@
 from itertools import chain
-from typing import Union, List, Pattern
-
-import re
+from typing import Union, List, Pattern, Type
 
 from .enums import Kind
 from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, TimespanType, \
@@ -11,7 +9,7 @@ from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, Timespan
     _ArrayExpression, _ColumnToType, BaseColumn, AnyExpression, _AnyAggregationExpression, _MappingExpression
 from .kql_converters import KQL
 from .logger import _logger
-from .type_utils import _plain_expression, _KustoType
+from .type_utils import _plain_expression, _KustoType, _PYTHON_TYPES_MAPPING_TO_KUSTO
 
 
 class Functions:
@@ -287,7 +285,7 @@ class Functions:
     # def extent_tags(self): return
 
     @staticmethod
-    def extract(regex: Union[str, Pattern], capture_group: int, text: StringType, type_literal: _KustoType = None) -> _StringExpression:
+    def extract(regex: Union[str, Pattern], capture_group: int, text: StringType, type_literal: Type = None) -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractfunction
         """
@@ -295,7 +293,8 @@ class Functions:
         if type_literal is None:
             return _StringExpression(KQL(f'extract(@{_to_kql(regex_str)}, {capture_group}, {_to_kql(text)})'))
         return _StringExpression(KQL(
-            f'extract(@{_to_kql(regex_str)}, {capture_group}, {_to_kql(text)}, typeof({type_literal.primary_name}))'
+            f'extract(@{_to_kql(regex_str)}, {capture_group}, {_to_kql(text)},'
+            f' typeof({_PYTHON_TYPES_MAPPING_TO_KUSTO[type_literal].primary_name}))'
         ))
 
     @staticmethod

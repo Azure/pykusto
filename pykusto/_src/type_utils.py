@@ -60,6 +60,11 @@ _NUMBER_TYPES: FrozenSet[_KustoType] = frozenset([
     _KustoType.INT, _KustoType.LONG, _KustoType.REAL, _KustoType.DECIMAL, _KustoType.FLOAT,
     _KustoType.INT16, _KustoType.UINT16, _KustoType.UINT32, _KustoType.UINT64, _KustoType.UINT8
 ])
+_PYTHON_TYPES_MAPPING_TO_KUSTO: Dict[Type, _KustoType] = {
+    str: _KustoType.STRING, int: _KustoType.INT, float: _KustoType.REAL, bool: _KustoType.BOOL,
+    datetime: _KustoType.DATETIME, Mapping: _KustoType.MAPPING, List: _KustoType.ARRAY, Tuple: _KustoType.ARRAY,
+    timedelta: _KustoType.TIMESPAN
+}
 
 
 class _TypeRegistrar:

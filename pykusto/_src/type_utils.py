@@ -8,13 +8,14 @@ PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timed
 class _KustoType(Enum):
     """
     https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/
+    Order of entries determines preference when converting Python to Kusto types
     """
     BOOL = ('bool', 'I8', 'System.SByte', bool)
     DATETIME = ('datetime', 'DateTime', 'System.DateTime', datetime)
     ARRAY = ('dynamic', 'Dynamic', 'System.Object', List, Tuple)
     MAPPING = ('dynamic', 'Dynamic', 'System.Object', Mapping)
-    INT = ('int', 'I32', 'System.Int32', int)
     LONG = ('long', 'I64', 'System.Int64', int)
+    INT = ('int', 'I32', 'System.Int32', int)
     REAL = ('real', 'R64', 'System.Double', float)
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
@@ -60,6 +61,11 @@ _NUMBER_TYPES: FrozenSet[_KustoType] = frozenset([
     _KustoType.INT, _KustoType.LONG, _KustoType.REAL, _KustoType.DECIMAL, _KustoType.FLOAT,
     _KustoType.INT16, _KustoType.UINT16, _KustoType.UINT32, _KustoType.UINT64, _KustoType.UINT8
 ])
+_PYTHON_TYPE_TO_KUSTO_TYPE: Dict[Type, _KustoType] = {
+    python_type: kusto_type
+    for kusto_type in reversed(_KustoType)
+    for python_type in kusto_type.python_types
+}
 
 
 class _TypeRegistrar:

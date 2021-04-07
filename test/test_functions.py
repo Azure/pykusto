@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime, timedelta
 
 from pykusto import column_generator as col, Functions as f, Query
@@ -111,6 +112,50 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | where (exp2(numField)) > 4",
             Query().where(f.exp2(t.numField) > 4).render()
+        )
+
+    def test_extract(self):
+        self.assertEqual(
+            " | extend extract(@\"Duration=([0-9.]+)\", 1, stringField)",
+            Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField)).render()
+        )
+
+    def test_extract_type_literal(self):
+        self.assertEqual(
+            r' | extend extract(@"Duration=([0-9.]+)", 1, stringField, typeof(real))',
+            Query().extend(f.extract(r"Duration=([0-9.]+)", 1, t.stringField, float)).render()
+        )
+
+    def test_extract_compiled_pattern(self):
+        pat = re.compile(r"Duration=([0-9.]+)")
+        self.assertEqual(
+            r' | extend extract(@"Duration=([0-9.]+)", 1, stringField)',
+            Query().extend(f.extract(pat, 1, t.stringField)).render()
+        )
+
+    def test_extract_all(self):
+        self.assertEqual(
+            r' | extend extract_all(@"([\da-f]{2})", stringField)',
+            Query().extend(f.extract_all(r"([\da-f]{2})", t.stringField)).render()
+        )
+
+    def test_extract_all_capture_group(self):
+        self.assertEqual(
+            r' | extend extract_all(@"([\da-f]{2})", dynamic([1, 3]), stringField)',
+            Query().extend(f.extract_all(r"([\da-f]{2})", t.stringField, [1, 3])).render()
+        )
+
+    def test_extract_all_named_capture_group(self):
+        self.assertEqual(
+            r' | extend extract_all(@"(?P<first>[\da-f]{2})", dynamic(["first", 3]), stringField)',
+            Query().extend(f.extract_all(r"(?P<first>[\da-f]{2})", t.stringField, ["first", 3])).render()
+        )
+
+    def test_extract_all_compiled_pattern(self):
+        pat = re.compile(r"([\da-f]{2})")
+        self.assertEqual(
+            r' | extend extract_all(@"([\da-f]{2})", stringField)',
+            Query().extend(f.extract_all(pat, t.stringField)).render()
         )
 
     def test_floor(self):

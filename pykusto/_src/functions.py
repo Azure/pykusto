@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Union
+from typing import Union, List, Pattern, Type
 
 from .enums import Kind
 from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, TimespanType, \
@@ -9,7 +9,7 @@ from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, Timespan
     _ArrayExpression, _ColumnToType, BaseColumn, AnyExpression, _AnyAggregationExpression, _MappingExpression
 from .kql_converters import KQL
 from .logger import _logger
-from .type_utils import _plain_expression, _KustoType
+from .type_utils import _plain_expression, _KustoType, _PYTHON_TYPE_TO_KUSTO_TYPE
 
 
 class Functions:
@@ -283,14 +283,32 @@ class Functions:
     #
     #
     # def extent_tags(self): return
-    #
-    #
-    # def extract(self): return
-    #
-    #
-    # def extract_all(self): return
-    #
-    #
+
+    @staticmethod
+    def extract(regex: Union[str, Pattern], capture_group: int, text: StringType, result_type: Type = None) -> _StringExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractfunction
+        """
+        regex_str = regex if isinstance(regex, str) else regex.pattern
+        if result_type is None:
+            return _StringExpression(KQL(f'extract(@{_to_kql(regex_str)}, {capture_group}, {_to_kql(text)})'))
+        return _StringExpression(KQL(
+            f'extract(@{_to_kql(regex_str)}, {capture_group}, {_to_kql(text)},'
+            f' typeof({_PYTHON_TYPE_TO_KUSTO_TYPE[result_type].primary_name}))'
+        ))
+
+    @staticmethod
+    def extract_all(regex: Union[str, Pattern], text: StringType, capture_group: List[Union[int, str]] = None) -> _ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/extractallfunction
+        """
+        regex_str = regex if isinstance(regex, str) else regex.pattern
+        if capture_group is None:
+            return _DynamicExpression(KQL(f'extract_all(@{_to_kql(regex_str)}, {_to_kql(text)})'))
+        return _DynamicExpression(KQL(
+            f'extract_all(@{_to_kql(regex_str)}, {_to_kql(capture_group)}, {_to_kql(text)})'
+        ))
+
     # def extractjson(self): return
 
     @staticmethod

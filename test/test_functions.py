@@ -621,6 +621,17 @@ class TestFunction(TestBase):
             ' | where (trim("--", stringField)) == "text"',
             Query().where(f.trim("--", t.stringField) == "text").render()
         )
+
+    def test_rand(self):
+        self.assertEqual(
+            " | extend rnd = rand()",
+            Query().extend(rnd=f.rand()).render()
+        )
+        self.assertEqual(
+            " | extend rnd = rand(5)",
+            Query().extend(rnd=f.rand(5)).render()
+        )
+
     # ------------------------------------------------------
     # Aggregation Functions
     # ------------------------------------------------------

@@ -47,7 +47,7 @@ class RetryConfig:
                         if attempt == self.attempts:
                             _logger.warn(f"Reached maximum number of attempts ({self.attempts}), raising exception")
                             raise
-                        _logger.info(f"Attempt number {attempt} out of {self.attempts} failed, previous sleep time was {sleep_time} seconds. Exception: {e}")
+                        _logger.info(f"Attempt number {attempt} out of {self.attempts} failed, previous sleep time was {sleep_time} seconds. Exception: {repr(e)}")
                         break
                 else:
                     raise

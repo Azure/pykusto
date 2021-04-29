@@ -202,7 +202,7 @@ class TestClient(TestBase):
         self.assertEqual(
             [
                 f"INFO:pykusto:Attempt number {i} out of {number_of_retries} failed, "
-                f"previous sleep time was 0.1 seconds. Exception: (KustoServiceError(...), 'Mock exception for test')"
+                f"previous sleep time was 0.1 seconds. Exception: KustoServiceError('Mock exception for test',)"
                 for i in range(1, number_of_retries)
             ],
             cm.output

@@ -9,7 +9,7 @@ from unittest import TestCase
 from unittest.case import _AssertLogsContext
 from urllib.parse import urljoin
 
-from azure.kusto.data import KustoClient, ClientRequestProperties
+from azure.kusto.data import KustoClient, ClientRequestProperties, KustoConnectionStringBuilder
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
@@ -89,7 +89,8 @@ class CustomAssertLogsContext(_AssertLogsContext):
 # noinspection PyMissingConstructor
 class MockKustoResultTable(KustoResultTable):
     def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
-        self.rows = tuple(KustoResultRow(columns, row) for row in rows)
+        self.kusto_result_rows = tuple(KustoResultRow(columns, row) for row in rows)
+        self.raw_rows = self.kusto_result_rows
         self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''}) for col in columns)
 
 
@@ -229,6 +230,11 @@ class MockKustoClient(KustoClient):
             self.recorded_queries.append(recorded_query)
         return response()
 
+
+class MockKustoConnectionStringBuilder(KustoConnectionStringBuilder):
+    # noinspection PyMissingConstructor
+    def __init__(self):
+        self._internal_dict = {}
 
 
 test_logger = logging.getLogger("pykusto_test")

@@ -9,11 +9,9 @@ import pandas as pd
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultRow as _KustoResultRow
-from azure.kusto.data.exceptions import KustoServiceError
+from azure.kusto.data.exceptions import KustoServiceError, KustoClientError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
-# noinspection PyProtectedMember
-from azure.kusto.data.security import _get_azure_cli_auth_token
 from redo import retrier
 
 from .expressions import BaseColumn, _AnyTypeColumn
@@ -160,15 +158,12 @@ class PyKustoClient(_ItemFetcher):
 
     @staticmethod
     def _get_client_for_cluster(cluster: str) -> KustoClient:
-        # If we call 'with_az_cli_authentication' directly, in case of failure we will get an un-informative exception.
-        # As a workaround, we first attempt to manually get the Azure CLI token, and see if it works.
-        # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
-        stored_token = _get_azure_cli_auth_token()
-        if stored_token is None:
-            _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication")
-            connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
-        else:
+        try:
             connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
+        except KustoClientError as e:
+            _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication\n" + str(e))
+            connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
+
         return KustoClient(connection_string_builder)
 
     @staticmethod

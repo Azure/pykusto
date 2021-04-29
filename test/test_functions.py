@@ -783,7 +783,7 @@ class TestFunction(TestBase):
 
     def test_dcountif(self):
         self.assertEqual(
-            " | summarize dcountif(stringField, boolField, 0)",
+            " | summarize dcountif(stringField, boolField, 1)",
             Query().summarize(f.dcount_if(t.stringField, t.boolField)).render()
         )
 

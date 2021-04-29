@@ -173,8 +173,11 @@ class PyKustoClient(_ItemFetcher):
                 self.__client = (self._cached_get_client_for_cluster if self.__use_global_cache else self._get_client_for_cluster)()
         return self.__client
 
+    def _get_connection_string_builder(self) -> KustoConnectionStringBuilder:
+        return self.__connection_string_builder_builder(self.__cluster_name)
+
     def _get_client_for_cluster(self) -> KustoClient:
-        return KustoClient(self.__connection_string_builder_builder(self.__cluster_name))
+        return KustoClient(self._get_connection_string_builder())
 
     def _cached_get_client_for_cluster(self) -> KustoClient:
         """

@@ -15,7 +15,7 @@ from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
 
 # noinspection PyProtectedMember
-from pykusto._src.client import Table
+from pykusto._src.client import Table, PyKustoClient
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
 # noinspection PyProtectedMember
@@ -235,6 +235,17 @@ class MockKustoConnectionStringBuilder(KustoConnectionStringBuilder):
     # noinspection PyMissingConstructor
     def __init__(self):
         self._internal_dict = {}
+
+
+class MockGetClientForCluster:
+    def __init__(self, expected_builder: KustoConnectionStringBuilder, client_to_return: KustoClient):
+        self.expected_builder = expected_builder
+        self.client_to_return = client_to_return
+
+    def __call__(self, client: PyKustoClient) -> KustoClient:
+        # noinspection PyProtectedMember
+        assert self.expected_builder._internal_dict == client._get_connection_string_builder()._internal_dict
+        return self.client_to_return
 
 
 test_logger = logging.getLogger("pykusto_test")

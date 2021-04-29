@@ -2,7 +2,7 @@ import logging
 from typing import Type
 from unittest.mock import patch
 
-from azure.kusto.data import KustoClient
+from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.kusto.data.exceptions import KustoError, KustoClientError
 
 from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES
@@ -10,7 +10,7 @@ from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceE
 from pykusto._src.logger import _logger
 # noinspection PyProtectedMember
 from pykusto._src.type_utils import _raise
-from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response
+from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response, MockGetClientForCluster
 
 
 class TestClient(TestBase):
@@ -157,8 +157,12 @@ class TestClient(TestBase):
         )
 
     def test_client_for_cluster_with_azure_cli_auth(self):
-        with self.assertLogs(_logger, logging.INFO) as cm:
+        with patch('pykusto._src.client.PyKustoClient._get_client_for_cluster', MockGetClientForCluster(
+                KustoConnectionStringBuilder.with_az_cli_authentication('https://help.kusto.windows.net'),
+                MockKustoClient('https://help.kusto.windows.net')
+        )), self.assertLogs(_logger, logging.INFO) as cm:
             client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
+            client.test_db
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
         self.assertEqual([], cm.output)

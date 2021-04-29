@@ -1,6 +1,5 @@
 from collections import defaultdict
 from fnmatch import fnmatch
-from functools import lru_cache
 from threading import Lock
 from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable
 from urllib.parse import urlparse
@@ -9,7 +8,7 @@ import pandas as pd
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultRow as _KustoResultRow
-from azure.kusto.data.exceptions import KustoServiceError, KustoClientError
+from azure.kusto.data.exceptions import KustoServiceError, KustoClientError, KustoAuthenticationError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
 from redo import retrier
@@ -88,11 +87,16 @@ class PyKustoClient(_ItemFetcher):
     Uses :class:`ItemFetcher` to fetch and cache the full cluster schema, including all databases, tables, columns and
     their types.
     """
-    __client: KustoClient
+    __client: Optional[KustoClient]
     __cluster_name: str
     __first_execution: bool
     __first_execution_lock: Lock
     __retry_config: RetryConfig
+    __use_global_cache: bool
+    __connection_string_builder_builder: Callable[[str], KustoConnectionStringBuilder]
+
+    # Static
+    __global_client_cache: Dict[str, KustoClient] = {}
 
     def __init__(
             self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False,
@@ -108,16 +112,18 @@ class PyKustoClient(_ItemFetcher):
         super().__init__(None, fetch_by_default)
         self.__first_execution = True
         self.__first_execution_lock = Lock()
+        self.__get_client_lock = Lock()
         self.__retry_config = retry_config
+        self.__use_global_cache = use_global_cache
         if isinstance(client_or_cluster, KustoClient):
             self.__client = client_or_cluster
             # noinspection PyProtectedMember
             self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
-            assert not use_global_cache, "Global cache not supported when providing your own client instance"
+            assert not self.__use_global_cache, "Global cache not supported when providing your own client instance"
         else:
-
-            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster)
+            self.__client = None
             self.__cluster_name = client_or_cluster
+            self.__connection_string_builder_builder = KustoConnectionStringBuilder.with_az_cli_authentication
         self._refresh_if_needed()
 
     def __repr__(self) -> str:
@@ -140,12 +146,17 @@ class PyKustoClient(_ItemFetcher):
         with self.__first_execution_lock:
             if self.__first_execution:
                 self.__first_execution = False
-                return self.__internal_execute(database, query, properties, retry_config)
+                try:
+                    return self.__internal_execute(database, query, properties, retry_config)
+                except (KustoClientError, KustoAuthenticationError) as e:
+                    _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication\n" + str(e))
+                    self.__connection_string_builder_builder = KustoConnectionStringBuilder.with_aad_device_authentication
+                    return self.__internal_execute(database, query, properties, retry_config)
         return self.__internal_execute(database, query, properties, retry_config)
 
     def __internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
         resolved_retry_config = self.__retry_config if retry_config is None else retry_config
-        return KustoResponse(resolved_retry_config.retry(lambda: self.__client.execute(database, query, properties)))
+        return KustoResponse(resolved_retry_config.retry(lambda: self._get_client().execute(database, query, properties)))
 
     def get_databases_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
@@ -156,23 +167,26 @@ class PyKustoClient(_ItemFetcher):
     def get_cluster_name(self) -> str:
         return self.__cluster_name
 
-    @staticmethod
-    def _get_client_for_cluster(cluster: str) -> KustoClient:
-        try:
-            connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
-        except KustoClientError as e:
-            _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication\n" + str(e))
-            connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
+    def _get_client(self) -> KustoClient:
+        with self.__get_client_lock:
+            if self.__client is None:
+                self.__client = (self._cached_get_client_for_cluster if self.__use_global_cache else self._get_client_for_cluster)()
+        return self.__client
 
-        return KustoClient(connection_string_builder)
+    def _get_client_for_cluster(self) -> KustoClient:
+        return KustoClient(self.__connection_string_builder_builder(self.__cluster_name))
 
-    @staticmethod
-    @lru_cache(maxsize=128)
-    def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
+    def _cached_get_client_for_cluster(self) -> KustoClient:
         """
         Provided for convenience during development, not recommended for general use.
+        Not thread safe, only called while '__get_client_lock' is locked.
         """
-        return PyKustoClient._get_client_for_cluster(cluster)
+        client = PyKustoClient.__global_client_cache.get(self.__cluster_name)
+        if client is None:
+            client = self._get_client_for_cluster()
+            PyKustoClient.__global_client_cache[self.__cluster_name] = client
+
+        return client
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

@@ -23,24 +23,25 @@ setup(
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
-        # https://github.com/Azure/azure-sdk-for-python/blob/master/sdk/core/azure-core/CHANGELOG.md
-        'azure-core==1.13.0',
+        # Release notes: https://github.com/Azure/azure-sdk-for-python/blob/master/sdk/core/azure-core/CHANGELOG.md
+        'azure-core>=1.13.0',  # Earliest tested version
+        'azure-core<=1.13.0',  # Latest tested version
 
-        # In 2.1.1 this was fixed: https://github.com/Azure/azure-kusto-python/issues/312
-        'azure-kusto-data>=2.1.1,<=2.1.1',
+        # Release notes: https://github.com/Azure/azure-kusto-python/releases
+        'azure-kusto-data>=2.1.1',  # Earliest tested version (earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312)
+        'azure-kusto-data<=2.1.1',  # Latest tested version
 
-        # azure-kusto-data requires 0.24.1
-        'pandas>=0.24.1,<=1.2.3',
+        # Release notes: https://pandas.pydata.org/docs/whatsnew/index.html
+        'pandas>=0.25.0',  # Earliest tested version (tests use DataFrame constructor options introduced in 0.25.0)
+        'pandas<=1.2.4',  # Latest tested version
 
-        'redo==2.0.4',
+        'redo>=2.0.4',  # Earliest tested version
+        'redo<=2.0.4',  # Latest tested version
     ],
     tests_require=[
         'pytest',
         'pytest-cov',
         'flake8',
-
-        # Tests use DataFrame constructor options introduced in 0.25.0
-        'pandas>=0.25.0',
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

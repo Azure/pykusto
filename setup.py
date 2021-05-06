@@ -30,7 +30,8 @@ setup(
         'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
 
         # Release notes: https://pandas.pydata.org/docs/whatsnew/index.html
-        'pandas>=0.25.0,<=1.2.4',  # Tests use DataFrame constructor options introduced in 0.25.0)
+        # Note that starting from 1.2.0 support for Python 3.6 was dropped
+        'pandas>=0.25.0,<=1.2.4',  # Tests use DataFrame constructor options introduced in 0.25.0
 
         'redo==2.0.4',
     ],

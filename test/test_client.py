@@ -2,14 +2,14 @@ import logging
 from typing import Type
 from unittest.mock import patch
 
-from azure.kusto.data import KustoClient
+from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.kusto.data.exceptions import KustoError
 
 from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger
 # noinspection PyProtectedMember
-from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response, MockKustoConnectionStringBuilder
+from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response
 
 
 class TestClient(TestBase):
@@ -156,19 +156,15 @@ class TestClient(TestBase):
         )
 
     def test_client_for_cluster_with_azure_cli_auth(self):
-        with patch(
-                'pykusto._src.client.KustoConnectionStringBuilder.with_az_cli_authentication', lambda cluster: MockKustoConnectionStringBuilder()
-        ), self.assertLogs(_logger, logging.INFO) as cm:
+        with self.assertLogs(_logger, logging.INFO) as cm:
             client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
         self.assertEqual([], cm.output)
 
     def test_client_for_cluster_with_aad_device_auth(self):
-        with patch(
-                'pykusto._src.client.KustoConnectionStringBuilder.with_aad_device_authentication', lambda cluster: MockKustoConnectionStringBuilder()
-        ), self.assertLogs(_logger, logging.INFO) as cm:
-            client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
+        with self.assertLogs(_logger, logging.INFO) as cm:
+            client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False, auth_method=KustoConnectionStringBuilder.with_aad_device_authentication)
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
         self.assertEqual([], cm.output)

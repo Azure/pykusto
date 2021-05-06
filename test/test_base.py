@@ -9,7 +9,7 @@ from unittest import TestCase
 from unittest.case import _AssertLogsContext
 from urllib.parse import urljoin
 
-from azure.kusto.data import KustoClient, ClientRequestProperties, KustoConnectionStringBuilder
+from azure.kusto.data import KustoClient, ClientRequestProperties
 # noinspection PyProtectedMember
 from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
@@ -229,12 +229,6 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response()
-
-
-class MockKustoConnectionStringBuilder(KustoConnectionStringBuilder):
-    # noinspection PyMissingConstructor
-    def __init__(self):
-        self._internal_dict = {}
 
 
 test_logger = logging.getLogger("pykusto_test")

@@ -44,7 +44,7 @@ class RetryConfig:
                 for exception_to_check in self.retry_exceptions:
                     if isinstance(e, exception_to_check):
                         if attempt == self.attempts:
-                            _logger.warn(f"Reached maximum number of attempts ({self.attempts}), raising exception")
+                            _logger.warning(f"Reached maximum number of attempts ({self.attempts}), raising exception")
                             raise
                         _logger.info(f"Attempt number {attempt} out of {self.attempts} failed, previous sleep time was {sleep_time} seconds. Exception: {repr(e)}")
                         break
@@ -120,7 +120,6 @@ class PyKustoClient(_ItemFetcher):
             self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
-
             self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
             self.__cluster_name = client_or_cluster
         self._refresh_if_needed()

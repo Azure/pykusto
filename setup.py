@@ -27,7 +27,7 @@ setup(
         'azure-core==1.13.0',
 
         # Release notes: https://github.com/Azure/azure-kusto-python/releases
-        'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312)
+        'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
 
         # Release notes: https://pandas.pydata.org/docs/whatsnew/index.html
         'pandas>=0.25.0,<=1.2.4',  # Tests use DataFrame constructor options introduced in 0.25.0)

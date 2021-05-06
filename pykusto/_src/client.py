@@ -120,8 +120,8 @@ class PyKustoClient(_ItemFetcher):
             self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
-            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
             self.__cluster_name = client_or_cluster
+            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
         self._refresh_if_needed()
 
     def __repr__(self) -> str:

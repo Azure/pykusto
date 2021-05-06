@@ -5,10 +5,9 @@ from threading import Lock
 from typing import Union, Dict, Any, Iterable, Callable, Generator
 
 from .logger import _logger
+
 # Using a thread pool even though we only need one thread, because that's the only way to make use of "futures".
 # Also, this makes it easy to use more than one thread, if the need ever arises.
-from .type_utils import _raise
-
 _POOL = ThreadPoolExecutor(max_workers=1)
 
 _DEFAULT_GET_ITEM_TIMEOUT_SECONDS = 3
@@ -153,3 +152,7 @@ class _ItemFetcher(metaclass=ABCMeta):
         with self.__items_lock:
             self.__items = fetched_items
             self.__fetched = True
+
+
+def _raise(e: BaseException):
+    raise e

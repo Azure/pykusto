@@ -170,7 +170,3 @@ def _get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
             break
     assert len(base_types) > 0, f"get_base_types called for unsupported type: {type(obj).__name__}"
     return base_types
-
-
-def _raise(e: BaseException):
-    raise e

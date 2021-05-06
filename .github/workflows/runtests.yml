@@ -16,10 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.8.9
+    - name: Set up Python 3.7.10
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8.9
+        python-version: 3.7.10   # There is currently some issue failing the tests on Python 3.8 (the package works on 3.8, only the tests fail)
     - name: Install dependencies
       run: |        
         python setup.py install

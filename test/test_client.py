@@ -3,13 +3,12 @@ from typing import Type
 from unittest.mock import patch
 
 from azure.kusto.data import KustoClient
-from azure.kusto.data.exceptions import KustoError, KustoClientError
+from azure.kusto.data.exceptions import KustoError
 
 from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger
 # noinspection PyProtectedMember
-from pykusto._src.type_utils import _raise
 from test.test_base import TestBase, MockKustoClient, RecordedQuery, mock_response, MockKustoConnectionStringBuilder
 
 
@@ -77,7 +76,7 @@ class TestClient(TestBase):
 
     def test_default_authentication(self):
         mock_kusto_client = MockKustoClient()
-        with patch('pykusto._src.client.PyKustoClient._get_client_for_cluster', lambda s, cluster: mock_kusto_client):
+        with patch('pykusto._src.client.PyKustoClient._get_client_for_cluster', lambda s: mock_kusto_client):
             table = PyKustoClient('https://help.kusto.windows.net/')['test_db']['mock_table']
             Query().take(5).execute(table)
         self.assertIs(
@@ -165,18 +164,14 @@ class TestClient(TestBase):
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
         self.assertEqual([], cm.output)
 
-    def test_client_for_cluster_fallback_to_aad_device_auth(self):
+    def test_client_for_cluster_with_aad_device_auth(self):
         with patch(
-                'pykusto._src.client.KustoConnectionStringBuilder.with_az_cli_authentication',
-                lambda cluster: _raise(KustoClientError('Mock exception'))
+                'pykusto._src.client.KustoConnectionStringBuilder.with_aad_device_authentication', lambda cluster: MockKustoConnectionStringBuilder()
         ), self.assertLogs(_logger, logging.INFO) as cm:
             client = PyKustoClient('https://help.kusto.windows.net', fetch_by_default=False)
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
-        self.assertEqual(
-            ['INFO:pykusto:Failed to get Azure CLI token, falling back to AAD device authentication\nMock exception'],
-            cm.output
-        )
+        self.assertEqual([], cm.output)
 
     @staticmethod
     def unreliable_mock_kusto_client(number_of_failures: int, exception_type: Type[Exception] = KustoServiceError):

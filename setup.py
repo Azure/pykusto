@@ -23,15 +23,24 @@ setup(
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
-        'azure-kusto-data>=2.1.1,<=2.1.1',  # In 2.1.1 this was fixed: https://github.com/Azure/azure-kusto-python/issues/312
-        'pandas>=0.24.1,<=1.2.3',  # azure-kusto-data requires 0.24.1
+        # https://github.com/Azure/azure-sdk-for-python/blob/master/sdk/core/azure-core/CHANGELOG.md
+        'azure-core==1.13.0',
+
+        # In 2.1.1 this was fixed: https://github.com/Azure/azure-kusto-python/issues/312
+        'azure-kusto-data>=2.1.1,<=2.1.1',
+
+        # azure-kusto-data requires 0.24.1
+        'pandas>=0.24.1,<=1.2.3',
+
         'redo==2.0.4',
     ],
     tests_require=[
         'pytest',
         'pytest-cov',
         'flake8',
-        'pandas>=0.25.0',  # Tests use DataFrame constructor options introduced in 0.25.0
+
+        # Tests use DataFrame constructor options introduced in 0.25.0
+        'pandas>=0.25.0',
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

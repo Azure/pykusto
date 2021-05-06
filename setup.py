@@ -23,7 +23,7 @@ setup(
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
-        'azure-kusto-data>=1.0.0,<=2.1.1',  # In 1.0.0 this was fixed: https://github.com/Azure/azure-kusto-python/issues/240
+        'azure-kusto-data>=2.1.1,<=2.1.1',  # In 2.1.1 this was fixed: https://github.com/Azure/azure-kusto-python/issues/312
         'pandas>=0.24.1,<=1.2.3',  # azure-kusto-data requires 0.24.1
         'redo==2.0.4',
     ],

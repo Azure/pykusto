@@ -16,13 +16,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.6.13
+    - name: Set up Python 3.8.9
       uses: actions/setup-python@v2
       with:
-        # There is currently some issue failing the tests on Python 3.7 and 3.8 (the package works with these versions, only the tests fail)
-        python-version: 3.6.13
+        python-version: 3.8.9
     - name: Install dependencies
-      run: |        
+      run: |
+        python -m pip install --upgrade pip
         python setup.py install
     - name: Lint with flake8
       run: |

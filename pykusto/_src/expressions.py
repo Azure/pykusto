@@ -523,6 +523,13 @@ class _StringExpression(BaseExpression):
             f'{self.as_subexpression()} {"!has_cs" if case_sensitive else "!has"} {_to_kql(exp, True)}'
         ))
 
+    def has_any(self, other: ArrayType) -> '_BooleanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/has-anyoperator
+        """
+        assert isinstance(other, (List, Tuple)), "Compared array must be a list of tabular, scalar, or literal expressions"
+        return _BooleanExpression(KQL(f'{self.kql} has_any ({", ".join(map(_to_kql, other))})'))
+
 
 @_plain_expression(_KustoType.DATETIME)
 class _DatetimeExpression(BaseExpression):

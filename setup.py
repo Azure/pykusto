@@ -41,9 +41,10 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Topic :: Software Development",
+        "License :: OSI Approved :: MIT License",
+        # Make sure this list matches the tested versions in runtests.yml
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
-        "License :: OSI Approved :: MIT License",
     ],
 )

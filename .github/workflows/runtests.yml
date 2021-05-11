@@ -24,7 +24,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install azure-kusto-data==2.1.1
+        # For some reason transitive dependencies are not installed properly, unless we first explictly install 'azure-kusto-data'. Hence this ugly hack.
+        python -m pip install `grep setup.py -o "azure-kusto-data==[^']+"`
         python setup.py install
         python -m pip freeze
     - name: Lint with flake8

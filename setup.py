@@ -24,7 +24,7 @@ setup(
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
         # Release notes: https://github.com/Azure/azure-kusto-python/releases
-        'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
+        'azure-kusto-data==2.0.0',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
 
         # Release notes: https://pandas.pydata.org/docs/whatsnew/index.html
         # Note that starting from 1.2.0 support for Python 3.6 was dropped

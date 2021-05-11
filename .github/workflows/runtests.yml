@@ -31,10 +31,12 @@ jobs:
         python -m pip freeze
     - name: Lint with flake8
       run: |
+        source ./venv/bin/activate
         python -m pip install flake8
         python -m flake8 setup.py pykusto test --count --max-complexity=10 --max-line-length=180 --show-source --statistics
     - name: Test with pytest
       run: |
+        source ./venv/bin/activate
         python -m pip install pytest pytest-cov
         python -m pip freeze
         python -m pip show azure-kusto-data

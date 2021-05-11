@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="" />
-    <option name="PARAMETERS" value="-m flake8 pykusto test --count --max-complexity=10 --max-line-length=180 --show-source --statistics" />
+    <option name="PARAMETERS" value="-m flake8 setup.py pykusto test --count --max-complexity=10 --max-line-length=180 --show-source --statistics" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

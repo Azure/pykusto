@@ -30,6 +30,8 @@ setup(
         # Note that starting from 1.2.0 support for Python 3.6 was dropped
         'pandas>=0.25.0,<1.2.0',  # Tests use DataFrame constructor options introduced in 0.25.0
 
+        'numpy<1.20.0'  # After that support for Python 3.6 was dropped
+
         'redo==2.0.4',
     ],
     tests_require=[

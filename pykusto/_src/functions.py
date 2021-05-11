@@ -648,6 +648,9 @@ class Functions:
 
     @staticmethod
     def rand(n: NumberType = None):
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/randfunction
+        """
         return _NumberExpression(KQL("rand()") if n is None else f'rand({_to_kql(n)})')
 
     # def range(self): return

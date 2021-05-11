@@ -23,9 +23,6 @@ setup(
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
-        # Release notes: https://github.com/Azure/azure-sdk-for-python/blob/master/sdk/core/azure-core/CHANGELOG.md
-        'azure-core==1.13.0',
-
         # Release notes: https://github.com/Azure/azure-kusto-python/releases
         'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
 

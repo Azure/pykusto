@@ -645,11 +645,11 @@ class Functions:
         return _NumberExpression(KQL(f'pow({_to_kql(expr1)}, {_to_kql(expr2)})'))
 
     # def radians(self): return
-    #
-    #
-    # def rand(self): return
-    #
-    #
+
+    @staticmethod
+    def rand(n: NumberType = None):
+        return _NumberExpression(KQL("rand()") if n is None else f'rand({_to_kql(n)})')
+
     # def range(self): return
     #
     #
@@ -1208,7 +1208,7 @@ class Functions:
         return _NumberAggregationExpression(KQL(f'dcount({_to_kql(expr)})' if accuracy is None else f'dcount({_to_kql(expr)}, {_to_kql(accuracy)})'))
 
     @staticmethod
-    def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> _NumberAggregationExpression:
+    def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 1) -> _NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dcountif-aggfunction
         """

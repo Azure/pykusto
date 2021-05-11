@@ -22,6 +22,7 @@ jobs:
         # TODO: test all relevant versions
         python-version: 3.8
     - name: Install dependencies
+      # According to the internet using 'python -m pip' instead of 'pip' can prevent some issues
       run: |
         python -m pip install --upgrade pip
         # For some reason transitive dependencies are not installed properly, unless we first explictly install 'azure-kusto-data'. Hence this ugly hack.

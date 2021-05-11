@@ -22,8 +22,10 @@ install_requires = [
 # pandas release notes: https://pandas.pydata.org/docs/whatsnew/index.html
 # Tests use DataFrame constructor options introduced in 0.25.0
 if sys.version_info[1] == 6:
-    # Starting from 1.2.0 support for Python 3.6 was dropped
+    # pandas support for Python 3.6 was dropped starting from version 1.2.0
     install_requires.append('pandas>=0.25.0,<1.2.0')
+    # In numpy the support was dropped in 1.20.0, and also the transitive dependency in pandas is not correctly restricted
+    install_requires.append('numpy<1.20.0')
 else:
     install_requires.append('pandas>=0.25.0,<=1.2.4')
 

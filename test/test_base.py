@@ -89,7 +89,8 @@ class CustomAssertLogsContext(_AssertLogsContext):
 # noinspection PyMissingConstructor
 class MockKustoResultTable(KustoResultTable):
     def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
-        self.rows = tuple(KustoResultRow(columns, row) for row in rows)
+        self.kusto_result_rows = tuple(KustoResultRow(columns, row) for row in rows)
+        self.raw_rows = self.kusto_result_rows
         self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''}) for col in columns)
 
 
@@ -228,7 +229,6 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response()
-
 
 
 test_logger = logging.getLogger("pykusto_test")

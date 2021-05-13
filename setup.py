@@ -23,20 +23,24 @@ setup(
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
     install_requires=[
-        'azure-kusto-data>=0.0.43,<=0.1.0',  # In 0.0.43 some packages were renamed
-        'pandas>=0.24.1,<=1.2.3',  # azure-kusto-data requires 0.24.1
+        # Release notes: https://github.com/Azure/azure-kusto-python/releases
+        'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
+
+        # Release notes: https://pandas.pydata.org/docs/whatsnew/index.html
+        # Note that starting from 1.2.0 support for Python 3.6 was dropped
+        'pandas>=0.25.0,<=1.2.4',  # Tests use DataFrame constructor options introduced in 0.25.0
+
         'redo==2.0.4',
     ],
     tests_require=[
         'pytest',
         'pytest-cov',
         'flake8',
-        'pandas>=0.25.0',  # Tests use DataFrame constructor options introduced in 0.25.0
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
-        "Topic :: Software Development",        
+        "Topic :: Software Development",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

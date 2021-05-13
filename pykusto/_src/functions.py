@@ -534,7 +534,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-timespanfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     # def max_of(self): return
     #
@@ -553,7 +553,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/newguidfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @staticmethod
     def now(offset: TimespanType = None) -> _DatetimeExpression:
@@ -628,14 +628,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentile-tdigestfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @staticmethod
     def percentrank_tdigest() -> AnyExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentrank-tdigestfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @staticmethod
     def pow(expr1: NumberType, expr2: NumberType) -> _NumberExpression:
@@ -645,11 +645,14 @@ class Functions:
         return _NumberExpression(KQL(f'pow({_to_kql(expr1)}, {_to_kql(expr2)})'))
 
     # def radians(self): return
-    #
-    #
-    # def rand(self): return
-    #
-    #
+
+    @staticmethod
+    def rand(n: NumberType = None):
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/randfunction
+        """
+        return _NumberExpression(KQL("rand()") if n is None else f'rand({_to_kql(n)})')
+
     # def range(self): return
     #
     #
@@ -1018,7 +1021,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toguidfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @staticmethod
     def to_hex(expr1: NumberType, expr2: NumberType = None) -> _StringExpression:
@@ -1101,21 +1104,21 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/urldecodefunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @staticmethod
     def url_encode() -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/urlencodefunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @staticmethod
     def week_of_year() -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/weekofyearfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     # def welch_test(self): return
 
@@ -1124,7 +1127,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/zipfunction
         """
-        raise NotImplemented  # pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     # ----------------------------------------------------
     # Aggregation functions
@@ -1208,7 +1211,7 @@ class Functions:
         return _NumberAggregationExpression(KQL(f'dcount({_to_kql(expr)})' if accuracy is None else f'dcount({_to_kql(expr)}, {_to_kql(accuracy)})'))
 
     @staticmethod
-    def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 0) -> _NumberAggregationExpression:
+    def dcount_if(expr: ExpressionType, predicate: BooleanType, accuracy: NumberType = 1) -> _NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dcountif-aggfunction
         """

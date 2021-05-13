@@ -450,6 +450,16 @@ class TestExpressions(TestBase):
             Query().where(t.stringField.has("test", case_sensitive=True)).render()
         )
 
+    def test_has_any(self):
+        self.assertEqual(
+            ' | where stringField has_any ("field", "string")',
+            Query().where(t.stringField.has_any(["field", "string"])).render()
+        )
+        self.assertRaises(
+            AssertionError("Compared array must be a list of tabular, scalar, or literal expressions"),
+            lambda: t.stringField.has_any(t.stringField2)
+        )
+
     def test_column_generator(self):
         field1 = col.foo
         field2 = col['foo.bar']

@@ -1,6 +1,5 @@
 from collections import defaultdict
 from fnmatch import fnmatch
-from functools import lru_cache
 from threading import Lock
 from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable
 from urllib.parse import urlparse
@@ -12,8 +11,6 @@ from azure.kusto.data._models import KustoResultRow as _KustoResultRow
 from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
-# noinspection PyProtectedMember
-from azure.kusto.data.security import _get_azure_cli_auth_token
 from redo import retrier
 
 from .expressions import BaseColumn, _AnyTypeColumn
@@ -47,9 +44,12 @@ class RetryConfig:
                 for exception_to_check in self.retry_exceptions:
                     if isinstance(e, exception_to_check):
                         if attempt == self.attempts:
-                            _logger.warn(f"Reached maximum number of attempts ({self.attempts}), raising exception")
+                            _logger.warning(f"Reached maximum number of attempts ({self.attempts}), raising exception")
                             raise
-                        _logger.info(f"Attempt number {attempt} out of {self.attempts} failed, previous sleep time was {sleep_time} seconds. Exception: {e}")
+                        _logger.info(
+                            f"Attempt number {attempt} out of {self.attempts} failed, "
+                            f"previous sleep time was {sleep_time} seconds. Exception: {e.__class__.__name__}('{str(e)}')"
+                        )
                         break
                 else:
                     raise
@@ -95,10 +95,15 @@ class PyKustoClient(_ItemFetcher):
     __first_execution: bool
     __first_execution_lock: Lock
     __retry_config: RetryConfig
+    __auth_method: Callable[[str], KustoConnectionStringBuilder]
+
+    __global_client_cache: Dict[str, KustoClient] = {}
+    __global_cache_lock: Lock = Lock()
 
     def __init__(
             self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False,
-            retry_config: RetryConfig = NO_RETRIES
+            retry_config: RetryConfig = NO_RETRIES,
+            auth_method: Callable[[str], KustoConnectionStringBuilder] = KustoConnectionStringBuilder.with_az_cli_authentication,
     ) -> None:
         """
         Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
@@ -111,15 +116,15 @@ class PyKustoClient(_ItemFetcher):
         self.__first_execution = True
         self.__first_execution_lock = Lock()
         self.__retry_config = retry_config
+        self.__auth_method = auth_method
         if isinstance(client_or_cluster, KustoClient):
             self.__client = client_or_cluster
             # noinspection PyProtectedMember
             self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
-
-            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)(client_or_cluster)
             self.__cluster_name = client_or_cluster
+            self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
         self._refresh_if_needed()
 
     def __repr__(self) -> str:
@@ -158,26 +163,21 @@ class PyKustoClient(_ItemFetcher):
     def get_cluster_name(self) -> str:
         return self.__cluster_name
 
-    @staticmethod
-    def _get_client_for_cluster(cluster: str) -> KustoClient:
-        # If we call 'with_az_cli_authentication' directly, in case of failure we will get an un-informative exception.
-        # As a workaround, we first attempt to manually get the Azure CLI token, and see if it works.
-        # Get rid of this workaround once this is resolved: https://github.com/Azure/azure-kusto-python/issues/240
-        stored_token = _get_azure_cli_auth_token()
-        if stored_token is None:
-            _logger.info("Failed to get Azure CLI token, falling back to AAD device authentication")
-            connection_string_builder = KustoConnectionStringBuilder.with_aad_device_authentication(cluster)
-        else:
-            connection_string_builder = KustoConnectionStringBuilder.with_az_cli_authentication(cluster)
-        return KustoClient(connection_string_builder)
+    def _get_client_for_cluster(self) -> KustoClient:
+        return KustoClient(self.__auth_method(self.__cluster_name))
 
-    @staticmethod
-    @lru_cache(maxsize=128)
-    def _cached_get_client_for_cluster(cluster: str) -> KustoClient:
+    def _cached_get_client_for_cluster(self) -> KustoClient:
         """
         Provided for convenience during development, not recommended for general use.
         """
-        return PyKustoClient._get_client_for_cluster(cluster)
+        with PyKustoClient.__global_cache_lock:
+            client = PyKustoClient.__global_client_cache.get(self.__cluster_name)
+            if client is None:
+                client = self._get_client_for_cluster()
+                PyKustoClient.__global_client_cache[self.__cluster_name] = client
+                assert len(PyKustoClient.__global_client_cache) <= 1024, "Global client cache cannot exceed size of 1024"
+
+        return client
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

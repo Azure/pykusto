@@ -621,6 +621,17 @@ class TestFunction(TestBase):
             ' | where (trim("--", stringField)) == "text"',
             Query().where(f.trim("--", t.stringField) == "text").render()
         )
+
+    def test_rand(self):
+        self.assertEqual(
+            " | extend rnd = rand()",
+            Query().extend(rnd=f.rand()).render()
+        )
+        self.assertEqual(
+            " | extend rnd = rand(5)",
+            Query().extend(rnd=f.rand(5)).render()
+        )
+
     # ------------------------------------------------------
     # Aggregation Functions
     # ------------------------------------------------------
@@ -772,7 +783,7 @@ class TestFunction(TestBase):
 
     def test_dcountif(self):
         self.assertEqual(
-            " | summarize dcountif(stringField, boolField, 0)",
+            " | summarize dcountif(stringField, boolField, 1)",
             Query().summarize(f.dcount_if(t.stringField, t.boolField)).render()
         )
 

@@ -13,19 +13,21 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: [ '3.6', '3.7', '3.8' ]  # Make sure this matches the supported versions in setup.py
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.8
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         # TODO: test all relevant versions
-        python-version: 3.8
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       # According to the internet using 'python -m pip' instead of 'pip' can prevent some issues
       run: |
         python -m pip install --upgrade pip
-        # For some reason transitive dependencies are not installed properly, unless we first explictly install 'azure-kusto-data'. Hence this ugly hack.
+        # For some reason transitive dependencies are not installed properly, unless we first explicitly install 'azure-kusto-data'. Hence this ugly hack.
         python -m pip install `grep -oP "azure-kusto-data==[^']+" setup.py`
         python setup.py install
         python -m pip freeze

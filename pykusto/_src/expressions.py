@@ -1054,7 +1054,7 @@ class ColumnGenerator:
         return _AnyTypeColumn(name, quote=True)
 
 
-# Recommended usage: from pykusto.expressions import column_generator as col
+# Recommended usage: from pykusto import column_generator as col
 # TODO: Is there a way to enforce this to be a singleton?
 column_generator = ColumnGenerator()
 

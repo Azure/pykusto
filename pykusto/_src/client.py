@@ -1,13 +1,11 @@
 from collections import defaultdict
 from fnmatch import fnmatch
 from threading import Lock
-from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable
+from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable, Iterable
 from urllib.parse import urlparse
 
 import pandas as pd
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
-# noinspection PyProtectedMember
-from azure.kusto.data._models import KustoResultRow as _KustoResultRow
 from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
@@ -65,20 +63,20 @@ class KustoResponse:
     def __init__(self, response: KustoResponseDataSet):
         self.__response = response
 
-    def get_rows(self) -> List[_KustoResultRow]:
+    def get_rows(self) -> List[Iterable]:
         return self.__response.primary_results[0].rows
 
     @staticmethod
-    def is_row_valid(row: _KustoResultRow) -> bool:
+    def is_row_valid(row: Iterable) -> bool:
         for field in row:
             if field is None or (isinstance(field, str) and len(field.strip()) == 0):
                 return False
         return True
 
-    def get_valid_rows(self) -> Generator[_KustoResultRow, None, None]:
+    def get_valid_rows(self) -> Generator[Tuple, None, None]:
         for row in self.get_rows():
             if self.is_row_valid(row):
-                yield row
+                yield tuple(row)
 
     def to_dataframe(self) -> pd.DataFrame:
         return dataframe_from_result_table(self.__response.primary_results[0])
@@ -103,7 +101,7 @@ class PyKustoClient(_ItemFetcher):
     def __init__(
             self, client_or_cluster: Union[str, KustoClient], fetch_by_default: bool = True, use_global_cache: bool = False,
             retry_config: RetryConfig = NO_RETRIES,
-            auth_method: Callable[[str], KustoConnectionStringBuilder] = KustoConnectionStringBuilder.with_az_cli_authentication,
+            auth_method: Optional[Callable[[str], KustoConnectionStringBuilder]] = KustoConnectionStringBuilder.with_az_cli_authentication,
     ) -> None:
         """
         Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
@@ -147,10 +145,10 @@ class PyKustoClient(_ItemFetcher):
         with self.__first_execution_lock:
             if self.__first_execution:
                 self.__first_execution = False
-                return self.__internal_execute(database, query, properties, retry_config)
-        return self.__internal_execute(database, query, properties, retry_config)
+                return self._internal_execute(database, query, properties, retry_config)
+        return self._internal_execute(database, query, properties, retry_config)
 
-    def __internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
+    def _internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
         resolved_retry_config = self.__retry_config if retry_config is None else retry_config
         return KustoResponse(resolved_retry_config.retry(lambda: self.__client.execute(database, query, properties)))
 

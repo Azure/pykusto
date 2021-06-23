@@ -469,6 +469,6 @@ class TestQuery(TestBase):
         ))
         client.wait_for_items()
         table = client.test_db.mock_table
-        self.assertTrue(
-            pd.DataFrame(rows, columns=columns).equals(Query(table).take(10).to_dataframe())
-        )
+        actual_df = Query(table).take(10).to_dataframe()
+        expected_df = pd.DataFrame(rows, columns=columns)
+        self.assertTrue(expected_df.equals(actual_df))

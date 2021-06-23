@@ -54,4 +54,3 @@ class PyKustoClientForSpark(PyKustoClient):
                 .option("accessToken", self.__device_auth.acquireToken())
                 .load()
         )
-

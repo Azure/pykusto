@@ -1,12 +1,17 @@
+from unittest.mock import patch
+
 import pandas as pd
 
-from pykusto import PyKustoClient, Query
+from pykusto import Query, PySparkKustoClient
 from test.test_base import TestBase
 
 
 class TestClient(TestBase):
     def test_sanity(self):
-        client = PyKustoClient.from_spark_session('https://help.kusto.windows.net/')
+        mock_spark_context = type('SparkContext', tuple(), {})
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_context', lambda s: mock_spark_context):
+            client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto', fetch_by_default=False)
+
         table = client['test_db']['mock_table']
         rows = []
         columns = []

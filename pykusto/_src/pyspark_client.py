@@ -1,4 +1,3 @@
-from importlib.util import find_spec
 from typing import List, Iterable, Dict, Callable, Union
 
 import pandas as pd
@@ -25,18 +24,10 @@ class DataframeBasedKustoResponse(KustoResponse):
 class PySparkKustoClient(PyKustoClient):
     def __init__(self, cluster: str, linked_service: str = None, fetch_by_default: bool = True, use_global_cache: bool = False) -> None:
         super().__init__(cluster, fetch_by_default, use_global_cache, NO_RETRIES, None)  # TODO: postpone call to "_refresh_if_needed"
-
-        pyspark_installed = find_spec('pyspark') is not None
-        spark_context = globals().get('sc', None)
-        spark_context_type = type(spark_context).__module__ + '.' + type(spark_context).__qualname__
-        if not (pyspark_installed and spark_context is not None and spark_context_type == 'pyspark.context.SparkContext'):
-            raise RuntimeError(
-                f"PyKustoClientForSpark can only be used inside a PySpark notebook: "
-                f"pyspark_installed={pyspark_installed}, spark_context={spark_context}, spark_context_type={spark_context_type}"
-            )
-
         self.__options: Dict[str, str] = {}
         self.__option_producers: Dict[str, Callable[[], str]] = {}
+
+        spark_context = self.get_spark_context()
 
         if linked_service is None:
             # noinspection PyUnresolvedReferences,PyPackageRequirements
@@ -49,6 +40,18 @@ class PySparkKustoClient(PyKustoClient):
             self.option('accessToken', self.__device_auth.acquireToken)
         else:
             self.option('spark.synapse.linkedService', linked_service)
+
+    # noinspection PyUnresolvedReferences
+    @staticmethod
+    def get_spark_context() -> 'pyspark.context.SparkContext':
+        spark_context = globals().get('sc', None)
+        spark_context_type = type(spark_context).__module__ + '.' + type(spark_context).__qualname__
+        if not (spark_context is not None and spark_context_type == 'pyspark.context.SparkContext'):
+            raise RuntimeError(
+                f"PyKustoClientForSpark can only be used inside a PySpark notebook: "
+                f"spark_context={spark_context}, spark_context_type={spark_context_type}"
+            )
+        return spark_context
 
     def option(self, key: str, value: Union[str, Callable[[], str]]) -> 'PySparkKustoClient':
         if isinstance(value, str):

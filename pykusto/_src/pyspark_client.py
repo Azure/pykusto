@@ -25,13 +25,10 @@ class DataframeBasedKustoResponse(KustoResponse):
 
 class PySparkKustoClient(PyKustoClient):
     def __init__(self, cluster: str, linked_service: str = None, fetch_by_default: bool = True, use_global_cache: bool = False) -> None:
-        super().__init__(cluster, fetch_by_default, use_global_cache, NO_RETRIES, None)
         self.__linked_service = linked_service
+        super().__init__(cluster, fetch_by_default, use_global_cache, NO_RETRIES, None)
 
     def _internal_init(self, client_or_cluster: Union[str, KustoClient], use_global_cache: bool):
-        if find_spec('pyspark') is None:
-            raise RuntimeError("pyspark package not found. PySparkKustoClient can only be used inside a PySpark notebook")
-
         self.__options: Dict[str, str] = {}
         self.__option_producers: Dict[str, Callable[[], str]] = {}
         self.__kusto_session = self.get_spark_session()
@@ -50,6 +47,8 @@ class PySparkKustoClient(PyKustoClient):
     # noinspection PyUnresolvedReferences
     @staticmethod
     def get_spark_session() -> 'pyspark.sql.session.SparkSession':
+        if find_spec('pyspark') is None:
+            raise RuntimeError("pyspark package not found. PySparkKustoClient can only be used inside a PySpark notebook")
         # noinspection PyPackageRequirements
         from pyspark.sql import SparkSession
         return SparkSession.builder.appName("kustoPySpark").getOrCreate()

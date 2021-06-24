@@ -39,7 +39,7 @@ class MockDeviceAuthentication:
         self.mock_token = mock_token
 
     def getDeviceCodeMessage(self):
-        return "To sign in, use a lubricated goat to open the pod bay doors and enter the code to obliterate."
+        return "To sign in, use a lubricated goat to open the pod bay doors."
 
     def acquireToken(self):
         return self.mock_token

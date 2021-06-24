@@ -246,7 +246,7 @@ def nested_attribute_dict(attributes: str, value: Any) -> Any:
     """
     result = value
     for key in reversed(attributes.split('.')):
-        result = type(key + '_wrapper', tuple(), {key: result})
+        result = type(key + 'Wrapper', tuple(), {key: result})
     return result
 
 

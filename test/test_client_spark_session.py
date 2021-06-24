@@ -8,18 +8,18 @@ from test.test_base import TestBase
 
 class MockDataFrameReader:
     def __init__(self, dataframe_to_return: pd.DataFrame) -> None:
-        self.format = None
-        self.options = {}
+        self.recorded_format = None
+        self.recorded_options = {}
         self.dataframe_to_return = dataframe_to_return
 
     def format(self, the_format: str) -> 'MockDataFrameReader':
-        assert self.format is None, "Trying to set format twice"
-        self.format = the_format
+        assert self.recorded_format is None, "Trying to set format twice"
+        self.recorded_format = the_format
         return self
 
     def option(self, key: str, value: str) -> 'MockDataFrameReader':
-        assert key not in self.options, f"Trying to set option '{key}' twice"
-        self.options[key] = value
+        assert key not in self.recorded_options, f"Trying to set option '{key}' twice"
+        self.recorded_options[key] = value
         return self
 
     def load(self) -> pd.DataFrame:
@@ -45,12 +45,12 @@ class TestClient(TestBase):
         actual_df = Query(table).take(5).to_dataframe()
         self.assertTrue(expected_df.equals(actual_df))
 
-        self.assertEqual('com.microsoft.kusto.spark.synapse.datasource', mock_spark_session.read.format)
+        self.assertEqual('com.microsoft.kusto.spark.synapse.datasource', mock_spark_session.read.recorded_format)
         self.assertEqual(
             {
                 'spark.synapse.linkedService': 'MockLinkedKusto',
                 'kustoDatabase': 'test_db',
                 'kustoQuery': 'mock_table | take 5',
             },
-            mock_spark_session.read.options,
+            mock_spark_session.read.recorded_options,
         )

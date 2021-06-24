@@ -71,7 +71,7 @@ class PySparkKustoClient(PyKustoClient):
         resolved_options = chain(
             self.__options.items(),
             ((key, value_producer()) for key, value_producer in self.__option_producers.items()),
-            (('kustoDatabase', database), ('kustoQuery', KQL))
+            (('kustoDatabase', database), ('kustoQuery', query))
         )
         kusto_read_session = self.__kusto_session.read.format(self.__format)
         for key, value in resolved_options:

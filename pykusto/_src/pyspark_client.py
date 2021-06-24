@@ -1,6 +1,6 @@
 from importlib.util import find_spec
 from itertools import chain
-from typing import List, Iterable, Dict, Callable, Union
+from typing import List, Iterable, Dict, Callable, Union, Tuple
 
 import pandas as pd
 from azure.kusto.data import ClientRequestProperties, KustoClient
@@ -33,11 +33,11 @@ class PySparkKustoClient(PyKustoClient):
         self.__cluster_name = client_or_cluster
         self.__options: Dict[str, str] = {}
         self.__option_producers: Dict[str, Callable[[], str]] = {}
-        self.__kusto_session = self.get_spark_session()
+        self.__kusto_session, spark_context = self.get_spark_session_and_context()
 
         if self.__linked_service is None:
             # noinspection PyProtectedMember
-            device_auth = self.get_spark_context()._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
+            device_auth = spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
             print(device_auth.getDeviceCodeMessage())
             self.__format = 'com.microsoft.kusto.spark.datasource'
             self.option('kustoCluster', self.__cluster_name)
@@ -46,21 +46,14 @@ class PySparkKustoClient(PyKustoClient):
             self.__format = 'com.microsoft.kusto.spark.synapse.datasource'
             self.option('spark.synapse.linkedService', self.__linked_service)
 
-    # noinspection PyUnresolvedReferences
+    # noinspection PyUnresolvedReferences,PyPackageRequirements
     @staticmethod
-    def get_spark_session() -> 'pyspark.sql.session.SparkSession':  # noqa: F821  # pragma: no cover
+    def get_spark_session_and_context() -> Tuple['pyspark.sql.session.SparkSession', 'pyspark.context.SparkContext']:  # noqa: F821  # pragma: no cover
         if find_spec('pyspark') is None:
             raise RuntimeError("pyspark package not found. PySparkKustoClient can only be used inside a PySpark notebook")
-        # noinspection PyPackageRequirements
         from pyspark.sql import SparkSession
-        return SparkSession.builder.appName("kustoPySpark").getOrCreate()
-
-    # noinspection PyUnresolvedReferences
-    @staticmethod
-    def get_spark_context() -> 'pyspark.context.SparkContext':  # noqa: F821  # pragma: no cover
-        # noinspection PyPackageRequirements
         from pyspark.context import SparkContext
-        return SparkContext.getOrCreate()
+        return SparkSession.builder.appName("kustoPySpark").getOrCreate(), SparkContext.getOrCreate()
 
     def option(self, key: str, value: Union[str, Callable[[], str]]) -> 'PySparkKustoClient':
         if isinstance(value, str):

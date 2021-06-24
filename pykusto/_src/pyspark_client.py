@@ -29,6 +29,8 @@ class PySparkKustoClient(PyKustoClient):
         super().__init__(cluster, fetch_by_default, use_global_cache, NO_RETRIES, None)
 
     def _internal_init(self, client_or_cluster: Union[str, KustoClient], use_global_cache: bool):
+        assert isinstance(client_or_cluster, str), "PySparkKustoClient must be initialized with a cluster name"
+        self.__cluster_name = client_or_cluster
         self.__options: Dict[str, str] = {}
         self.__option_producers: Dict[str, Callable[[], str]] = {}
         self.__kusto_session = self.get_spark_session()
@@ -38,7 +40,7 @@ class PySparkKustoClient(PyKustoClient):
             device_auth = self.get_spark_context()._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
             print(device_auth.getDeviceCodeMessage())
             self.__format = 'com.microsoft.kusto.spark.datasource'
-            self.option('kustoCluster', self.__cluster_nam)
+            self.option('kustoCluster', self.__cluster_name)
             self.option('accessToken', device_auth.acquireToken)
         else:
             self.__format = 'com.microsoft.kusto.spark.synapse.datasource'

@@ -237,4 +237,14 @@ class MockKustoClient(KustoClient):
         return response()
 
 
+def nested_attribute_dict(attributes: str, value: Any) -> Any:
+    """
+    Used to mock chained lists of attribute references.
+    """
+    result = value
+    for key in reversed(attributes.split('.')):
+        result = type(key + '_wrapper', tuple(), {key: result})
+    return result
+
+
 test_logger = logging.getLogger("pykusto_test")

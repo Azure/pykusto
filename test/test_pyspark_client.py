@@ -3,6 +3,8 @@ from unittest.mock import patch
 import pandas as pd
 
 from pykusto import Query, PySparkKustoClient
+# noinspection PyProtectedMember
+from pykusto._src.expressions import _StringColumn, _NumberColumn
 from test.test_base import TestBase, nested_attribute_dict
 
 
@@ -95,6 +97,32 @@ class TestClient(TestBase):
                 'accessToken': 'MOCK_TOKEN',
                 'kustoDatabase': 'test_db',
                 'kustoQuery': 'mock_table | take 5',
+            },
+            mock_spark_session.read.recorded_options,
+        )
+
+    def test_linked_service_with_fetch(self):
+        rows = (
+            ['test_db', 'mock_table', 'stringField', 'System.String'],
+            ['test_db', 'mock_table', 'numField', 'System.Int32'],
+        )
+        columns = ('DatabaseName', 'TableName', 'ColumnName', 'ColumnType')
+        expected_df = pd.DataFrame(rows, columns=columns)
+        mock_spark_session = MockSparkSession(expected_df)
+
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_session', lambda s: mock_spark_session):
+            client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto')
+            client.wait_for_items()
+
+        self.assertType(client.test_db.mock_table.stringField, _StringColumn)
+        self.assertType(client.test_db.mock_table.numField, _NumberColumn)
+
+        self.assertEqual('com.microsoft.kusto.spark.synapse.datasource', mock_spark_session.read.recorded_format)
+        self.assertEqual(
+            {
+                'spark.synapse.linkedService': 'MockLinkedKusto',
+                'kustoDatabase': '',
+                'kustoQuery': '.show databases schema | project DatabaseName, TableName, ColumnName, ColumnType | limit 100000',
             },
             mock_spark_session.read.recorded_options,
         )

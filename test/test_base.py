@@ -3,7 +3,7 @@ import logging
 import sys
 from concurrent.futures import Future
 from threading import Event
-from typing import Callable, Tuple, Any, List, Optional, Union
+from typing import Callable, Tuple, Any, List, Optional, Union, Type
 from unittest import TestCase
 from urllib.parse import urljoin
 
@@ -79,6 +79,9 @@ class TestBase(TestCase):
     @staticmethod
     def raise_mock_exception():
         raise Exception("Mock exception")
+
+    def assertType(self, obj: Any, expected_type: Type):
+        self.assertEqual(type(obj), expected_type)
 
 
 # Get rid of this in Python 3.10, as this was resolved: https://bugs.python.org/issue39385

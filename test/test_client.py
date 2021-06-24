@@ -243,7 +243,7 @@ class TestClient(TestBase):
             [
                 f"INFO:pykusto:Attempt number {num_failed_attempts} out of {num_retries} failed, "
                 f"previous sleep time was {retry_sleep_time} seconds. "
-                f"Exception: (KustoServiceError(...), 'Mock exception for test')"
+                f"Exception: KustoServiceError('Mock exception for test')"
             ],
             cm.output
         )

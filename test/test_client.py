@@ -222,3 +222,28 @@ class TestClient(TestBase):
             KustoError("Mock exception for test", None),
             lambda: Query(table).take(5).execute(),
         )
+
+    def test_override_retry_config_for_query(self):
+        num_retries = 2
+        num_failed_attempts = num_retries - 1
+        retry_sleep_time = 0.1
+
+        mock_kusto_client = self.unreliable_mock_kusto_client(num_failed_attempts)
+        table = PyKustoClient(mock_kusto_client, fetch_by_default=False)['test_db']['mock_table']
+        retry_config = RetryConfig(num_retries, sleep_time=retry_sleep_time, jitter=0)
+
+        with self.assertLogs(_logger, logging.INFO) as cm:
+            Query(table).take(5).execute(retry_config=retry_config)
+
+        self.assertEqual(
+            [RecordedQuery('test_db', 'mock_table | take 5')] * num_retries,
+            mock_kusto_client.recorded_queries
+        )
+        self.assertEqual(
+            [
+                f"INFO:pykusto:Attempt number {num_failed_attempts} out of {num_retries} failed, "
+                f"previous sleep time was {retry_sleep_time} seconds. "
+                f"Exception: KustoServiceError('Mock exception for test')"
+            ],
+            cm.output
+        )

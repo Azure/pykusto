@@ -46,7 +46,7 @@ class PySparkKustoClient(PyKustoClient):
 
     # noinspection PyUnresolvedReferences
     @staticmethod
-    def get_spark_session() -> 'pyspark.sql.session.SparkSession':
+    def get_spark_session() -> 'pyspark.sql.session.SparkSession':  # noqa: F821  # pragma: no cover
         if find_spec('pyspark') is None:
             raise RuntimeError("pyspark package not found. PySparkKustoClient can only be used inside a PySpark notebook")
         # noinspection PyPackageRequirements
@@ -55,7 +55,7 @@ class PySparkKustoClient(PyKustoClient):
 
     # noinspection PyUnresolvedReferences
     @staticmethod
-    def get_spark_context() -> 'pyspark.context.SparkContext':
+    def get_spark_context() -> 'pyspark.context.SparkContext':  # noqa: F821  # pragma: no cover
         # noinspection PyPackageRequirements
         from pyspark.context import SparkContext
         return SparkContext.getOrCreate()

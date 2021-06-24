@@ -371,7 +371,7 @@ class Table(_ItemFetcher):
         return KQL(table_names[0])
 
     def execute(self, query: KQL, retry_config: RetryConfig = None) -> KustoResponse:
-        return self.__database.execute(query, retry_config)
+        return self.__database.execute(query, retry_config=retry_config)
 
     def get_columns_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()

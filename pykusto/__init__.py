@@ -1,3 +1,4 @@
+# flake8: noqa
 # Allows importing externally-facing classes without specifying submodules.
 # e.g. "from pykusto import PyKustoClient" instead of "from pykusto.client import PyKustoClient"
 # Also allows for a convenient list of all externally-facing classes as the autocomplete of "from pykusto import "

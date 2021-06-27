@@ -10,5 +10,5 @@ from ._src.expressions import *
 from ._src.functions import *
 from ._src.query import *
 
-__version__ = '0.0.29'
+__version__ = '0.0.30'
 name = "pykusto"

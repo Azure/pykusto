@@ -5,8 +5,12 @@ from concurrent.futures import Future
 from threading import Event
 from typing import Callable, Tuple, Any, List, Optional, Union
 from unittest import TestCase
-# noinspection PyProtectedMember
-from unittest.case import _AssertLogsContext
+if sys.version_info[1] < 9:
+    # noinspection PyProtectedMember
+    from unittest.case import _AssertLogsContext
+else:
+    # noinspection PyUnresolvedReferences,PyProtectedMember,PyCompatibility
+    from unittest._log import _AssertLogsContext
 from urllib.parse import urljoin
 
 from azure.kusto.data import KustoClient, ClientRequestProperties
@@ -66,7 +70,7 @@ class TestBase(TestCase):
         """
         This method overrides the one in `unittest.case.TestCase`, and has the same behavior, except for not causing a failure when there are no log messages.
         The point is to allow asserting there are no logs.
-        Get rid of this once this is resolved: https://github.com/python/cpython/pull/18067
+        Get rid of this in Python 3.10, as this was resolved: https://bugs.python.org/issue39385
         """
         # noinspection PyArgumentList
         return CustomAssertLogsContext(self, logger_to_watch, level)
@@ -76,6 +80,7 @@ class TestBase(TestCase):
         raise Exception("Mock exception")
 
 
+# Get rid of this in Python 3.10, as this was resolved: https://bugs.python.org/issue39385
 class CustomAssertLogsContext(_AssertLogsContext):
     # noinspection PyUnresolvedReferences
     def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
@@ -89,7 +94,8 @@ class CustomAssertLogsContext(_AssertLogsContext):
 # noinspection PyMissingConstructor
 class MockKustoResultTable(KustoResultTable):
     def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
-        self.rows = tuple(KustoResultRow(columns, row) for row in rows)
+        self.kusto_result_rows = tuple(KustoResultRow(columns, row) for row in rows)
+        self.raw_rows = self.kusto_result_rows
         self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''}) for col in columns)
 
 
@@ -228,7 +234,6 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response()
-
 
 
 test_logger = logging.getLogger("pykusto_test")

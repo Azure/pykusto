@@ -136,7 +136,7 @@ class _ItemFetcher(metaclass=ABCMeta):
                 # If an exception is raised in the future thread, it is re-raised here
                 self.__future.result(timeout=timeout_seconds)
             except TimeoutError:
-                _logger.warn("Timeout while waiting for response from Kusto")
+                _logger.warning("Timeout while waiting for response from Kusto")
 
     def blocking_refresh(self, timeout_seconds: Union[None, float] = None) -> None:
         self.refresh()

@@ -37,15 +37,19 @@ class PySparkKustoClient(PyKustoClient):
         self.__kusto_session, spark_context = self.get_spark_session_and_context()
 
         if self.__linked_service is None:
-            # noinspection PyProtectedMember
-            device_auth = spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
-            _logger.info(device_auth.getDeviceCodeMessage())
+            self.refresh_device_auth(spark_context)
             self.__format = 'com.microsoft.kusto.spark.datasource'
             self.option('kustoCluster', self.__cluster_name)
-            self.option('accessToken', device_auth.acquireToken)
         else:
             self.__format = 'com.microsoft.kusto.spark.synapse.datasource'
             self.option('spark.synapse.linkedService', self.__linked_service)
+
+    # noinspection PyUnresolvedReferences
+    def refresh_device_auth(self, spark_context: 'pyspark.context.SparkContext'):  # noqa: F821
+        # noinspection PyProtectedMember
+        device_auth = spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
+        _logger.info(device_auth.getDeviceCodeMessage())
+        self.option('accessToken', device_auth.acquireToken)
 
     # noinspection PyUnresolvedReferences,PyPackageRequirements
     @staticmethod

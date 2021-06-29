@@ -6,6 +6,7 @@ import pandas as pd
 from azure.kusto.data import ClientRequestProperties, KustoClient
 
 from pykusto import PyKustoClient, NO_RETRIES, KustoResponse, KQL, RetryConfig
+from .logger import _logger
 
 
 class DataframeBasedKustoResponse(KustoResponse):
@@ -38,7 +39,7 @@ class PySparkKustoClient(PyKustoClient):
         if self.__linked_service is None:
             # noinspection PyProtectedMember
             device_auth = spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
-            print(device_auth.getDeviceCodeMessage())
+            _logger.info(device_auth.getDeviceCodeMessage())
             self.__format = 'com.microsoft.kusto.spark.datasource'
             self.option('kustoCluster', self.__cluster_name)
             self.option('accessToken', device_auth.acquireToken)

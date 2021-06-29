@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import patch
 
 import pandas as pd
@@ -5,6 +6,8 @@ import pandas as pd
 from pykusto import Query, PySparkKustoClient
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _StringColumn, _NumberColumn
+# noinspection PyProtectedMember
+from pykusto._src.logger import _logger
 from test.test_base import TestBase, nested_attribute_dict
 
 
@@ -82,9 +85,11 @@ class TestClient(TestBase):
         mock_spark_session = MockSparkSession(expected_df)
         mock_spark_context = MockSparkContext('MOCK_TOKEN')
 
-        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_session_and_context', lambda s: (mock_spark_session, mock_spark_context)):
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_session_and_context', lambda s: (mock_spark_session, mock_spark_context)),\
+                self.assertLogs(_logger, logging.INFO) as cm:
             client = PySparkKustoClient('https://help.kusto.windows.net/', fetch_by_default=False)
 
+        self.assertEqual(["INFO:pykusto:To sign in, use a lubricated goat to open the pod bay doors."], cm.output)
         table = client['test_db']['mock_table']
         actual_df = Query(table).take(5).to_dataframe()
         self.assertTrue(expected_df.equals(actual_df))

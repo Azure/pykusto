@@ -78,6 +78,33 @@ class TestClient(TestBase):
             mock_spark_session.read.recorded_options,
         )
 
+    def test_linked_service_with_extra_options(self):
+        rows = (['foo', 10], ['bar', 20], ['baz', 30])
+        columns = ('stringField', 'numField')
+        expected_df = pd.DataFrame(rows, columns=columns)
+        mock_spark_session = MockSparkSession(expected_df)
+
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient._PySparkKustoClient__get_spark_session_and_context', lambda s: (mock_spark_session, None)):
+            client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto', fetch_by_default=False)
+
+        client.option('alsoMake', 'coffee')
+        client.option('performanceLevel', 'awesome')
+        client.clear_option('alsoMake')
+        table = client['test_db']['mock_table']
+        actual_df = Query(table).take(5).to_dataframe()
+        self.assertTrue(expected_df.equals(actual_df))
+
+        self.assertEqual('com.microsoft.kusto.spark.synapse.datasource', mock_spark_session.read.recorded_format)
+        self.assertEqual(
+            {
+                'spark.synapse.linkedService': 'MockLinkedKusto',
+                'kustoDatabase': 'test_db',
+                'kustoQuery': 'mock_table | take 5',
+                'performanceLevel': 'awesome',
+            },
+            mock_spark_session.read.recorded_options,
+        )
+
     def test_device_auth(self):
         rows = (['foo', 10], ['bar', 20], ['baz', 30])
         columns = ('stringField', 'numField')

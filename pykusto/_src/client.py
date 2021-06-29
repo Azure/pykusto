@@ -104,11 +104,13 @@ class PyKustoClient(_ItemFetcher):
             auth_method: Optional[Callable[[str], KustoConnectionStringBuilder]] = KustoConnectionStringBuilder.with_az_cli_authentication,
     ) -> None:
         """
-        Create a new handle to Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
+        Create a new handle to a Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
-        :param client_or_cluster: Either a KustoClient instance, or a cluster name. In case a cluster name is provided, a KustoClient is generated using Azure CLI authentication,
-            falling back to AAD device authentication if needed.
+        :param client_or_cluster: Either a KustoClient instance, or a cluster URL. In case a cluster URL is provided, a KustoClient is generated using the provided auth_method.
         :param use_global_cache: If true, share a global client cache between all instances. Provided for convenience during development, not recommended for general use.
+        :param retry_config: An instance of RetryConfig which instructs the client how to perform retries in case of failure. The default is NO_RETRIES.
+        :param auth_method: A method that returns a KustoConnectionStringBuilder for authentication. The default is 'KustoConnectionStringBuilder.with_az_cli_authentication'.
+        A popular alternative is 'KustoConnectionStringBuilder.with_aad_device_authentication'
         """
         super().__init__(None, fetch_by_default)
         self.__first_execution = True

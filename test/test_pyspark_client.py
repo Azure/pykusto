@@ -61,7 +61,7 @@ class TestClient(TestBase):
         expected_df = pd.DataFrame(rows, columns=columns)
         mock_spark_session = MockSparkSession(expected_df)
 
-        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_session_and_context', lambda s: (mock_spark_session, None)):
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient._PySparkKustoClient__get_spark_session_and_context', lambda s: (mock_spark_session, None)):
             client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto', fetch_by_default=False)
 
         table = client['test_db']['mock_table']
@@ -85,7 +85,7 @@ class TestClient(TestBase):
         mock_spark_session = MockSparkSession(expected_df)
         mock_spark_context = MockSparkContext('MOCK_TOKEN')
 
-        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_session_and_context', lambda s: (mock_spark_session, mock_spark_context)),\
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient._PySparkKustoClient__get_spark_session_and_context', lambda s: (mock_spark_session, mock_spark_context)),\
                 self.assertLogs(_logger, logging.INFO) as cm:
             client = PySparkKustoClient('https://help.kusto.windows.net/', fetch_by_default=False)
 
@@ -114,7 +114,7 @@ class TestClient(TestBase):
         expected_df = pd.DataFrame(rows, columns=columns)
         mock_spark_session = MockSparkSession(expected_df)
 
-        with patch('pykusto._src.pyspark_client.PySparkKustoClient.get_spark_session_and_context', lambda s: (mock_spark_session, None)):
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient._PySparkKustoClient__get_spark_session_and_context', lambda s: (mock_spark_session, None)):
             client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto')
             client.wait_for_items()
 

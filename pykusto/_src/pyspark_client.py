@@ -1,6 +1,7 @@
 from importlib.util import find_spec
-from typing import List, Iterable, Dict, Callable, Union, Tuple
+from typing import Dict, Callable, Union, Tuple
 
+import numpy as np
 import pandas as pd
 from azure.kusto.data import ClientRequestProperties, KustoClient
 
@@ -18,8 +19,7 @@ class DataframeBasedKustoResponse(KustoResponse):
     def __init__(self, dataframe: pd.DataFrame):
         self.__dataframe = dataframe
 
-    def get_rows(self) -> List[Iterable]:
-        # noinspection PyTypeChecker
+    def get_rows(self) -> np.ndarray:
         return self.__dataframe.to_numpy()
 
     def to_dataframe(self) -> pd.DataFrame:

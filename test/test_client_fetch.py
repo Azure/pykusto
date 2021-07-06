@@ -1,5 +1,5 @@
 from threading import Thread, Lock
-from typing import Any, Type, Callable, List
+from typing import Any, Callable, List
 from unittest.mock import patch
 
 from pykusto import PyKustoClient, Query
@@ -17,9 +17,6 @@ background_query_lock = Lock()
 class TestClientFetch(TestBase):
     query_thread: Thread = None
     query_results: List = []
-
-    def assertType(self, obj: Any, expected_type: Type):
-        self.assertEqual(type(obj), expected_type)
 
     @staticmethod
     def query_in_background(query: Callable[[], Any]):

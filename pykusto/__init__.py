@@ -8,6 +8,7 @@ from ._src.client import *
 from ._src.enums import *
 from ._src.expressions import *
 from ._src.functions import *
+from ._src.pyspark_client import *
 from ._src.query import *
 
 __version__ = 'dev'  # Version number is managed in the 'release' branch

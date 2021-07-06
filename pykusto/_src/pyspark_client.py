@@ -20,7 +20,7 @@ class DataframeBasedKustoResponse(KustoResponse):
 
     def get_rows(self) -> List[Iterable]:
         # noinspection PyTypeChecker
-        return self.__dataframe.values.tolist()
+        return self.__dataframe.to_numpy()
 
     def to_dataframe(self) -> pd.DataFrame:
         return self.__dataframe

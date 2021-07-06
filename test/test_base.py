@@ -3,14 +3,8 @@ import logging
 import sys
 from concurrent.futures import Future
 from threading import Event
-from typing import Callable, Tuple, Any, List, Optional, Union
+from typing import Callable, Tuple, Any, List, Optional, Union, Type
 from unittest import TestCase
-if sys.version_info[1] < 9:
-    # noinspection PyProtectedMember
-    from unittest.case import _AssertLogsContext
-else:
-    # noinspection PyUnresolvedReferences,PyProtectedMember,PyCompatibility
-    from unittest._log import _AssertLogsContext
 from urllib.parse import urljoin
 
 from azure.kusto.data import KustoClient, ClientRequestProperties
@@ -24,6 +18,13 @@ from pykusto._src.client import Table
 from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
 # noinspection PyProtectedMember
 from pykusto._src.type_utils import _KustoType
+
+if sys.version_info[1] < 9:
+    # noinspection PyProtectedMember
+    from unittest.case import _AssertLogsContext
+else:
+    # noinspection PyUnresolvedReferences,PyProtectedMember,PyCompatibility
+    from unittest._log import _AssertLogsContext
 
 # Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
 # noinspection PyTypeChecker
@@ -78,6 +79,9 @@ class TestBase(TestCase):
     @staticmethod
     def raise_mock_exception():
         raise Exception("Mock exception")
+
+    def assertType(self, obj: Any, expected_type: Type):
+        self.assertEqual(type(obj), expected_type)
 
 
 # Get rid of this in Python 3.10, as this was resolved: https://bugs.python.org/issue39385
@@ -234,6 +238,16 @@ class MockKustoClient(KustoClient):
         if self.record_metadata or not metadata_query:
             self.recorded_queries.append(recorded_query)
         return response()
+
+
+def nested_attribute_dict(attributes: str, value: Any) -> Any:
+    """
+    Used to mock chained lists of attribute references.
+    """
+    result = value
+    for key in reversed(attributes.split('.')):
+        result = type(key + 'Wrapper', tuple(), {key: result})
+    return result
 
 
 test_logger = logging.getLogger("pykusto_test")

@@ -22,7 +22,6 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
-        # TODO: test all relevant versions
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       # According to the internet using 'python -m pip' instead of 'pip' can prevent some issues

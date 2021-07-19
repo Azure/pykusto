@@ -545,8 +545,32 @@ class _JoinQuery(Query):
         self._kind = kind
         self._on_attributes = on_attributes
 
-    def on(self, col1: _AnyTypeColumn, col2: _AnyTypeColumn = None) -> '_JoinQuery':
-        self._on_attributes = self._on_attributes + (((col1,),) if col2 is None else ((col1, col2),))
+    def on(self, join_cols: Union[_AnyTypeColumn, Tuple[_AnyTypeColumn, ...], List[Union[_AnyTypeColumn, Tuple[_AnyTypeColumn, ...]]]]) -> '_JoinQuery':
+        if type(join_cols) != list:
+            join_cols = [join_cols]
+
+        for col in join_cols:
+            self._inner_on_with_or_without_table(col)
+        return self
+
+    def _inner_on_with_or_without_table(self, col: Union[_AnyTypeColumn, Tuple[_AnyTypeColumn, _AnyTypeColumn]]) -> '_JoinQuery':
+        try:
+            if type(col) == tuple and len(col) == 2:
+                return self._inner_on_with_table(*col)
+            else:
+                return self._inner_on(col)
+        except Exception:
+            raise JoinException(
+                "A join argument could be a column, or a tuple of columns corresponding to the input and join "
+                f"tables column names. However, the join argument provided is {col} of type {type(col)}"
+            )
+
+    def _inner_on(self, col: _AnyTypeColumn) -> '_JoinQuery':
+        self._on_attributes = self._on_attributes + ((col,),)
+        return self
+
+    def _inner_on_with_table(self, col1: _AnyTypeColumn, col2: _AnyTypeColumn) -> '_JoinQuery':
+        self._on_attributes = self._on_attributes + ((col1, col2),)
         return self
 
     @staticmethod
@@ -557,11 +581,17 @@ class _JoinQuery(Query):
         else:
             return f"$left.{attribute[0].kql}==$right.{attribute[1].kql}"
 
-    def _compile(self) -> KQL:
-        if len(self._on_attributes) == 0:
-            raise JoinException("A call to join() must be followed by a call to on()")
+    def _assert_joined_query(self) -> None:
         if self._joined_query.get_table() is None:
             raise JoinException("The joined query must have a table")
+
+    def _assert_on_attributes(self) -> None:
+        if len(self._on_attributes) == 0:
+            raise JoinException("A call to join() must be followed by a call to on()")
+
+    def _compile(self) -> KQL:
+        self._assert_joined_query()
+        self._assert_on_attributes()
 
         return KQL(f'join {"" if self._kind is None else f"kind={self._kind.value}"} '
                    f'({self._joined_query.render(use_full_table_name=True)}) on '

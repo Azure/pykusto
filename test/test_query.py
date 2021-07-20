@@ -265,6 +265,24 @@ class TestQuery(TestBase):
                 Query(t).take(2), kind=JoinKind.INNER).render
         )
 
+    def test_join_wrong_arguments_type(self):
+        col_name_str = "numField"
+        # noinspection PyTypeChecker
+        self.assertRaises(
+            JoinException(
+                "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
+                f"tables column names. However, the join argument provided is {col_name_str} of type {type(col_name_str)}"
+            ),
+            lambda: (
+                Query(t)
+                .where(t.numField > 4)
+                .take(5)
+                .join(Query(t).take(2), kind=JoinKind.INNER)
+                .on(col_name_str)
+                .render()
+            )
+        )
+
     def test_extend(self):
         self.assertEqual(
             "mock_table | extend sumField = numField + numField2, foo = numField3 * 4 | take 5",

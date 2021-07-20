@@ -553,11 +553,11 @@ class _JoinQuery(Query):
     def _inner_on_with_or_without_table(self, col: Union[BaseColumn, Tuple[BaseColumn, BaseColumn]]) -> '_JoinQuery':
         if isinstance(col, BaseColumn):
             return self._inner_on(col)
-        elif isinstance(col, tuple) and isinstance(col[0], BaseColumn) and isinstance(col[1], BaseColumn):
+        elif isinstance(col, tuple) and len(col) == 2 and isinstance(col[0], BaseColumn) and isinstance(col[1], BaseColumn):
             return self._inner_on_with_table(*col)
         else:
-            JoinException(
-                "A join argument could be a column, or a tuple of columns corresponding to the input and join "
+            raise JoinException(
+                "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
                 f"tables column names. However, the join argument provided is {col} of type {type(col)}"
             )
 

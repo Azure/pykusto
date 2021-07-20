@@ -202,7 +202,7 @@ class TestQuery(TestBase):
                 Query(t)
                 .where(t.numField > 4).take(5)
                 .join(Query(table), kind=JoinKind.INNER)
-                .on([t.numField, (t.stringField, table.tableStringField)])
+                .on(t.numField, (t.stringField, table.tableStringField))
                 .render()
             )
         )
@@ -220,15 +220,42 @@ class TestQuery(TestBase):
                 .where(t.numField > 4)
                 .take(5)
                 .join(Query(table).where(table.numField == 2).take(6), kind=JoinKind.INNER)
-                .on([t.numField, (t.stringField, table.tableStringField)])
+                .on(t.numField, (t.stringField, table.tableStringField))
                 .render()
             )
         )
 
+    def test_join_chained_on(self):
+        mock_client = PyKustoClient(
+            MockKustoClient(
+                columns_response=mock_columns_response(
+                    [('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)]
+                )
+            )
+        )
+        mock_table = mock_client['test_db']['mock_table']
+
+        expected_query = (
+            'mock_table | where numField > 4 | take 5 | join kind=inner '
+            '(cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table")'
+            ' | where numField == 2 | take 6) on numField, $left.stringField==$right.tableStringField'
+        )
+        actual_query = (
+            Query(t)
+            .where(t.numField > 4)
+            .take(5)
+            .join(Query(mock_table).where(mock_table.numField == 2).take(6), kind=JoinKind.INNER)
+            .on(t.numField)
+            .on((t.stringField, mock_table.tableStringField))
+            .render()
+        )
+
+        self.assertEqual(expected_query, actual_query)
+
     def test_join_no_joined_table(self):
         self.assertRaises(
             JoinException("The joined query must have a table"),
-            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on([t.numField, t.stringField, t.stringField2]).render()
+            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on(t.numField, (t.stringField, t.stringField2)).render()
         )
 
     def test_join_no_on(self):

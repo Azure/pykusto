@@ -100,12 +100,12 @@ class MockKustoResultTable(KustoResultTable):
     def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
         self.kusto_result_rows = tuple(KustoResultRow(columns, row) for row in rows)
         self.raw_rows = self.kusto_result_rows
-        self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''}) for col in columns)
+        self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''})() for col in columns)
 
 
 # noinspection PyTypeChecker
 def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> Callable[[], KustoResponseDataSet]:
-    return lambda: type(
+    return type(
         'MockKustoResponseDataSet',
         (KustoResponseDataSet,),
         {'primary_results': (MockKustoResultTable(rows, columns),)}
@@ -246,7 +246,7 @@ def nested_attribute_dict(attributes: str, value: Any) -> Any:
     """
     result = value
     for key in reversed(attributes.split('.')):
-        result = type(key + 'Wrapper', tuple(), {key: result})
+        result = type(key + 'Wrapper', tuple(), {key: result})()
     return result
 
 

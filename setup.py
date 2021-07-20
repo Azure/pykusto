@@ -46,6 +46,7 @@ setup(
         'pytest',
         'pytest-cov',
         'flake8',
+        'typeguard',
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

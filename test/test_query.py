@@ -195,13 +195,16 @@ class TestQuery(TestBase):
     def test_join_with_table(self):
         table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)])))['test_db'][
             'mock_table']
-
         self.assertEqual(
             'mock_table | where numField > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table")) '
             'on numField, $left.stringField==$right.tableStringField',
-            Query(t).where(t.numField > 4).take(5).join(
-                Query(table), kind=JoinKind.INNER
-            ).on(t.numField).on(t.stringField, table.tableStringField).render(),
+            (
+                Query(t)
+                .where(t.numField > 4).take(5)
+                .join(Query(table), kind=JoinKind.INNER)
+                .on(t.numField, (t.stringField, table.tableStringField))
+                .render()
+            )
         )
 
     def test_join_with_table_and_query(self):
@@ -212,15 +215,47 @@ class TestQuery(TestBase):
         self.assertEqual(
             'mock_table | where numField > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table") | where numField == 2 '
             '| take 6) on numField, $left.stringField==$right.tableStringField',
-            Query(t).where(t.numField > 4).take(5).join(
-                Query(table).where(table.numField == 2).take(6), kind=JoinKind.INNER
-            ).on(t.numField).on(t.stringField, table.tableStringField).render(),
+            (
+                Query(t)
+                .where(t.numField > 4)
+                .take(5)
+                .join(Query(table).where(table.numField == 2).take(6), kind=JoinKind.INNER)
+                .on(t.numField, (t.stringField, table.tableStringField))
+                .render()
+            )
         )
+
+    def test_join_chained_on(self):
+        mock_client = PyKustoClient(
+            MockKustoClient(
+                columns_response=mock_columns_response(
+                    [('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)]
+                )
+            )
+        )
+        mock_table = mock_client['test_db']['mock_table']
+
+        expected_query = (
+            'mock_table | where numField > 4 | take 5 | join kind=inner '
+            '(cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table")'
+            ' | where numField == 2 | take 6) on numField, $left.stringField==$right.tableStringField'
+        )
+        actual_query = (
+            Query(t)
+            .where(t.numField > 4)
+            .take(5)
+            .join(Query(mock_table).where(mock_table.numField == 2).take(6), kind=JoinKind.INNER)
+            .on(t.numField)
+            .on((t.stringField, mock_table.tableStringField))
+            .render()
+        )
+
+        self.assertEqual(expected_query, actual_query)
 
     def test_join_no_joined_table(self):
         self.assertRaises(
             JoinException("The joined query must have a table"),
-            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on(t.numField).on(t.stringField, t.stringField2).render()
+            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on(t.numField, (t.stringField, t.stringField2)).render()
         )
 
     def test_join_no_on(self):
@@ -228,6 +263,24 @@ class TestQuery(TestBase):
             JoinException("A call to join() must be followed by a call to on()"),
             Query(t).where(t.numField > 4).take(5).join(
                 Query(t).take(2), kind=JoinKind.INNER).render
+        )
+
+    def test_join_wrong_arguments_type(self):
+        col_name_str = "numField"
+        # noinspection PyTypeChecker
+        self.assertRaises(
+            JoinException(
+                "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
+                f"tables column names. However, the join argument provided is {col_name_str} of type {type(col_name_str)}"
+            ),
+            lambda: (
+                Query(t)
+                .where(t.numField > 4)
+                .take(5)
+                .join(Query(t).take(2), kind=JoinKind.INNER)
+                .on(col_name_str)
+                .render()
+            )
         )
 
     def test_extend(self):

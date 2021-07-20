@@ -536,32 +536,58 @@ class JoinException(Exception):
 class _JoinQuery(Query):
     _joined_query: Query
     _kind: JoinKind
-    _on_attributes: Tuple[Tuple[_AnyTypeColumn, ...], ...]
+    _on_attributes: Tuple[Union[Tuple[BaseColumn], Tuple[BaseColumn, BaseColumn]], ...]
 
     def __init__(self, head: Query, joined_query: Query, kind: JoinKind,
-                 on_attributes: Tuple[Tuple[_AnyTypeColumn, ...], ...] = tuple()):
+                 on_attributes: Tuple[Tuple[BaseColumn, ...], ...] = tuple()):
         super(_JoinQuery, self).__init__(head)
         self._joined_query = joined_query
         self._kind = kind
         self._on_attributes = on_attributes
 
-    def on(self, col1: _AnyTypeColumn, col2: _AnyTypeColumn = None) -> '_JoinQuery':
-        self._on_attributes = self._on_attributes + (((col1,),) if col2 is None else ((col1, col2),))
+    def on(self, *join_cols: Union[BaseColumn, Tuple[BaseColumn, BaseColumn]]) -> '_JoinQuery':
+        for col in join_cols:
+            self._inner_on_with_or_without_table(col)
+        return self
+
+    def _inner_on_with_or_without_table(self, col: Union[BaseColumn, Tuple[BaseColumn, BaseColumn]]) -> '_JoinQuery':
+        if isinstance(col, BaseColumn):
+            return self._inner_on(col)
+        elif isinstance(col, tuple) and len(col) == 2 and isinstance(col[0], BaseColumn) and isinstance(col[1], BaseColumn):
+            return self._inner_on_with_table(*col)
+        else:
+            raise JoinException(
+                "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
+                f"tables column names. However, the join argument provided is {col} of type {type(col)}"
+            )
+
+    def _inner_on(self, col: BaseColumn) -> '_JoinQuery':
+        self._on_attributes = self._on_attributes + ((col,),)
+        return self
+
+    def _inner_on_with_table(self, col1: BaseColumn, col2: BaseColumn) -> '_JoinQuery':
+        self._on_attributes = self._on_attributes + ((col1, col2),)
         return self
 
     @staticmethod
-    def _compile_on_attribute(attribute: Tuple[_AnyTypeColumn]):
+    def _compile_on_attribute(attribute: Tuple[BaseColumn]):
         assert len(attribute) in (1, 2)
         if len(attribute) == 1:
             return attribute[0].kql
         else:
             return f"$left.{attribute[0].kql}==$right.{attribute[1].kql}"
 
-    def _compile(self) -> KQL:
-        if len(self._on_attributes) == 0:
-            raise JoinException("A call to join() must be followed by a call to on()")
+    def _assert_joined_query(self) -> None:
         if self._joined_query.get_table() is None:
             raise JoinException("The joined query must have a table")
+
+    def _assert_on_attributes(self) -> None:
+        if len(self._on_attributes) == 0:
+            raise JoinException("A call to join() must be followed by a call to on()")
+
+    def _compile(self) -> KQL:
+        self._assert_joined_query()
+        self._assert_on_attributes()
 
         return KQL(f'join {"" if self._kind is None else f"kind={self._kind.value}"} '
                    f'({self._joined_query.render(use_full_table_name=True)}) on '

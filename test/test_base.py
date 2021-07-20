@@ -13,7 +13,7 @@ from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
 
 # noinspection PyProtectedMember
-from pykusto._src.client import Table
+from pykusto._src.client import Table, Database, PyKustoClient
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
 # noinspection PyProtectedMember
@@ -29,7 +29,7 @@ else:
 # Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
 # noinspection PyTypeChecker
 mock_table = Table(
-    None, "mock_table",
+    Database(PyKustoClient('mock_cluster', fetch_by_default=False), 'mock_database', fetch_by_default=False), "mock_table",
     (
         _NumberColumn('numField'), _NumberColumn('numField2'), _NumberColumn('numField3'), _NumberColumn('numField4'), _NumberColumn('numField5'), _NumberColumn('numField6'),
         _BooleanColumn('boolField'), _ArrayColumn('arrayField'), _ArrayColumn('arrayField2'), _ArrayColumn('arrayField3'), _MappingColumn('mapField'), _StringColumn('stringField'),

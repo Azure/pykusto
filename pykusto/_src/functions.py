@@ -2,7 +2,7 @@ from itertools import chain
 from typing import Union, List, Pattern, Type
 
 from .enums import Kind
-from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, TimespanType, \
+from .expressions import NumberType, _NumberExpression, TimespanType, \
     _DatetimeExpression, _TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, _StringExpression, _BooleanExpression, \
     _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, _DynamicExpression, \
@@ -1190,7 +1190,7 @@ class Functions:
     #     return
 
     @staticmethod
-    def count(col: _AnyTypeColumn = None) -> _NumberAggregationExpression:
+    def count(col: BaseColumn = None) -> _NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/count-aggfunction
         """

@@ -9,8 +9,7 @@ from .client import Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from .expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
     StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
-    BaseExpression, \
-    _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType
+    BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType
 from .functions import Functions as f
 from .kql_converters import KQL
 from .logger import _logger
@@ -117,7 +116,7 @@ class Query:
         """
         return self.sort_by(col, order, nulls)
 
-    def top(self, num_rows: int, col: _AnyTypeColumn, order: Order = None, nulls: Nulls = None) -> '_TopQuery':
+    def top(self, num_rows: int, col: OrderedType, order: Order = None, nulls: Nulls = None) -> '_TopQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/topoperator
         """
@@ -145,7 +144,7 @@ class Query:
         """
         return _ProjectQuery(self, self._extract_assignments(*args, **kwargs))
 
-    def project_rename(self, *args: _AssignmentFromColumnToColumn, **kwargs: _AnyTypeColumn) -> '_ProjectRenameQuery':
+    def project_rename(self, *args: _AssignmentFromColumnToColumn, **kwargs: BaseColumn) -> '_ProjectRenameQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectrenameoperator
         """
@@ -228,7 +227,7 @@ class Query:
             distribution=distribution
         )
 
-    def bag_unpack(self, col: _AnyTypeColumn, prefix: str = None) -> '_EvaluateQuery':
+    def bag_unpack(self, col: BaseColumn, prefix: str = None) -> '_EvaluateQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bag-unpackplugin
         """
@@ -315,7 +314,7 @@ class Query:
 
 
 class _ProjectQuery(Query):
-    _columns: List[_AnyTypeColumn]
+    _columns: List[BaseColumn]
     _assignments: List[_AssignmentBase]
 
     def __init__(self, head: 'Query', assignments: List[_AssignmentBase]) -> None:
@@ -519,7 +518,7 @@ class _TopQuery(Query):
     _num_rows: int
     _order_spec: _OrderQueryBase.OrderSpec
 
-    def __init__(self, head: Query, num_rows: int, col: _AnyTypeColumn, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, num_rows: int, col: OrderedType, order: Order, nulls: Nulls):
         super(_TopQuery, self).__init__(head)
         self._num_rows = num_rows
         self._order_spec = _OrderQueryBase.OrderSpec(col, order, nulls)
@@ -596,7 +595,7 @@ class _JoinQuery(Query):
 
 class _SummarizeQuery(Query):
     _assignments: List[_AssignmentFromAggregationToColumn]
-    _by_columns: List[Union[_AnyTypeColumn, BaseExpression]]
+    _by_columns: List[Union[BaseColumn, BaseExpression]]
     _by_assignments: List[_AssignmentToSingleColumn]
 
     def __init__(self, head: Query,
@@ -606,10 +605,10 @@ class _SummarizeQuery(Query):
         self._by_columns = []
         self._by_assignments = []
 
-    def by(self, *args: Union[_AssignmentToSingleColumn, _AnyTypeColumn, BaseExpression],
+    def by(self, *args: Union[_AssignmentToSingleColumn, BaseColumn, BaseExpression],
            **kwargs: BaseExpression):
         for arg in args:
-            if isinstance(arg, _AnyTypeColumn) or isinstance(arg, BaseExpression):
+            if isinstance(arg, BaseColumn) or isinstance(arg, BaseExpression):
                 self._by_columns.append(arg)
             else:
                 assert isinstance(arg, _AssignmentToSingleColumn), "Invalid assignment"

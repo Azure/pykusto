@@ -176,7 +176,7 @@ class BaseExpression:
         """
         return _NumberExpression(KQL(f'tolong({self.kql})'))
 
-    def assign_to_single_column(self, column: '_AnyTypeColumn') -> '_AssignmentToSingleColumn':
+    def assign_to_single_column(self, column: 'BaseColumn') -> '_AssignmentToSingleColumn':
         return _AssignmentToSingleColumn(column, self)
 
     def assign_to_multiple_columns(self, *columns: '_AnyTypeColumn') -> '_AssignmentBase':
@@ -185,7 +185,7 @@ class BaseExpression:
         """
         raise ValueError("Only arrays can be assigned to multiple columns")
 
-    def assign_to(self, *columns: '_AnyTypeColumn') -> '_AssignmentBase':
+    def assign_to(self, *columns: 'BaseColumn') -> '_AssignmentBase':
         if len(columns) == 0:
             # Unspecified column name
             return _AssignmentBase(None, self)
@@ -794,7 +794,7 @@ class _ArrayExpression(_BaseDynamicExpression):
         """
         return self.contains(other)
 
-    def assign_to_multiple_columns(self, *columns: '_AnyTypeColumn') -> '_AssignmentToMultipleColumns':
+    def assign_to_multiple_columns(self, *columns: 'BaseColumn') -> '_AssignmentToMultipleColumns':
         return _AssignmentToMultipleColumns(columns, self)
 
 
@@ -909,22 +909,22 @@ class _AssignmentBase:
 
 
 class _AssignmentToSingleColumn(_AssignmentBase):
-    def __init__(self, column: '_AnyTypeColumn', expression: ExpressionType) -> None:
+    def __init__(self, column: 'BaseColumn', expression: ExpressionType) -> None:
         super().__init__(column.kql, expression)
 
 
 class _AssignmentFromColumnToColumn(_AssignmentToSingleColumn):
-    def __init__(self, target: '_AnyTypeColumn', source: 'BaseColumn') -> None:
+    def __init__(self, target: 'BaseColumn', source: 'BaseColumn') -> None:
         super().__init__(target, source)
 
 
 class _AssignmentToMultipleColumns(_AssignmentBase):
-    def __init__(self, columns: Union[List['_AnyTypeColumn'], Tuple['_AnyTypeColumn']], expression: ArrayType) -> None:
+    def __init__(self, columns: Union[List['BaseColumn'], Tuple['BaseColumn']], expression: ArrayType) -> None:
         super().__init__(KQL(f'({", ".join(c.kql for c in columns)})'), expression)
 
 
 class _AssignmentFromAggregationToColumn(_AssignmentBase):
-    def __init__(self, column: Optional['_AnyTypeColumn'], aggregation: AggregationExpression) -> None:
+    def __init__(self, column: Optional['BaseColumn'], aggregation: AggregationExpression) -> None:
         super().__init__(None if column is None else column.kql, aggregation)
 
 
@@ -949,7 +949,7 @@ class BaseColumn(BaseExpression):
     def as_subexpression(self) -> KQL:
         return self.kql
 
-    def assign_to_single_column(self, column: '_AnyTypeColumn') -> '_AssignmentFromColumnToColumn':
+    def assign_to_single_column(self, column: 'BaseColumn') -> '_AssignmentFromColumnToColumn':
         return _AssignmentFromColumnToColumn(column, self)
 
     def __repr__(self) -> str:

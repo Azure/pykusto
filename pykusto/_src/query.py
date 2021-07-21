@@ -256,7 +256,7 @@ class Query:
         else:
             return KQL(f"{self._head._compile_all(use_full_table_name)} | {self._compile()}")
 
-    def get_table(self) -> Table:
+    def get_table(self) -> Optional[Table]:
         if self._head is None:
             return self._table
         else:

@@ -97,7 +97,7 @@ class _TypeRegistrar:
 
         return inner
 
-    def for_obj(self, obj: PythonTypes) -> Union[Type, Callable]:
+    def for_obj(self, obj: PythonTypes) -> Any:
         """
         Given an object of Kusto type, retrieve the python type or function associated with the object's type, and call
         it with the given object as a parameter

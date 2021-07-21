@@ -103,13 +103,32 @@ class MockKustoResultTable(KustoResultTable):
         self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''})() for col in columns)
 
 
+class MockKustoResponseDataSet(KustoResponseDataSet):
+    # noinspection PyMissingConstructor
+    def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
+        self.rows = rows
+        self.columns = columns
+
+    @property
+    def _error_column(self):
+        raise NotImplementedError()
+
+    @property
+    def _crid_column(self):
+        raise NotImplementedError()
+
+    @property
+    def _status_column(self):
+        raise NotImplementedError()
+
+    @property
+    def primary_results(self) -> List[KustoResultTable]:
+        return [MockKustoResultTable(self.rows, self.columns)]
+
+
 # noinspection PyTypeChecker
 def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> Callable[[], KustoResponseDataSet]:
-    return type(
-        'MockKustoResponseDataSet',
-        (KustoResponseDataSet,),
-        {'primary_results': (MockKustoResultTable(rows, columns),)}
-    )
+    return lambda: MockKustoResponseDataSet(rows, columns)
 
 
 def mock_columns_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> Callable[[], KustoResponseDataSet]:

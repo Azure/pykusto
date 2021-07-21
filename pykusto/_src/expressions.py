@@ -16,7 +16,8 @@ MappingType = Union[Mapping, '_MappingExpression']
 DatetimeType = Union[datetime, '_DatetimeExpression']
 TimespanType = Union[timedelta, '_TimespanExpression']
 DynamicType = Union[ArrayType, MappingType]
-OrderedType = Union[DatetimeType, TimespanType, NumberType, StringType]
+ComparableType = Union[DatetimeType, TimespanType, NumberType]
+OrderedType = Union[ComparableType, StringType]
 
 
 # All classes in the same file to prevent circular dependencies
@@ -714,6 +715,18 @@ class _TimespanExpression(BaseExpression):
         # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/datetime-timespan-arithmetic
         return _TimespanExpression.binary_op(other, ' - ', self)
 
+    def __lt__(self, other: TimespanType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' < ', other)
+
+    def __le__(self, other: TimespanType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' <= ', other)
+
+    def __gt__(self, other: TimespanType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' > ', other)
+
+    def __ge__(self, other: TimespanType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' >= ', other)
+
     def ago(self) -> _DatetimeExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/agofunction
@@ -826,11 +839,22 @@ class _DynamicExpression(_ArrayExpression, _MappingExpression):
         return _BaseDynamicExpression.__getitem__(self, index)
 
 
-class AnyExpression(
-    _NumberExpression, _BooleanExpression,
-    _StringExpression, _DynamicExpression,
-    _DatetimeExpression, _TimespanExpression
-):
+class _ComparableExpression(_NumberExpression, _DatetimeExpression, _TimespanExpression):
+    # TODO: Implement for strings using 'strcmp': https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/strcmpfunction
+    def __lt__(self, other: ComparableType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' < ', other)
+
+    def __le__(self, other: ComparableType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' <= ', other)
+
+    def __gt__(self, other: ComparableType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' > ', other)
+
+    def __ge__(self, other: ComparableType) -> _BooleanExpression:
+        return _BooleanExpression.binary_op(self, ' >= ', other)
+
+
+class AnyExpression(_BooleanExpression, _ComparableExpression, _StringExpression, _DynamicExpression):
     pass
 
 

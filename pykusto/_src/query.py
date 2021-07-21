@@ -7,9 +7,11 @@ from typing import Tuple, List, Union, Optional
 
 from .client import Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
-from .expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
-    StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
-    BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType, _BooleanExpression
+from .expressions import BooleanType, ExpressionType, AggregationExpression, StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, \
+    _AnyTypeColumn, BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType, OrderedType
+# These seem like redundant imports, but without them typeguard is confused
+# noinspection PyUnresolvedReferences
+from .expressions import _DatetimeExpression, _TimespanExpression, _NumberExpression, _StringExpression, _BooleanExpression
 from .functions import Functions as f
 from .kql_converters import KQL
 from .logger import _logger
@@ -49,7 +51,7 @@ class Query:
             new_object._head = self._head.__deepcopy__(memo)
         return new_object
 
-    def where(self, *predicates: Union[bool, _BooleanExpression]) -> 'Query':  # Can't use the 'BooleanType' shorthand because that fails typeguard for some reason
+    def where(self, *predicates: BooleanType) -> 'Query':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/whereoperator
 

@@ -88,8 +88,8 @@ class TestExpressions(TestBase):
 
     def test_swapped_and(self):
         self.assertEqual(
-            ' | where 1 and boolField',
-            Query().where(1 & t.boolField).render(),
+            ' | where true and boolField',
+            Query().where(True & t.boolField).render(),
         )
 
     def test_or(self):
@@ -100,8 +100,8 @@ class TestExpressions(TestBase):
 
     def test_swapped_or(self):
         self.assertEqual(
-            ' | where 0 or boolField',
-            Query().where(0 | t.boolField).render(),
+            ' | where false or boolField',
+            Query().where(False | t.boolField).render(),
         )
 
     def test_not(self):

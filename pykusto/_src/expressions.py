@@ -823,7 +823,7 @@ class _MappingExpression(_BaseDynamicExpression):
 
 class _DynamicExpression(_ArrayExpression, _MappingExpression):
     def __getitem__(self, index: Union[StringType, NumberType]) -> 'AnyExpression':
-        return super().__getitem__(index)
+        return _BaseDynamicExpression.__getitem__(self, index)
 
 
 class AnyExpression(

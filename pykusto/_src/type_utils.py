@@ -42,7 +42,7 @@ class _KustoType(Enum):
         self.dot_net_name = dot_net_name
         self.python_types = python_types
 
-    def is_type_of(self, obj) -> bool:
+    def is_type_of(self, obj: Any) -> bool:
         for python_type in self.python_types:
             if python_type is not None and isinstance(obj, python_type):
                 return True
@@ -156,7 +156,7 @@ _plain_expression = _TypeRegistrar("Plain expression")
 _aggregation_expression = _TypeRegistrar("Aggregation expression")
 
 
-def _get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
+def _get_base_types(obj: Any) -> Set[_KustoType]:
     """
     A registrar-agnostic version of TypeRegistrar.get_base_types
     """

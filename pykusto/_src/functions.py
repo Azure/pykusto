@@ -996,14 +996,14 @@ class Functions:
         return _DatetimeExpression(KQL(f'todatetime({_to_kql(expr)})'))
 
     @staticmethod
-    def to_decimal(expr: NumberType) -> _NumberExpression:
+    def to_decimal(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todecimalfunction
         """
         return _NumberExpression(KQL(f"todecimal({_to_kql(expr)})"))
 
     @staticmethod
-    def to_double(expr: NumberType) -> _NumberExpression:
+    def to_double(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
@@ -1031,14 +1031,14 @@ class Functions:
         return _StringExpression(KQL(f'tohex({_to_kql(expr1)})' if expr2 is None else 'tohex({to_kql(expr1)}, {to_kql(expr2)})'))
 
     @staticmethod
-    def to_int(expr: NumberType) -> _NumberExpression:
+    def to_int(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tointfunction
         """
         return _NumberExpression(KQL(f"toint({_to_kql(expr)})"))
 
     @staticmethod
-    def to_long(expr: NumberType) -> _NumberExpression:
+    def to_long(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolongfunction
         """
@@ -1052,7 +1052,7 @@ class Functions:
         return expr.lower()
 
     @staticmethod
-    def to_real(expr: NumberType) -> _NumberExpression:
+    def to_real(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """

@@ -538,7 +538,7 @@ class _JoinQuery(Query):
     _kind: JoinKind
     _on_attributes: Tuple[Union[Tuple[BaseColumn], Tuple[BaseColumn, BaseColumn]], ...]
 
-    def __init__(self, head: Query, joined_query: Query, kind: JoinKind,
+    def __init__(self, head: Query, joined_query: Query, kind: Optional[JoinKind],
                  on_attributes: Tuple[Tuple[BaseColumn, ...], ...] = tuple()):
         super(_JoinQuery, self).__init__(head)
         self._joined_query = joined_query

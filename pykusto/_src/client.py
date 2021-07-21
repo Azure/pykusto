@@ -215,7 +215,7 @@ class Database(_ItemFetcher):
     __name: str
 
     def __init__(
-            self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn]] = None,
+            self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn, ...]] = None,
             fetch_by_default: bool = True
     ) -> None:
         """

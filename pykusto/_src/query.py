@@ -557,7 +557,8 @@ class _JoinQuery(Query):
         elif isinstance(col, tuple) and len(col) == 2 and isinstance(col[0], BaseColumn) and isinstance(col[1], BaseColumn):
             return self._inner_on_with_table(*col)
         else:
-            raise JoinException(
+            # Re-apply coverage to this line once the corresponding test is re-enabled, after this is resolved: https://github.com/agronholm/typeguard/issues/159
+            raise JoinException(  # pragma: no cover
                 "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
                 f"tables column names. However, the join argument provided is {col} of type {type(col)}"
             )

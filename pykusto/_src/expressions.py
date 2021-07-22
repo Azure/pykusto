@@ -529,6 +529,7 @@ class _StringExpression(BaseExpression):
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/has-anyoperator
         Please notice that this implementation does not support tabular expression inputs currently
         """
+        assert isinstance(other, (List, Tuple)), "Compared array must be a list of tabular, scalar, or literal expressions"
         return _BooleanExpression(KQL(f'{self.kql} has_any ({", ".join(map(_to_kql, other))})'))
 
 

@@ -1021,7 +1021,7 @@ class _TimespanColumn(BaseColumn, _TimespanExpression):
     pass
 
 
-class _SubtractableColumn(_NumberColumn, _DatetimeColumn, _TimespanColumn):
+class _SubtractableColumn(_NumberColumn, _DatetimeColumn, _TimespanColumn, _ComparableExpression):
     @staticmethod
     def __resolve_type(type_to_resolve: Union['NumberType', 'DatetimeType', 'TimespanType']) -> Optional[_KustoType]:
         # noinspection PyTypeChecker

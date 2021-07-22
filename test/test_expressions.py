@@ -238,6 +238,30 @@ class TestExpressions(TestBase):
             Query(t).where(t.timespanField > timedelta(minutes=15)).render(),
         )
 
+    def test_le_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn <= 10',
+            Query(t).where(col['someColumn'] <= 10).render(),
+        )
+
+    def test_lt_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn < 10',
+            Query(t).where(col['someColumn'] < 10).render(),
+        )
+
+    def test_ge_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn >= 10',
+            Query(t).where(col['someColumn'] >= 10).render(),
+        )
+
+    def test_gt_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn > 10',
+            Query(t).where(col['someColumn'] > 10).render(),
+        )
+
     def test_add_timespan_to_date(self):
         self.assertEqual(
             ' | extend foo = dateField + time(0.1:0:0.0)',

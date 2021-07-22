@@ -110,7 +110,7 @@ class _TypeRegistrar:
                 return registered_callable(obj)
         raise ValueError(f"{self}: no registered callable for object {obj} of type {type(obj).__name__}")
 
-    def for_type(self, t: Type[PythonTypes]) -> Union[Type, Callable]:
+    def for_type(self, t: Type) -> Union[Type, Callable]:
         """
         Given a Kusto type, retrieve the associated python type or function
 

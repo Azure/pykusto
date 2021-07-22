@@ -4,7 +4,7 @@ from itertools import chain
 from numbers import Number
 from typing import NewType, Union, Mapping, List, Tuple
 
-from .type_utils import _kql_converter, _KustoType, _NUMBER_TYPES
+from .type_utils import _kql_converter, _KustoType, _NUMBER_TYPES, PythonTypes
 
 KQL = NewType('KQL', str)
 
@@ -33,7 +33,7 @@ def _dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
         return _build_dynamic(d)
 
 
-def _build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
+def _build_dynamic(d: PythonTypes) -> KQL:
     if isinstance(d, Mapping):
         return KQL(f"pack({', '.join(map(_build_dynamic, chain(*d.items())))})")
     if isinstance(d, (List, Tuple)):

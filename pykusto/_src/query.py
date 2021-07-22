@@ -571,7 +571,7 @@ class _JoinQuery(Query):
         return self
 
     @staticmethod
-    def _compile_on_attribute(attribute: Tuple[BaseColumn]):
+    def _compile_on_attribute(attribute: Union[Tuple[BaseColumn], Tuple[BaseColumn, BaseColumn]]):
         assert len(attribute) in (1, 2)
         if len(attribute) == 1:
             return attribute[0].kql

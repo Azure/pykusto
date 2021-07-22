@@ -214,6 +214,30 @@ class TestExpressions(TestBase):
             Query().where(t.dateField > datetime(2000, 1, 1)).render(),
         )
 
+    def test_le_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField <= time(0.0:15:0.0)',
+            Query(t).where(t.timespanField <= timedelta(minutes=15)).render(),
+        )
+
+    def test_lt_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField < time(0.0:15:0.0)',
+            Query(t).where(t.timespanField < timedelta(minutes=15)).render(),
+        )
+
+    def test_ge_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField >= time(0.0:15:0.0)',
+            Query(t).where(t.timespanField >= timedelta(minutes=15)).render(),
+        )
+
+    def test_gt_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField > time(0.0:15:0.0)',
+            Query(t).where(t.timespanField > timedelta(minutes=15)).render(),
+        )
+
     def test_add_timespan_to_date(self):
         self.assertEqual(
             ' | extend foo = dateField + time(0.1:0:0.0)',

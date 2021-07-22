@@ -339,11 +339,11 @@ class _ProjectRenameQuery(Query):
 
 
 class _ProjectAwayQuery(Query):
-    _columns: Tuple[Union[BaseColumn, str], ...]
+    _columns: Tuple[BaseColumn, ...]
 
     def __init__(self, head: 'Query', columns: Tuple[Union[BaseColumn, str], ...]) -> None:
         super().__init__(head)
-        self._columns = columns
+        self._columns = tuple(c if isinstance(c, BaseColumn) else _AnyTypeColumn(c) for c in columns)
 
     def _compile(self) -> KQL:
         return KQL(f"project-away {', '.join(_to_kql(c) for c in self._columns)}")

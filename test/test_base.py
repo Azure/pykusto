@@ -113,6 +113,7 @@ class MockKustoResponseDataSet(KustoResponseDataSet):
     def _error_column(self):
         raise NotImplementedError()
 
+    # noinspection SpellCheckingInspection
     @property
     def _crid_column(self):
         raise NotImplementedError()

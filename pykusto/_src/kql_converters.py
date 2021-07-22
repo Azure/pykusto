@@ -33,7 +33,7 @@ def _dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
         return _build_dynamic(d)
 
 
-# Type hint should be Union[PythonTypes, BaseExpression], but currently this is impossible without intoducing a circular import.
+# Type hint should be Union[PythonTypes, BaseExpression], but currently this is impossible without introducing a circular import.
 # Once we drop support for Python 3.6, this enhancement should allow us to use a proper hint: https://www.python.org/dev/peps/pep-0563/
 def _build_dynamic(d: Any) -> KQL:
     if isinstance(d, Mapping):

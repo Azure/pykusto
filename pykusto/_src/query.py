@@ -11,7 +11,7 @@ from .expressions import BooleanType, ExpressionType, AggregationExpression, _As
     _AnyTypeColumn, BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType, OrderedType
 # These seem like redundant imports, but without them typeguard is confused
 # noinspection PyUnresolvedReferences
-from .expressions import _DatetimeExpression, _TimespanExpression, _NumberExpression, _StringExpression, _BooleanExpression
+from .expressions import _DatetimeExpression, _TimespanExpression, _NumberExpression, _StringExpression, _BooleanExpression  # noqa: F401
 from .functions import Functions as f
 from .kql_converters import KQL
 from .logger import _logger

@@ -1,5 +1,7 @@
 from datetime import timedelta, datetime
 
+import pytest
+
 from pykusto import Functions as f
 from pykusto import column_generator as col, Query
 # noinspection PyProtectedMember
@@ -454,6 +456,13 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | where stringField has_any ("field", "string")',
             Query().where(t.stringField.has_any(["field", "string"])).render()
+        )
+
+    @pytest.mark.skip(reason="Re-enable once this is resoled: https://github.com/agronholm/typeguard/issues/159")
+    def test_has_any_bad_argument(self):
+        self.assertRaises(
+            AssertionError("Compared array must be a list of tabular, scalar, or literal expressions"),
+            lambda: t.stringField.has_any(t.stringField2)
         )
 
     def test_column_generator(self):

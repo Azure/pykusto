@@ -1,6 +1,7 @@
 from os import linesep
 
 import pandas as pd
+import pytest
 
 from pykusto import PyKustoClient, Order, Nulls, JoinKind, Distribution, BagExpansion, column_generator as col, Functions as f, Query, JoinException
 # noinspection PyProtectedMember
@@ -265,6 +266,7 @@ class TestQuery(TestBase):
                 Query(t).take(2), kind=JoinKind.INNER).render
         )
 
+    @pytest.mark.skip(reason="Re-enable once this is resoled: https://github.com/agronholm/typeguard/issues/159")
     def test_join_wrong_arguments_type(self):
         col_name_str = "numField"
         # noinspection PyTypeChecker

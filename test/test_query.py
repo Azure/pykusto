@@ -449,8 +449,8 @@ class TestQuery(TestBase):
 
     def test_distinct(self):
         self.assertEqual(
-            "mock_table | distinct stringField, numField * 2",
-            Query(t).distinct(t.stringField, t.numField * 2).render(),
+            "mock_table | distinct stringField, numField",
+            Query(t).distinct(t.stringField, t.numField).render(),
         )
 
     def test_distinct_sample(self):
@@ -490,12 +490,16 @@ class TestQuery(TestBase):
         )
 
     def test_udf(self):
+        # The static type checker mistakenly thinks func is not of type "FunctionType"
+        # noinspection PyTypeChecker
         self.assertEqual(
             f"mock_table | evaluate python(typeof(*, StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, StateZone=_KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
+        # The static type checker mistakenly thinks func is not of type "FunctionType"
+        # noinspection PyTypeChecker
         self.assertEqual(
             f"mock_table | evaluate python(typeof(StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, extend=False, StateZone=_KustoType.STRING).render(),

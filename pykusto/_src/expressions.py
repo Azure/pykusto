@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Tuple, Mapping, Optional
+from typing import Any, List, Tuple, Mapping, Optional, Iterable
 from typing import Union
 
 from .keywords import _KUSTO_KEYWORDS
@@ -942,7 +942,7 @@ class _AssignmentFromColumnToColumn(_AssignmentToSingleColumn):
 
 
 class _AssignmentToMultipleColumns(_AssignmentBase):
-    def __init__(self, columns: Union[List['BaseColumn'], Tuple['BaseColumn']], expression: ArrayType) -> None:
+    def __init__(self, columns: Iterable['BaseColumn'], expression: ArrayType) -> None:
         super().__init__(KQL(f'({", ".join(c.kql for c in columns)})'), expression)
 
 

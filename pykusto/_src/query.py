@@ -263,7 +263,7 @@ class Query:
         else:
             return self._head.get_table()
 
-    def get_table_name(self) -> str:
+    def get_table_name(self) -> Optional[str]:
         if self._head is None:
             return self._table_name
         else:
@@ -352,7 +352,7 @@ class _ProjectAwayQuery(Query):
 class _DistinctQuery(Query):
     _columns: Tuple[BaseColumn, ...]
 
-    def __init__(self, head: 'Query', columns: Tuple[BaseColumn]) -> None:
+    def __init__(self, head: 'Query', columns: Tuple[BaseColumn, ...]) -> None:
         super().__init__(head)
         self._columns = columns
 

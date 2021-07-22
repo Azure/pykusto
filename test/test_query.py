@@ -1,3 +1,4 @@
+from datetime import timedelta
 from os import linesep
 
 import pandas as pd
@@ -323,8 +324,11 @@ class TestQuery(TestBase):
 
     def test_summarize_by(self):
         self.assertEqual(
-            "mock_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, 10)",
-            Query(t).summarize(f.count(t.stringField), my_count=f.count(t.stringField2)).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, 10)).render(),
+            "mock_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, time(0.0:0:10.0))",
+            Query(t).summarize(
+                f.count(t.stringField),
+                my_count=f.count(t.stringField2)
+            ).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, timedelta(seconds=10))).render(),
         )
 
     def test_summarize_by_expression(self):

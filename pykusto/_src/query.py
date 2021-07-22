@@ -7,7 +7,7 @@ from typing import Tuple, List, Union, Optional
 
 from .client import Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
-from .expressions import BooleanType, ExpressionType, AggregationExpression, StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, \
+from .expressions import BooleanType, ExpressionType, AggregationExpression, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, \
     _AnyTypeColumn, BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType, OrderedType
 # These seem like redundant imports, but without them typeguard is confused
 # noinspection PyUnresolvedReferences
@@ -155,7 +155,7 @@ class Query:
             assignments.append(_AssignmentFromColumnToColumn(_AnyTypeColumn(column_name), column))
         return _ProjectRenameQuery(self, assignments)
 
-    def project_away(self, *columns: StringType) -> '_ProjectAwayQuery':
+    def project_away(self, *columns: Union[BaseColumn, str]) -> '_ProjectAwayQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectawayoperator
         """
@@ -339,14 +339,14 @@ class _ProjectRenameQuery(Query):
 
 
 class _ProjectAwayQuery(Query):
-    _columns: Tuple[StringType, ...]
+    _columns: Tuple[Union[BaseColumn, str], ...]
 
-    def __init__(self, head: 'Query', columns: Tuple[StringType]) -> None:
+    def __init__(self, head: 'Query', columns: Tuple[Union[BaseColumn, str], ...]) -> None:
         super().__init__(head)
         self._columns = columns
 
     def _compile(self) -> KQL:
-        return KQL(f"project-away {', '.join(str(c) for c in self._columns)}")
+        return KQL(f"project-away {', '.join(_to_kql(c) for c in self._columns)}")
 
 
 class _DistinctQuery(Query):

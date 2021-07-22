@@ -477,10 +477,10 @@ class _CountQuery(Query):
 class _OrderQueryBase(Query):
     class OrderSpec:
         col: OrderedType
-        order: Order
-        nulls: Nulls
+        order: Optional[Order]
+        nulls: Optional[Nulls]
 
-        def __init__(self, col: OrderedType, order: Order, nulls: Nulls):
+        def __init__(self, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
             self.col = col
             self.order = order
             self.nulls = nulls
@@ -488,7 +488,7 @@ class _OrderQueryBase(Query):
     _query_name: str
     _order_specs: List[OrderSpec]
 
-    def __init__(self, head: Query, query_name: str, col: OrderedType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, query_name: str, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
         super(_OrderQueryBase, self).__init__(head)
         self._query_name = query_name
         self._order_specs = []
@@ -512,7 +512,7 @@ class _OrderQueryBase(Query):
 
 
 class _SortQuery(_OrderQueryBase):
-    def __init__(self, head: Query, col: OrderedType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
         super(_SortQuery, self).__init__(head, "sort", col, order, nulls)
 
 

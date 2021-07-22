@@ -628,11 +628,11 @@ class _SummarizeQuery(Query):
 
 class _MvExpandQuery(Query):
     _assignments: Tuple[_AssignmentBase]
-    _bag_expansion: BagExpansion
-    _with_item_index: BaseColumn
-    _limit: int
+    _bag_expansion: Optional[BagExpansion]
+    _with_item_index: Optional[BaseColumn]
+    _limit: Optional[int]
 
-    def __init__(self, head: Query, bag_expansion: BagExpansion, with_item_index: BaseColumn, limit: int, *assignments: _AssignmentBase):
+    def __init__(self, head: Query, bag_expansion: Optional[BagExpansion], with_item_index: Optional[BaseColumn], limit: Optional[int], *assignments: _AssignmentBase):
         super(_MvExpandQuery, self).__init__(head)
         self._assignments = assignments
         self._bag_expansion = bag_expansion
@@ -646,7 +646,7 @@ class _MvExpandQuery(Query):
         if self._with_item_index is not None:
             res += f"with_itemindex={self._with_item_index.kql} "
         res += ", ".join(a.to_kql() for a in self._assignments)
-        if self._limit:
+        if self._limit is not None:
             res += f" limit {self._limit}"
         return KQL(res)
 

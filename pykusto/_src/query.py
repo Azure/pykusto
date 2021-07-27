@@ -488,7 +488,7 @@ class _OrderQueryBase(Query):
     _order_specs: List[OrderSpec]
 
     def __init__(self, head: Query, query_name: str, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
-        super(_OrderQueryBase, self).__init__(head)
+        super().__init__(head)
         self._query_name = query_name
         self._order_specs = []
         self.then_by(col, order, nulls)

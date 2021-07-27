@@ -316,7 +316,6 @@ class Query:
 
 
 class _ProjectQuery(Query):
-    _columns: List[BaseColumn]
     _assignments: List[_AssignmentBase]
 
     def __init__(self, head: 'Query', assignments: List[_AssignmentBase]) -> None:

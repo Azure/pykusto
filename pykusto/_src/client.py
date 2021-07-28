@@ -131,7 +131,7 @@ class PyKustoClient(_ItemFetcher):
             self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
 
     def __repr__(self) -> str:
-        return f'PyKustoClient({self.__cluster_name})'
+        return f"PyKustoClient('{self.__cluster_name}')"
 
     def to_query_format(self) -> KQL:
         return KQL(f'cluster("{self.__cluster_name}")')
@@ -241,7 +241,7 @@ class Database(_ItemFetcher):
         self._refresh_if_needed()
 
     def __repr__(self) -> str:
-        return f'{self.__client}.Database({self.__name})'
+        return f"{self.__client}.Database('{self.__name}')"
 
     def to_query_format(self) -> KQL:
         return KQL(f'{self.__client.to_query_format()}.database("{self.__name}")')
@@ -336,7 +336,8 @@ class Table(_ItemFetcher):
         self._refresh_if_needed()
 
     def __repr__(self) -> str:
-        return f'{self.__database}.Table({", ".join(self.__tables)})'
+        table_string = ', '.join(f"'{table}'" for table in self.__tables)
+        return f'{self.__database}.Table({table_string})'
 
     def _new_item(self, name: str) -> BaseColumn:
         return _AnyTypeColumn(name)

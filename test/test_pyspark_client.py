@@ -132,6 +132,17 @@ class TestClient(TestBase):
             mock_spark_session.read.recorded_options,
         )
 
+    def test_repr(self):
+        mock_spark_session = MockSparkSession(pd.DataFrame())
+        mock_spark_context = MockSparkContext('MOCK_TOKEN')
+
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient._PySparkKustoClient__get_spark_session_and_context', lambda s: (mock_spark_session, mock_spark_context)):
+            device_auth_client = PySparkKustoClient('https://help.kusto.windows.net/', fetch_by_default=False)
+            linked_service_client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto', fetch_by_default=False)
+
+        self.assertEqual("PySparkKustoClient('https://help.kusto.windows.net/')", repr(device_auth_client))
+        self.assertEqual("PySparkKustoClient('https://help.kusto.windows.net/', 'MockLinkedKusto')", repr(linked_service_client))
+
     def test_linked_service_with_fetch(self):
         rows = (
             ['test_db', 'mock_table', 'stringField', 'System.String'],

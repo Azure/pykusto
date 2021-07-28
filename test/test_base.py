@@ -2,6 +2,8 @@ import json
 import logging
 import sys
 from concurrent.futures import Future
+from contextlib import contextmanager
+from io import StringIO
 from threading import Event
 from typing import Callable, Tuple, Any, List, Optional, Union, Type
 from unittest import TestCase
@@ -268,6 +270,17 @@ def nested_attribute_dict(attributes: str, value: Any) -> Any:
     for key in reversed(attributes.split('.')):
         result = type(key + 'Wrapper', tuple(), {key: result})()
     return result
+
+
+@contextmanager
+def captured_stdout():
+    new_out = StringIO()
+    old_out = sys.stdout
+    try:
+        sys.stdout = new_out
+        yield sys.stdout
+    finally:
+        sys.stdout = old_out
 
 
 test_logger = logging.getLogger("pykusto_test")

@@ -2,7 +2,7 @@ from itertools import chain
 from typing import Union, List, Pattern, Type
 
 from .enums import Kind
-from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, TimespanType, \
+from .expressions import NumberType, _NumberExpression, TimespanType, \
     _DatetimeExpression, _TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, _StringExpression, _BooleanExpression, \
     _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, _DynamicExpression, \
@@ -996,14 +996,14 @@ class Functions:
         return _DatetimeExpression(KQL(f'todatetime({_to_kql(expr)})'))
 
     @staticmethod
-    def to_decimal(expr: NumberType) -> _NumberExpression:
+    def to_decimal(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todecimalfunction
         """
         return _NumberExpression(KQL(f"todecimal({_to_kql(expr)})"))
 
     @staticmethod
-    def to_double(expr: NumberType) -> _NumberExpression:
+    def to_double(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
@@ -1031,14 +1031,14 @@ class Functions:
         return _StringExpression(KQL(f'tohex({_to_kql(expr1)})' if expr2 is None else 'tohex({to_kql(expr1)}, {to_kql(expr2)})'))
 
     @staticmethod
-    def to_int(expr: NumberType) -> _NumberExpression:
+    def to_int(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tointfunction
         """
         return _NumberExpression(KQL(f"toint({_to_kql(expr)})"))
 
     @staticmethod
-    def to_long(expr: NumberType) -> _NumberExpression:
+    def to_long(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolongfunction
         """
@@ -1052,7 +1052,7 @@ class Functions:
         return expr.lower()
 
     @staticmethod
-    def to_real(expr: NumberType) -> _NumberExpression:
+    def to_real(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
@@ -1190,7 +1190,7 @@ class Functions:
     #     return
 
     @staticmethod
-    def count(col: _AnyTypeColumn = None) -> _NumberAggregationExpression:
+    def count(col: BaseColumn = None) -> _NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/count-aggfunction
         """

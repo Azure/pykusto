@@ -1,6 +1,8 @@
+from datetime import timedelta
 from os import linesep
 
 import pandas as pd
+import pytest
 
 from pykusto import PyKustoClient, Order, Nulls, JoinKind, Distribution, BagExpansion, column_generator as col, Functions as f, Query, JoinException
 # noinspection PyProtectedMember
@@ -265,6 +267,7 @@ class TestQuery(TestBase):
                 Query(t).take(2), kind=JoinKind.INNER).render
         )
 
+    @pytest.mark.skip(reason="Re-enable once this is resoled: https://github.com/agronholm/typeguard/issues/159")
     def test_join_wrong_arguments_type(self):
         col_name_str = "numField"
         # noinspection PyTypeChecker
@@ -321,8 +324,11 @@ class TestQuery(TestBase):
 
     def test_summarize_by(self):
         self.assertEqual(
-            "mock_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, 10)",
-            Query(t).summarize(f.count(t.stringField), my_count=f.count(t.stringField2)).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, 10)).render(),
+            "mock_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, time(0.0:0:10.0))",
+            Query(t).summarize(
+                f.count(t.stringField),
+                my_count=f.count(t.stringField2)
+            ).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, timedelta(seconds=10))).render(),
         )
 
     def test_summarize_by_expression(self):
@@ -449,8 +455,8 @@ class TestQuery(TestBase):
 
     def test_distinct(self):
         self.assertEqual(
-            "mock_table | distinct stringField, numField * 2",
-            Query(t).distinct(t.stringField, t.numField * 2).render(),
+            "mock_table | distinct stringField, numField",
+            Query(t).distinct(t.stringField, t.numField).render(),
         )
 
     def test_distinct_sample(self):
@@ -490,12 +496,16 @@ class TestQuery(TestBase):
         )
 
     def test_udf(self):
+        # The static type checker mistakenly thinks func is not of type "FunctionType"
+        # noinspection PyTypeChecker
         self.assertEqual(
             f"mock_table | evaluate python(typeof(*, StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, StateZone=_KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
+        # The static type checker mistakenly thinks func is not of type "FunctionType"
+        # noinspection PyTypeChecker
         self.assertEqual(
             f"mock_table | evaluate python(typeof(StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, extend=False, StateZone=_KustoType.STRING).render(),

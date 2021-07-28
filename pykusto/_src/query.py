@@ -7,10 +7,11 @@ from typing import Tuple, List, Union, Optional
 
 from .client import Table, KustoResponse, RetryConfig
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
-from .expressions import BooleanType, ExpressionType, AggregationExpression, OrderedType, \
-    StringType, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, _AnyTypeColumn, \
-    BaseExpression, \
-    _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType
+from .expressions import BooleanType, ExpressionType, AggregationExpression, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, \
+    _AnyTypeColumn, BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType, OrderedType
+# These seem like redundant imports, but without them typeguard is confused
+# noinspection PyUnresolvedReferences
+from .expressions import _DatetimeExpression, _TimespanExpression, _NumberExpression, _StringExpression, _BooleanExpression  # noqa: F401
 from .functions import Functions as f
 from .kql_converters import KQL
 from .logger import _logger
@@ -117,7 +118,7 @@ class Query:
         """
         return self.sort_by(col, order, nulls)
 
-    def top(self, num_rows: int, col: _AnyTypeColumn, order: Order = None, nulls: Nulls = None) -> '_TopQuery':
+    def top(self, num_rows: int, col: OrderedType, order: Order = None, nulls: Nulls = None) -> '_TopQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/topoperator
         """
@@ -145,7 +146,7 @@ class Query:
         """
         return _ProjectQuery(self, self._extract_assignments(*args, **kwargs))
 
-    def project_rename(self, *args: _AssignmentFromColumnToColumn, **kwargs: _AnyTypeColumn) -> '_ProjectRenameQuery':
+    def project_rename(self, *args: _AssignmentFromColumnToColumn, **kwargs: BaseColumn) -> '_ProjectRenameQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectrenameoperator
         """
@@ -154,7 +155,7 @@ class Query:
             assignments.append(_AssignmentFromColumnToColumn(_AnyTypeColumn(column_name), column))
         return _ProjectRenameQuery(self, assignments)
 
-    def project_away(self, *columns: StringType) -> '_ProjectAwayQuery':
+    def project_away(self, *columns: Union[BaseColumn, str]) -> '_ProjectAwayQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/projectawayoperator
         """
@@ -228,7 +229,7 @@ class Query:
             distribution=distribution
         )
 
-    def bag_unpack(self, col: _AnyTypeColumn, prefix: str = None) -> '_EvaluateQuery':
+    def bag_unpack(self, col: BaseColumn, prefix: str = None) -> '_EvaluateQuery':
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/bag-unpackplugin
         """
@@ -256,13 +257,13 @@ class Query:
         else:
             return KQL(f"{self._head._compile_all(use_full_table_name)} | {self._compile()}")
 
-    def get_table(self) -> Table:
+    def get_table(self) -> Optional[Table]:
         if self._head is None:
             return self._table
         else:
             return self._head.get_table()
 
-    def get_table_name(self) -> str:
+    def get_table_name(self) -> Optional[str]:
         if self._head is None:
             return self._table_name
         else:
@@ -315,7 +316,6 @@ class Query:
 
 
 class _ProjectQuery(Query):
-    _columns: List[_AnyTypeColumn]
     _assignments: List[_AssignmentBase]
 
     def __init__(self, head: 'Query', assignments: List[_AssignmentBase]) -> None:
@@ -338,20 +338,20 @@ class _ProjectRenameQuery(Query):
 
 
 class _ProjectAwayQuery(Query):
-    _columns: Tuple[StringType, ...]
+    _columns: Tuple[BaseColumn, ...]
 
-    def __init__(self, head: 'Query', columns: Tuple[StringType]) -> None:
+    def __init__(self, head: 'Query', columns: Tuple[Union[BaseColumn, str], ...]) -> None:
         super().__init__(head)
-        self._columns = columns
+        self._columns = tuple(c if isinstance(c, BaseColumn) else _AnyTypeColumn(c) for c in columns)
 
     def _compile(self) -> KQL:
-        return KQL(f"project-away {', '.join(str(c) for c in self._columns)}")
+        return KQL(f"project-away {', '.join(_to_kql(c) for c in self._columns)}")
 
 
 class _DistinctQuery(Query):
     _columns: Tuple[BaseColumn, ...]
 
-    def __init__(self, head: 'Query', columns: Tuple[BaseColumn]) -> None:
+    def __init__(self, head: 'Query', columns: Tuple[BaseColumn, ...]) -> None:
         super().__init__(head)
         self._columns = columns
 
@@ -476,10 +476,10 @@ class _CountQuery(Query):
 class _OrderQueryBase(Query):
     class OrderSpec:
         col: OrderedType
-        order: Order
-        nulls: Nulls
+        order: Optional[Order]
+        nulls: Optional[Nulls]
 
-        def __init__(self, col: OrderedType, order: Order, nulls: Nulls):
+        def __init__(self, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
             self.col = col
             self.order = order
             self.nulls = nulls
@@ -487,8 +487,8 @@ class _OrderQueryBase(Query):
     _query_name: str
     _order_specs: List[OrderSpec]
 
-    def __init__(self, head: Query, query_name: str, col: OrderedType, order: Order, nulls: Nulls):
-        super(_OrderQueryBase, self).__init__(head)
+    def __init__(self, head: Query, query_name: str, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
+        super().__init__(head)
         self._query_name = query_name
         self._order_specs = []
         self.then_by(col, order, nulls)
@@ -511,7 +511,7 @@ class _OrderQueryBase(Query):
 
 
 class _SortQuery(_OrderQueryBase):
-    def __init__(self, head: Query, col: OrderedType, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, col: OrderedType, order: Optional[Order], nulls: Optional[Nulls]):
         super(_SortQuery, self).__init__(head, "sort", col, order, nulls)
 
 
@@ -519,7 +519,7 @@ class _TopQuery(Query):
     _num_rows: int
     _order_spec: _OrderQueryBase.OrderSpec
 
-    def __init__(self, head: Query, num_rows: int, col: _AnyTypeColumn, order: Order, nulls: Nulls):
+    def __init__(self, head: Query, num_rows: int, col: OrderedType, order: Order, nulls: Nulls):
         super(_TopQuery, self).__init__(head)
         self._num_rows = num_rows
         self._order_spec = _OrderQueryBase.OrderSpec(col, order, nulls)
@@ -538,7 +538,7 @@ class _JoinQuery(Query):
     _kind: JoinKind
     _on_attributes: Tuple[Union[Tuple[BaseColumn], Tuple[BaseColumn, BaseColumn]], ...]
 
-    def __init__(self, head: Query, joined_query: Query, kind: JoinKind,
+    def __init__(self, head: Query, joined_query: Query, kind: Optional[JoinKind],
                  on_attributes: Tuple[Tuple[BaseColumn, ...], ...] = tuple()):
         super(_JoinQuery, self).__init__(head)
         self._joined_query = joined_query
@@ -556,7 +556,8 @@ class _JoinQuery(Query):
         elif isinstance(col, tuple) and len(col) == 2 and isinstance(col[0], BaseColumn) and isinstance(col[1], BaseColumn):
             return self._inner_on_with_table(*col)
         else:
-            raise JoinException(
+            # Re-apply coverage to this line once the corresponding test is re-enabled, after this is resolved: https://github.com/agronholm/typeguard/issues/159
+            raise JoinException(  # pragma: no cover
                 "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
                 f"tables column names. However, the join argument provided is {col} of type {type(col)}"
             )
@@ -570,7 +571,7 @@ class _JoinQuery(Query):
         return self
 
     @staticmethod
-    def _compile_on_attribute(attribute: Tuple[BaseColumn]):
+    def _compile_on_attribute(attribute: Union[Tuple[BaseColumn], Tuple[BaseColumn, BaseColumn]]):
         assert len(attribute) in (1, 2)
         if len(attribute) == 1:
             return attribute[0].kql
@@ -596,7 +597,7 @@ class _JoinQuery(Query):
 
 class _SummarizeQuery(Query):
     _assignments: List[_AssignmentFromAggregationToColumn]
-    _by_columns: List[Union[_AnyTypeColumn, BaseExpression]]
+    _by_columns: List[Union[BaseColumn, BaseExpression]]
     _by_assignments: List[_AssignmentToSingleColumn]
 
     def __init__(self, head: Query,
@@ -606,10 +607,10 @@ class _SummarizeQuery(Query):
         self._by_columns = []
         self._by_assignments = []
 
-    def by(self, *args: Union[_AssignmentToSingleColumn, _AnyTypeColumn, BaseExpression],
+    def by(self, *args: Union[_AssignmentToSingleColumn, BaseColumn, BaseExpression],
            **kwargs: BaseExpression):
         for arg in args:
-            if isinstance(arg, _AnyTypeColumn) or isinstance(arg, BaseExpression):
+            if isinstance(arg, BaseColumn) or isinstance(arg, BaseExpression):
                 self._by_columns.append(arg)
             else:
                 assert isinstance(arg, _AssignmentToSingleColumn), "Invalid assignment"
@@ -627,11 +628,11 @@ class _SummarizeQuery(Query):
 
 class _MvExpandQuery(Query):
     _assignments: Tuple[_AssignmentBase]
-    _bag_expansion: BagExpansion
-    _with_item_index: BaseColumn
-    _limit: int
+    _bag_expansion: Optional[BagExpansion]
+    _with_item_index: Optional[BaseColumn]
+    _limit: Optional[int]
 
-    def __init__(self, head: Query, bag_expansion: BagExpansion, with_item_index: BaseColumn, limit: int, *assignments: _AssignmentBase):
+    def __init__(self, head: Query, bag_expansion: Optional[BagExpansion], with_item_index: Optional[BaseColumn], limit: Optional[int], *assignments: _AssignmentBase):
         super(_MvExpandQuery, self).__init__(head)
         self._assignments = assignments
         self._bag_expansion = bag_expansion
@@ -645,7 +646,7 @@ class _MvExpandQuery(Query):
         if self._with_item_index is not None:
             res += f"with_itemindex={self._with_item_index.kql} "
         res += ", ".join(a.to_kql() for a in self._assignments)
-        if self._limit:
+        if self._limit is not None:
             res += f" limit {self._limit}"
         return KQL(res)
 

@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta
 from itertools import chain
 from numbers import Number
-from typing import NewType, Union, Mapping, List, Tuple
+from typing import NewType, Union, Mapping, List, Tuple, Any
 
 from .type_utils import _kql_converter, _KustoType, _NUMBER_TYPES
 
@@ -33,7 +33,9 @@ def _dynamic_to_kql(d: Union[Mapping, List, Tuple]) -> KQL:
         return _build_dynamic(d)
 
 
-def _build_dynamic(d: Union[Mapping, List, Tuple]) -> KQL:
+# Type hint should be Union[PythonTypes, BaseExpression], but currently this is impossible without introducing a circular import.
+# Once we drop support for Python 3.6, this enhancement should allow us to use a proper hint: https://www.python.org/dev/peps/pep-0563/
+def _build_dynamic(d: Any) -> KQL:
     if isinstance(d, Mapping):
         return KQL(f"pack({', '.join(map(_build_dynamic, chain(*d.items())))})")
     if isinstance(d, (List, Tuple)):

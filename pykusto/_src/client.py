@@ -63,7 +63,7 @@ class KustoResponse:
     def __init__(self, response: KustoResponseDataSet):
         self.__response = response
 
-    def get_rows(self) -> List[Iterable]:
+    def get_rows(self) -> Iterable[Iterable]:
         return self.__response.primary_results[0].rows
 
     @staticmethod
@@ -215,7 +215,7 @@ class Database(_ItemFetcher):
     __name: str
 
     def __init__(
-            self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn]] = None,
+            self, client: PyKustoClient, name: str, tables: Dict[str, Tuple[BaseColumn, ...]] = None,
             fetch_by_default: bool = True
     ) -> None:
         """

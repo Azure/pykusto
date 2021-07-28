@@ -51,7 +51,7 @@ class MockDeviceAuthentication:
 class MockSparkContext:
     def __init__(self, mock_token: str):
         self.mock_token = mock_token
-        self._jvm = nested_attribute_dict('com.microsoft.kusto.spark.authentication.DeviceAuthentication', lambda s1, s2: MockDeviceAuthentication(self.mock_token))
+        self._jvm = nested_attribute_dict('com.microsoft.kusto.spark.authentication.DeviceAuthentication', lambda s, n, c: MockDeviceAuthentication(self.mock_token))
 
 
 class TestClient(TestBase):

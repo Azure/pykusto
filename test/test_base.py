@@ -13,7 +13,7 @@ from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
 
 # noinspection PyProtectedMember
-from pykusto._src.client import Table
+from pykusto._src.client import Table, Database, PyKustoClient
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
 # noinspection PyProtectedMember
@@ -29,7 +29,7 @@ else:
 # Naming this variable "test_table" triggers the following bug: https://github.com/pytest-dev/pytest/issues/7378
 # noinspection PyTypeChecker
 mock_table = Table(
-    None, "mock_table",
+    Database(PyKustoClient('mock_cluster', fetch_by_default=False), 'mock_database', fetch_by_default=False), "mock_table",
     (
         _NumberColumn('numField'), _NumberColumn('numField2'), _NumberColumn('numField3'), _NumberColumn('numField4'), _NumberColumn('numField5'), _NumberColumn('numField6'),
         _BooleanColumn('boolField'), _ArrayColumn('arrayField'), _ArrayColumn('arrayField2'), _ArrayColumn('arrayField3'), _MappingColumn('mapField'), _StringColumn('stringField'),
@@ -100,16 +100,36 @@ class MockKustoResultTable(KustoResultTable):
     def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
         self.kusto_result_rows = tuple(KustoResultRow(columns, row) for row in rows)
         self.raw_rows = self.kusto_result_rows
-        self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''}) for col in columns)
+        self.columns = tuple(type('Column', (object,), {'column_name': col, 'column_type': ''})() for col in columns)
+
+
+class MockKustoResponseDataSet(KustoResponseDataSet):
+    # noinspection PyMissingConstructor
+    def __init__(self, rows: Tuple[Any, ...], columns: Tuple[str, ...]):
+        self.rows = rows
+        self.columns = columns
+
+    @property
+    def _error_column(self):
+        raise NotImplementedError()
+
+    # noinspection SpellCheckingInspection
+    @property
+    def _crid_column(self):
+        raise NotImplementedError()
+
+    @property
+    def _status_column(self):
+        raise NotImplementedError()
+
+    @property
+    def primary_results(self) -> List[KustoResultTable]:
+        return [MockKustoResultTable(self.rows, self.columns)]
 
 
 # noinspection PyTypeChecker
 def mock_response(rows: Tuple[Any, ...], columns: Tuple[str, ...] = tuple()) -> Callable[[], KustoResponseDataSet]:
-    return lambda: type(
-        'MockKustoResponseDataSet',
-        (KustoResponseDataSet,),
-        {'primary_results': (MockKustoResultTable(rows, columns),)}
-    )
+    return lambda: MockKustoResponseDataSet(rows, columns)
 
 
 def mock_columns_response(columns: List[Tuple[str, _KustoType]] = tuple()) -> Callable[[], KustoResponseDataSet]:
@@ -246,7 +266,7 @@ def nested_attribute_dict(attributes: str, value: Any) -> Any:
     """
     result = value
     for key in reversed(attributes.split('.')):
-        result = type(key + 'Wrapper', tuple(), {key: result})
+        result = type(key + 'Wrapper', tuple(), {key: result})()
     return result
 
 

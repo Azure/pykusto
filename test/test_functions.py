@@ -732,16 +732,12 @@ class TestFunction(TestBase):
             Query().summarize(f.avg(t.numField)).by(f.bin_at(t.numField2, 0.1, 1)).render()
         )
         self.assertEqual(
-            " | summarize avg(numField) by bin_at(dateField, time(0.12:0:0.0), time(0.2:24:0.0))",
-            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.dateField, timedelta(0.5), timedelta(0.1))).render()
-        )
-        self.assertEqual(
             " | summarize avg(numField) by bin_at(dateField, time(0.12:0:0.0), datetime(2019-07-08 00:00:00.000000))",
             Query().summarize(f.avg(t.numField)).by(f.bin_at(t.dateField, timedelta(0.5), datetime(2019, 7, 8))).render()
         )
         self.assertEqual(
-            " | summarize avg(numField) by bin_at(timespanField, 0.1, 1)",
-            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.timespanField, 0.1, 1)).render()
+            " | summarize avg(numField) by bin_at(timespanField, time(0.12:0:0.0), time(1.0:0:0.0))",
+            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.timespanField, timedelta(0.5), timedelta(days=1))).render()
         )
 
     def test_bin_auto(self):

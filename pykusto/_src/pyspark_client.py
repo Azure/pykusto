@@ -57,6 +57,13 @@ class PySparkKustoClient(PyKustoClient):
             self.__format = 'com.microsoft.kusto.spark.synapse.datasource'
             self.option('spark.synapse.linkedService', self.__linked_service)
 
+    def __repr__(self) -> str:
+        items = [self.__cluster_name]
+        if self.__linked_service is not None:
+            items.append(self.__linked_service)
+        item_string = ', '.join(f"'{item}'" for item in items)
+        return f"PySparkKustoClient({item_string})"
+
     def refresh_device_auth(self) -> None:
         """
         Run device authentication sequence, called in the client constructor. Call this method again if you need to re-authenticate.

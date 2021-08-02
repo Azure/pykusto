@@ -6,7 +6,6 @@ import pandas as pd
 from azure.kusto.data import ClientRequestProperties, KustoClient
 
 from pykusto import PyKustoClient, NO_RETRIES, KustoResponse, KQL, RetryConfig
-from .logger import _logger
 
 
 class DataframeBasedKustoResponse(KustoResponse):
@@ -30,6 +29,7 @@ class PySparkKustoClient(PyKustoClient):
     """
     Handle to a Kusto cluster, to be used inside a PySpark notebook.
     """
+
     def __init__(self, cluster: str, linked_service: str = None, fetch_by_default: bool = True) -> None:
         """
         Create a new handle to a Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
@@ -71,7 +71,7 @@ class PySparkKustoClient(PyKustoClient):
         assert self.__linked_service is None, "Device authentication can be used only when a linked_service was not provided to the client constructor"
         # noinspection PyProtectedMember
         device_auth = self.__spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
-        _logger.info(device_auth.getDeviceCodeMessage())
+        print(device_auth.getDeviceCodeMessage())  # Logging is better than printing, but the PySpark notebook does not display logs by default
         self.option('accessToken', device_auth.acquireToken)
 
     # noinspection PyUnresolvedReferences,PyPackageRequirements

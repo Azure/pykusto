@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from pykusto import Query, PySparkKustoClient
+from pykusto import Query, PySparkKustoClient, ClientRequestProperties
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _StringColumn, _NumberColumn
 # noinspection PyProtectedMember
@@ -70,6 +70,34 @@ class TestClient(TestBase):
         self.assertEqual(
             {
                 'spark.synapse.linkedService': 'MockLinkedKusto',
+                'kustoDatabase': 'test_db',
+                'kustoQuery': 'mock_table | take 5',
+            },
+            mock_spark_session.read.recorded_options,
+        )
+
+    def test_linked_service_with_request_properties(self):
+        rows = (['foo', 10], ['bar', 20], ['baz', 30])
+        columns = ('stringField', 'numField')
+        expected_df = pd.DataFrame(rows, columns=columns)
+        mock_spark_session = MockSparkSession(expected_df)
+
+        with patch('pykusto._src.pyspark_client.PySparkKustoClient._PySparkKustoClient__get_spark_session_and_context', lambda s: (mock_spark_session, None)):
+            client = PySparkKustoClient('https://help.kusto.windows.net/', linked_service='MockLinkedKusto', fetch_by_default=False)
+
+        properties = ClientRequestProperties()
+        properties.set_option(ClientRequestProperties.results_defer_partial_query_failures_option_name, False)
+        properties.set_parameter('xIntValue', 11)
+
+        table = client['test_db']['mock_table']
+        actual_df = Query(table).take(5).to_dataframe(properties=properties)
+        self.assertTrue(expected_df.equals(actual_df))
+
+        self.assertEqual('com.microsoft.kusto.spark.synapse.datasource', mock_spark_session.read.recorded_format)
+        self.assertEqual(
+            {
+                'spark.synapse.linkedService': 'MockLinkedKusto',
+                'clientRequestPropertiesJson': '{"Options": {"deferpartialqueryfailures": false}, "Parameters": {"xIntValue": 11}}',
                 'kustoDatabase': 'test_db',
                 'kustoQuery': 'mock_table | take 5',
             },

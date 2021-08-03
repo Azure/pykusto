@@ -294,8 +294,8 @@ class Query:
         _logger.debug("Running query: " + rendered_query)
         return table.execute(rendered_query, properties, retry_config)
 
-    def to_dataframe(self, table: Table = None, retry_config: RetryConfig = None):
-        return self.execute(table, retry_config).to_dataframe()
+    def to_dataframe(self, table: Table = None, properties: ClientRequestProperties = None, retry_config: RetryConfig = None):
+        return self.execute(table, properties, retry_config).to_dataframe()
 
     @staticmethod
     def _extract_assignments(*args: Union[_AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> List[_AssignmentBase]:

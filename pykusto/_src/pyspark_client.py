@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 from azure.kusto.data import ClientRequestProperties, KustoClient
 
-from pykusto import PyKustoClient, NO_RETRIES, KustoResponse, KQL, RetryConfig
+from pykusto import PyKustoClient, NO_RETRIES, KQL, RetryConfig, KustoResponseBase
 
 
-class DataframeBasedKustoResponse(KustoResponse):
+class DataframeBasedKustoResponse(KustoResponseBase):
     """
     In PySpark Kusto results are returned as dataframes. We wrap the dataframe with this object for compatibility with :class:`PyKustoClient`.
     """

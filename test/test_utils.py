@@ -1,4 +1,5 @@
 # noinspection PyProtectedMember
+from pykusto import ClientRequestProperties
 from pykusto._src.expressions import _to_kql
 # noinspection PyProtectedMember
 from pykusto._src.kql_converters import KQL
@@ -84,4 +85,20 @@ class TestUtils(TestBase):
         self.assertRaises(
             TypeError("Test annotation: type already registered: string"),
             lambda: test_annotation(_KustoType.STRING)(str_annotated_2)
+        )
+
+    def test_request_properties(self):
+        properties = ClientRequestProperties()
+
+        properties.set_option(ClientRequestProperties.results_defer_partial_query_failures_option_name, False)
+        self.assertTrue(properties.has_option(ClientRequestProperties.results_defer_partial_query_failures_option_name))
+        self.assertEqual(properties.get_option(ClientRequestProperties.results_defer_partial_query_failures_option_name, None), False)
+
+        properties.set_parameter('xIntValue', 11)
+        self.assertTrue(properties.has_parameter('xIntValue'))
+        self.assertEqual(properties.get_parameter('xIntValue', None), 11)
+
+        self.assertRaises(
+            ValueError("Value should not be empty"),
+            lambda: properties.set_option(' ', True)
         )

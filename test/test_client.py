@@ -171,14 +171,8 @@ class TestClient(TestBase):
 
     def test_request_properties(self):
         properties = ClientRequestProperties()
-
         properties.set_option(ClientRequestProperties.results_defer_partial_query_failures_option_name, False)
-        self.assertTrue(properties.has_option(ClientRequestProperties.results_defer_partial_query_failures_option_name))
-        self.assertEqual(properties.get_option(ClientRequestProperties.results_defer_partial_query_failures_option_name, None), False)
-
         properties.set_parameter('xIntValue', 11)
-        self.assertTrue(properties.has_parameter('xIntValue'))
-        self.assertEqual(properties.get_parameter('xIntValue', None), 11)
 
         mock_kusto_client = MockKustoClient()
         table = PyKustoClient(mock_kusto_client)['test_db']['mock_table']

@@ -1,3 +1,4 @@
+import json
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from fnmatch import fnmatch
@@ -78,6 +79,60 @@ class KustoResponseBase(metaclass=ABCMeta):
         raise NotImplementedError()
 
 
+# Copied from https://github.com/Azure/azure-kusto-python/blob/master/azure-kusto-data/azure/kusto/data/client.py
+# We are copying this class because we don't won't to force a dependency on azure-kusto-data unless it's actually needed (e.g. it's not needed for PySpark usage).
+class ClientRequestProperties:
+    """This class is a POD used by client making requests to describe specific needs from the service executing the requests.
+    For more information please look at: https://docs.microsoft.com/en-us/azure/kusto/api/netfx/request-properties
+    """
+
+    results_defer_partial_query_failures_option_name = "deferpartialqueryfailures"
+    request_timeout_option_name = "servertimeout"
+    no_request_timeout_option_name = "norequesttimeout"
+
+    def __init__(self) -> None:
+        self._options = {}
+        self._parameters = {}
+        self.client_request_id = None
+        self.application = None
+        self.user = None
+
+    @staticmethod
+    def _assert_value_is_valid(value: str):
+        if not value or not value.strip():
+            raise ValueError("Value should not be empty")
+
+    def set_parameter(self, name: str, value: str):
+        """Sets a parameter's value"""
+        self._assert_value_is_valid(name)
+        self._parameters[name] = value
+
+    def has_parameter(self, name) -> bool:
+        """Checks if a parameter is specified."""
+        return name in self._parameters
+
+    def get_parameter(self, name, default_value) -> str:
+        """Gets a parameter's value."""
+        return self._parameters.get(name, default_value)
+
+    def set_option(self, name, value) -> None:
+        """Sets an option's value"""
+        self._assert_value_is_valid(name)
+        self._options[name] = value
+
+    def has_option(self, name) -> bool:
+        """Checks if an option is specified."""
+        return name in self._options
+
+    def get_option(self, name, default_value) -> str:
+        """Gets an option's value."""
+        return self._options.get(name, default_value)
+
+    def to_json(self) -> str:
+        """Safe serialization to a JSON string."""
+        return json.dumps({"Options": self._options, "Parameters": self._parameters}, default=str)
+
+
 class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
     """
     Handle to a Kusto cluster.
@@ -92,13 +147,12 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(
-            self, cluster_name: str, fetch_by_default: bool = True, use_global_cache: bool = False, retry_config: RetryConfig = NO_RETRIES,
+            self, cluster_name: str, fetch_by_default: bool = True, retry_config: RetryConfig = NO_RETRIES,
     ) -> None:
         """
         Create a new handle to a Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
         :param cluster_name: A cluster URL.
-        :param use_global_cache: If true, share a global client cache between all instances. Provided for convenience during development, not recommended for general use.
         :param retry_config: An instance of RetryConfig which instructs the client how to perform retries in case of failure. The default is NO_RETRIES.
         """
         super().__init__(None, fetch_by_default)
@@ -120,17 +174,17 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
     def get_database(self, name: str) -> 'Database':
         return self[name]
 
-    def execute(self, database: str, query: KQL, retry_config: RetryConfig = None) -> KustoResponseBase:
+    def execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
         # The first execution usually triggers an authentication flow. We block all subsequent executions to prevent redundant authentications.
         # Remove the below block once this is resolved: https://github.com/Azure/azure-kusto-python/issues/208
         with self.__first_execution_lock:
             if self.__first_execution:
                 self.__first_execution = False
-                return self._internal_execute(database, query, retry_config)
-        return self._internal_execute(database, query, retry_config)
+                return self._internal_execute(database, query, properties, retry_config)
+        return self._internal_execute(database, query, properties, retry_config)
 
     @abstractmethod
-    def _internal_execute(self, database: str, query: KQL, retry_config: RetryConfig = None) -> KustoResponseBase:
+    def _internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
         raise NotImplementedError()
 
     def get_databases_names(self) -> Generator[str, None, None]:
@@ -214,8 +268,8 @@ class Database(_ItemFetcher):
         # Kusto table
         return Table(self, name, fetch_by_default=False)
 
-    def execute(self, query: KQL, retry_config: RetryConfig = None) -> KustoResponseBase:
-        return self.__client.execute(self.__name, query, retry_config)
+    def execute(self, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
+        return self.__client.execute(self.__name, query, properties, retry_config)
 
     def get_table_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()
@@ -334,8 +388,8 @@ class Table(_ItemFetcher):
             return KQL('union ' + ', '.join(table_names))
         return KQL(table_names[0])
 
-    def execute(self, query: KQL, retry_config: RetryConfig = None) -> KustoResponseBase:
-        return self.__database.execute(query, retry_config=retry_config)
+    def execute(self, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
+        return self.__database.execute(query, properties, retry_config=retry_config)
 
     def get_columns_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()

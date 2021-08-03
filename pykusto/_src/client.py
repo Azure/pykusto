@@ -60,7 +60,7 @@ class PyKustoClient(PyKustoClientBase):
             cluster_name = client_or_cluster
             self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
         self.__auth_method = auth_method
-        super().__init__(cluster_name, fetch_by_default, use_global_cache, retry_config.retry_on(KustoServiceError))
+        super().__init__(cluster_name, fetch_by_default, retry_config.retry_on(KustoServiceError))
 
     def __repr__(self) -> str:
         return f"PyKustoClient('{self.__cluster_name}')"

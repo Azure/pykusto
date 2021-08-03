@@ -167,6 +167,9 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
     def __repr__(self) -> str:
         raise NotImplementedError()
 
+    def to_query_format(self) -> KQL:
+        return KQL(f'cluster("{self._cluster_name}")')
+
     def _new_item(self, name: str) -> 'Database':
         # "fetch_by_default" set to false because often a database generated this way is not represented by an actual
         # Kusto database
@@ -389,8 +392,8 @@ class Table(_ItemFetcher):
             return KQL('union ' + ', '.join(table_names))
         return KQL(table_names[0])
 
-    def execute(self, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
-        return self.__database.execute(query, properties, retry_config=retry_config)
+    def execute(self, query: KQL, retry_config: RetryConfig = None) -> KustoResponseBase:
+        return self.__database.execute(query, retry_config=retry_config)
 
     def get_columns_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()

@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from fnmatch import fnmatch
 from threading import Lock
-from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable, Iterable, Any
+from typing import Union, List, Tuple, Dict, Generator, Optional, Set, Type, Callable, Iterable
 
 import pandas as pd
 from redo import retrier
@@ -17,7 +17,7 @@ from .type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
 class RetryConfig:
     def __init__(
             self, attempts: int = 5, sleep_time: float = 60, max_sleep_time: float = 300, sleep_scale: float = 1.5, jitter: float = 1,
-            retry_exceptions: Tuple[Type[Exception], ...] = tuple(),  # TODO: Init to KustoServiceError in PyKustoClient
+            retry_exceptions: Tuple[Type[Exception], ...] = tuple(),
     ) -> None:
         """
         All time parameters are in seconds
@@ -48,6 +48,9 @@ class RetryConfig:
                 else:
                     raise
             attempt += 1
+
+    def retry_on(self, *additional_exceptions: Type[Exception]) -> 'RetryConfig':
+        return RetryConfig(self.attempts, self.sleep_time, self.max_sleep_time, self.sleep_scale, self.jitter, self.retry_exceptions + additional_exceptions)
 
 
 NO_RETRIES = RetryConfig(1)
@@ -82,6 +85,11 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
     their types.
     """
 
+    __cluster_name: str
+    __first_execution: bool
+    __first_execution_lock: Lock
+    __retry_config: RetryConfig
+
     @abstractmethod
     def __init__(
             self, cluster_name: str, fetch_by_default: bool = True, use_global_cache: bool = False, retry_config: RetryConfig = NO_RETRIES,
@@ -94,15 +102,11 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
         :param retry_config: An instance of RetryConfig which instructs the client how to perform retries in case of failure. The default is NO_RETRIES.
         """
         super().__init__(None, fetch_by_default)
+        self.__cluster_name = cluster_name
         self.__first_execution = True
         self.__first_execution_lock = Lock()
         self.__retry_config = retry_config
-        self._internal_init(cluster_name, use_global_cache)
         self._refresh_if_needed()
-
-    @abstractmethod
-    def _internal_init(self, cluster_object: Any, use_global_cache: bool):
-        raise NotImplementedError()
 
     @abstractmethod
     def __repr__(self) -> str:

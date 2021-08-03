@@ -1,10 +1,15 @@
-from typing import Iterable, Generator, Tuple
+from multiprocessing import Lock
+from typing import Iterable, Callable, Dict, Union, Optional
+from urllib.parse import urlparse
 
 import pandas as pd
+from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
+from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
 
-from pykusto._src.client_base import KustoResponseBase, PyKustoClientBase
+from pykusto import KQL
+from pykusto._src.client_base import KustoResponseBase, PyKustoClientBase, RetryConfig, NO_RETRIES
 
 
 class KustoResponse(KustoResponseBase):
@@ -15,18 +20,6 @@ class KustoResponse(KustoResponseBase):
 
     def get_rows(self) -> Iterable[Iterable]:
         return self.__response.primary_results[0].rows
-
-    @staticmethod
-    def is_row_valid(row: Iterable) -> bool:
-        for field in row:
-            if field is None or (isinstance(field, str) and len(field.strip()) == 0):
-                return False
-        return True
-
-    def get_valid_rows(self) -> Generator[Tuple, None, None]:
-        for row in self.get_rows():
-            if self.is_row_valid(row):
-                yield tuple(row)
 
     def to_dataframe(self) -> pd.DataFrame:
         return dataframe_from_result_table(self.__response.primary_results[0])
@@ -39,10 +32,6 @@ class PyKustoClient(PyKustoClientBase):
     their types.
     """
     __client: KustoClient
-    __cluster_name: str
-    __first_execution: bool
-    __first_execution_lock: Lock
-    __retry_config: RetryConfig
     __auth_method: Callable[[str], KustoConnectionStringBuilder]
 
     __global_client_cache: Dict[str, KustoClient] = {}
@@ -62,23 +51,16 @@ class PyKustoClient(PyKustoClientBase):
         :param auth_method: A method that returns a KustoConnectionStringBuilder for authentication. The default is 'KustoConnectionStringBuilder.with_az_cli_authentication'.
         A popular alternative is 'KustoConnectionStringBuilder.with_aad_device_authentication'
         """
-        super().__init__(None, fetch_by_default)
-        self.__first_execution = True
-        self.__first_execution_lock = Lock()
-        self.__retry_config = retry_config
-        self.__auth_method = auth_method
-        self._internal_init(client_or_cluster, use_global_cache)
-        self._refresh_if_needed()
-
-    def _internal_init(self, client_or_cluster: Union[str, KustoClient], use_global_cache: bool):
         if isinstance(client_or_cluster, KustoClient):
             self.__client = client_or_cluster
             # noinspection PyProtectedMember
-            self.__cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
+            cluster_name = urlparse(client_or_cluster._query_endpoint).netloc
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
-            self.__cluster_name = client_or_cluster
+            cluster_name = client_or_cluster
             self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
+        self.__auth_method = auth_method
+        super().__init__(cluster_name, fetch_by_default, use_global_cache, retry_config.retry_on(KustoServiceError))
 
     def __repr__(self) -> str:
         return f"PyKustoClient('{self.__cluster_name}')"

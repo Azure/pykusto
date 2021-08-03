@@ -55,7 +55,7 @@ class _ItemFetcher(metaclass=ABCMeta):
 
     @abstractmethod
     def _new_item(self, name: str) -> Any:
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     def __getattr__(self, name: str) -> Any:
         """
@@ -144,7 +144,7 @@ class _ItemFetcher(metaclass=ABCMeta):
 
     @abstractmethod
     def _internal_get_items(self) -> Dict[str, Any]:
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     def __fetch_items(self) -> None:
         fetched_items = self._internal_get_items()

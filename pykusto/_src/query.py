@@ -239,7 +239,7 @@ class Query:
 
     @abstractmethod
     def _compile(self) -> KQL:
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     def _compile_all(self, use_full_table_name) -> KQL:
         if self._head is None:

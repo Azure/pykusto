@@ -47,14 +47,14 @@ class PySparkKustoClient(PyKustoClientBase):
             # Connect via device authentication
             self.refresh_device_auth()
             self.__format = 'com.microsoft.kusto.spark.datasource'
-            self.option('kustoCluster', self.__cluster_name)
+            self.option('kustoCluster', self._cluster_name)
         else:
             # Connect via pre-configured link
             self.__format = 'com.microsoft.kusto.spark.synapse.datasource'
             self.option('spark.synapse.linkedService', self.__linked_service)
 
     def __repr__(self) -> str:
-        items = [self.__cluster_name]
+        items = [self._cluster_name]
         if self.__linked_service is not None:
             items.append(self.__linked_service)
         item_string = ', '.join(f"'{item}'" for item in items)
@@ -66,7 +66,7 @@ class PySparkKustoClient(PyKustoClientBase):
         """
         assert self.__linked_service is None, "Device authentication can be used only when a linked_service was not provided to the client constructor"
         # noinspection PyProtectedMember
-        device_auth = self.__spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
+        device_auth = self.__spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self._cluster_name, "common")
         print(device_auth.getDeviceCodeMessage())  # Logging is better than printing, but the PySpark notebook does not display logs by default
         self.option('accessToken', device_auth.acquireToken)
 

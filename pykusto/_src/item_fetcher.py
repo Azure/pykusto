@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from itertools import chain
 from threading import Lock
-from typing import Union, Dict, Any, Iterable, Callable, Generator
+from typing import Union, Dict, Any, Iterable, Callable, Generator, Optional
 
 from .logger import _logger
 
@@ -24,7 +24,7 @@ class _ItemFetcher(metaclass=ABCMeta):
     __future: Union[None, Future]
     __items_lock: Lock
 
-    def __init__(self, items: Union[None, Dict[str, Any]], fetch_by_default: bool) -> None:
+    def __init__(self, items: Optional[Dict[str, Any]], fetch_by_default: bool) -> None:
         """
         :param items: Initial items. If not None, items will not be fetched until the "refresh" method is explicitly called.
         :param fetch_by_default: When true, items will be fetched even if not explicitly requested, but only if they were not supplied as a parameter. Subclasses are encouraged

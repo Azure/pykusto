@@ -5,6 +5,7 @@
 # "import *" does not import names which start with an underscore
 
 from ._src.client import *
+from ._src.client_base import *
 from ._src.enums import *
 from ._src.expressions import *
 from ._src.functions import *

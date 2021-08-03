@@ -81,6 +81,7 @@ class KustoResponseBase(metaclass=ABCMeta):
 
 # Copied from https://github.com/Azure/azure-kusto-python/blob/master/azure-kusto-data/azure/kusto/data/client.py
 # We are copying this class because we don't won't to force a dependency on azure-kusto-data unless it's actually needed (e.g. it's not needed for PySpark usage).
+# noinspection SpellCheckingInspection
 class ClientRequestProperties:
     """This class is a POD used by client making requests to describe specific needs from the service executing the requests.
     For more information please look at: https://docs.microsoft.com/en-us/azure/kusto/api/netfx/request-properties
@@ -140,10 +141,10 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
     their types.
     """
 
-    __cluster_name: str
+    _cluster_name: str
+    _retry_config: RetryConfig
     __first_execution: bool
     __first_execution_lock: Lock
-    __retry_config: RetryConfig
 
     @abstractmethod
     def __init__(
@@ -156,10 +157,10 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
         :param retry_config: An instance of RetryConfig which instructs the client how to perform retries in case of failure. The default is NO_RETRIES.
         """
         super().__init__(None, fetch_by_default)
-        self.__cluster_name = cluster_name
+        self._cluster_name = cluster_name
+        self._retry_config = retry_config
         self.__first_execution = True
         self.__first_execution_lock = Lock()
-        self.__retry_config = retry_config
         self._refresh_if_needed()
 
     @abstractmethod
@@ -194,7 +195,7 @@ class PyKustoClientBase(_ItemFetcher, metaclass=ABCMeta):
         yield from self._get_items()
 
     def get_cluster_name(self) -> str:
-        return self.__cluster_name
+        return self._cluster_name
 
     def _internal_get_items(self) -> Dict[str, 'Database']:
         # Retrieves database names, table names, column names and types for all databases. A database name is required

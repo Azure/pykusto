@@ -46,9 +46,11 @@ t = client.Samples.StormEvents
 
 ### Retrying failed queries
 ```python
-# Turn on retrying for all queries 
+# Turn on retrying for all queries
+from pykusto import PyKustoClient, RetryConfig, Query
+
 client = PyKustoClient(
-    'https://help.kusto.windows.net',
+    "https://help.kusto.windows.net",
     retry_config=RetryConfig()  # Use default retry config 
 )
 

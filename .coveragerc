@@ -1,4 +1,7 @@
 [report]
+# Lines to exclude from tests coverage requirement
 exclude_lines =
+    # Exclude lines ad-hoc by adding this text in a comment
     pragma: no cover
+    # Exclude abstract methods
     raise NotImplementedError()

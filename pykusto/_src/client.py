@@ -62,7 +62,7 @@ class PyKustoClient(PyKustoClientBase):
             assert not use_global_cache, "Global cache not supported when providing your own client instance"
         else:
             cluster_name = client_or_cluster
-        super().__init__(cluster_name, fetch_by_default, retry_config.retry_on(KustoServiceError))
+        super().__init__(cluster_name, fetch_by_default, retry_config)
         if not client_resolved:
             self.__client = (self._cached_get_client_for_cluster if use_global_cache else self._get_client_for_cluster)()
 
@@ -71,6 +71,8 @@ class PyKustoClient(PyKustoClientBase):
 
     def _internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
         resolved_retry_config = self._retry_config if retry_config is None else retry_config
+        if resolved_retry_config is not None:
+            resolved_retry_config = resolved_retry_config.retry_on(KustoServiceError)
         return KustoResponse(resolved_retry_config.retry(lambda: self.__client.execute(database, query, properties)))
 
     def _get_client_for_cluster(self) -> KustoClient:

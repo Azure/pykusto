@@ -3,12 +3,12 @@ from typing import Iterable, Callable, Dict, Union, Optional
 from urllib.parse import urlparse
 
 import pandas as pd
-from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
+from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.data.helpers import dataframe_from_result_table
 from azure.kusto.data.response import KustoResponseDataSet
 
-from .client_base import KustoResponseBase, PyKustoClientBase, RetryConfig, NO_RETRIES
+from .client_base import KustoResponseBase, PyKustoClientBase, RetryConfig, NO_RETRIES, ClientRequestProperties
 from .kql_converters import KQL
 
 

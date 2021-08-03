@@ -12,7 +12,7 @@ from .expressions import BaseColumn, _AnyTypeColumn
 from .item_fetcher import _ItemFetcher
 from .kql_converters import KQL
 from .logger import _logger
-from .type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE
+from .type_utils import _INTERNAL_NAME_TO_TYPE, _typed_column, _DOT_NAME_TO_TYPE, PythonTypes
 
 
 class RetryConfig:
@@ -103,29 +103,29 @@ class ClientRequestProperties:
         if not value or not value.strip():
             raise ValueError("Value should not be empty")
 
-    def set_parameter(self, name: str, value: str):
+    def set_parameter(self, name: str, value: Optional[PythonTypes]):
         """Sets a parameter's value"""
         self._assert_value_is_valid(name)
         self._parameters[name] = value
 
-    def has_parameter(self, name) -> bool:
+    def has_parameter(self, name: str) -> bool:
         """Checks if a parameter is specified."""
         return name in self._parameters
 
-    def get_parameter(self, name, default_value) -> str:
+    def get_parameter(self, name: str, default_value: Optional[PythonTypes]) -> Optional[PythonTypes]:
         """Gets a parameter's value."""
         return self._parameters.get(name, default_value)
 
-    def set_option(self, name, value) -> None:
+    def set_option(self, name: str, value: Optional[PythonTypes]) -> None:
         """Sets an option's value"""
         self._assert_value_is_valid(name)
         self._options[name] = value
 
-    def has_option(self, name) -> bool:
+    def has_option(self, name: str) -> bool:
         """Checks if an option is specified."""
         return name in self._options
 
-    def get_option(self, name, default_value) -> str:
+    def get_option(self, name: str, default_value: Optional[PythonTypes]) -> Optional[PythonTypes]:
         """Gets an option's value."""
         return self._options.get(name, default_value)
 
@@ -392,8 +392,8 @@ class Table(_ItemFetcher):
             return KQL('union ' + ', '.join(table_names))
         return KQL(table_names[0])
 
-    def execute(self, query: KQL, retry_config: RetryConfig = None) -> KustoResponseBase:
-        return self.__database.execute(query, retry_config=retry_config)
+    def execute(self, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
+        return self.__database.execute(query, properties, retry_config)
 
     def get_columns_names(self) -> Generator[str, None, None]:
         yield from self._get_item_names()

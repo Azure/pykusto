@@ -109,7 +109,8 @@ class PySparkKustoClient(PyKustoClientBase):
 
     def _internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> DataframeBasedKustoResponse:
         resolved_options = self.get_options()
-        resolved_options['clientRequestPropertiesJson'] = properties.to_json()
+        if properties is not None:
+            resolved_options['clientRequestPropertiesJson'] = properties.to_json()
         resolved_options['kustoDatabase'] = database
         resolved_options['kustoQuery'] = query
         kusto_read_session = self.__kusto_session.read.format(self.__format)

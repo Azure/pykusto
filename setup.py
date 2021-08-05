@@ -2,6 +2,7 @@ import os
 import sys
 
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 
 assert sys.version_info[0] == 3
 __version__ = None
@@ -12,22 +13,41 @@ with open(os.path.join('.', 'pykusto', '__init__.py')) as f:
             __version__ = line.split(delim)[1]
 assert __version__ is not None, 'Unable to determine version'
 
-install_requires = [
+core_requires = [
+    'redo==2.0.4',
+]
+
+full_requires = [
     # Release notes: https://github.com/Azure/azure-kusto-python/releases
     'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
-
-    'redo==2.0.4',
 ]
 
 # pandas release notes: https://pandas.pydata.org/docs/whatsnew/index.html
 # Tests use DataFrame constructor options introduced in 0.25.0
 if sys.version_info[1] <= 6:
     # pandas support for Python 3.6 was dropped starting from version 1.2.0
-    install_requires.append('pandas>=0.25.0,<1.2.0')
+    full_requires.append('pandas>=0.25.0,<1.2.0')
     # In numpy the support was dropped in 1.20.0, and also the transitive dependency in pandas is not correctly restricted
-    install_requires.append('numpy<1.20.0')
+    full_requires.append('numpy<1.20.0')
 else:
-    install_requires.append('pandas>=0.25.0,<=1.2.4')
+    full_requires.append('pandas>=0.25.0,<=1.2.4')
+
+
+# Allows installing with '--core-only', to avoid most dependencies. Relevant e.g. for usage in PySpark.
+class CustomInstall(install):
+    user_options = install.user_options + [('core-only', None, None)]
+
+    def initialize_options(self):
+        super().initialize_options()
+        # noinspection PyAttributeOutsideInit
+        self.core_only = None
+
+    def run(self):
+        if self.core_only:
+            # noinspection PyUnresolvedReferences
+            self.distribution.requires = list(set(self.distribution.requires) - set(full_requires))
+        super().run()
+
 
 setup(
     name='pykusto',
@@ -41,8 +61,9 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
-    install_requires=install_requires,
-    tests_require=[
+    cmdclass={'install': CustomInstall},
+    install_requires=core_requires + full_requires,
+    tests_require=[  # TODO: Deprecated, use 'extras' instead (and update workflows accordingly)
         'pytest',
         'pytest-cov',
         'flake8',

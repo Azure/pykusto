@@ -33,7 +33,12 @@ else:
     full_requires.append('pandas>=0.25.0,<=1.2.4')
 
 
-# Allows installing with '--core-only', to avoid most dependencies. Relevant e.g. for usage in PySpark.
+# Allows installing with '--core-only' to avoid most dependencies. Relevant e.g. for usage in PySpark.
+# Usage:
+#   pip install pykusto --global-option core-only
+# OR
+#   python setup.py install --core-only
+# TODO: Document this option in README file
 class CustomInstall(install):
     user_options = install.user_options + [('core-only', None, None)]
 
@@ -45,7 +50,7 @@ class CustomInstall(install):
     def run(self):
         if self.core_only:
             # noinspection PyUnresolvedReferences
-            self.distribution.requires = list(set(self.distribution.requires) - set(full_requires))
+            self.distribution.install_requires = core_requires
         super().run()
 
 

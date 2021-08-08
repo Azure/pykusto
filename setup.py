@@ -40,7 +40,6 @@ else:
 #   pip install pykusto --global-option pyspark
 # OR
 #   python setup.py install --pyspark
-# TODO: Document this option in README file
 class CustomInstall(install):
     user_options = install.user_options + [('pyspark', None, None)]
 

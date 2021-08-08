@@ -5,7 +5,7 @@ from os import linesep
 from types import FunctionType
 from typing import Tuple, List, Union, Optional
 
-from .client import Table, KustoResponse, RetryConfig
+from .client_base import Table, KustoResponseBase, RetryConfig, ClientRequestProperties
 from .enums import Order, Nulls, JoinKind, Distribution, BagExpansion
 from .expressions import BooleanType, ExpressionType, AggregationExpression, _AssignmentBase, _AssignmentFromAggregationToColumn, _AssignmentToSingleColumn, \
     _AnyTypeColumn, BaseExpression, _AssignmentFromColumnToColumn, AnyExpression, _to_kql, _expression_to_type, BaseColumn, NumberType, OrderedType
@@ -239,7 +239,7 @@ class Query:
 
     @abstractmethod
     def _compile(self) -> KQL:
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     def _compile_all(self, use_full_table_name) -> KQL:
         if self._head is None:
@@ -280,7 +280,7 @@ class Query:
             kql = KQL(kql.replace(" |", linesep + "|"))
         return kql
 
-    def execute(self, table: Table = None, retry_config: RetryConfig = None) -> KustoResponse:
+    def execute(self, table: Table = None, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponseBase:
         if self.get_table() is None:
             if table is None:
                 raise RuntimeError("No table supplied")
@@ -292,10 +292,10 @@ class Query:
             rendered_query = self.render()
 
         _logger.debug("Running query: " + rendered_query)
-        return table.execute(rendered_query, retry_config)
+        return table.execute(rendered_query, properties, retry_config)
 
-    def to_dataframe(self, table: Table = None, retry_config: RetryConfig = None):
-        return self.execute(table, retry_config).to_dataframe()
+    def to_dataframe(self, table: Table = None, properties: ClientRequestProperties = None, retry_config: RetryConfig = None):
+        return self.execute(table, properties, retry_config).to_dataframe()
 
     @staticmethod
     def _extract_assignments(*args: Union[_AssignmentBase, BaseExpression], **kwargs: ExpressionType) -> List[_AssignmentBase]:

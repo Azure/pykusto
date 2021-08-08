@@ -534,7 +534,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-timespanfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     # def max_of(self): return
     #
@@ -553,7 +553,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/newguidfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def now(offset: TimespanType = None) -> _DatetimeExpression:
@@ -628,14 +628,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentile-tdigestfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def percentrank_tdigest() -> AnyExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentrank-tdigestfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def pow(expr1: NumberType, expr2: NumberType) -> _NumberExpression:
@@ -1021,7 +1021,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toguidfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def to_hex(expr1: NumberType, expr2: NumberType = None) -> _StringExpression:
@@ -1104,21 +1104,21 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/urldecodefunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def url_encode() -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/urlencodefunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def week_of_year() -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/weekofyearfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     # def welch_test(self): return
 
@@ -1127,7 +1127,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/zipfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     # ----------------------------------------------------
     # Aggregation functions

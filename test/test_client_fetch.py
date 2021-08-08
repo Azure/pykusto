@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from pykusto import PyKustoClient, Query
 # noinspection PyProtectedMember
-from pykusto._src.client import Database
+from pykusto._src.client_base import Database
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _StringColumn, _NumberColumn, _AnyTypeColumn, _BooleanColumn
 # noinspection PyProtectedMember

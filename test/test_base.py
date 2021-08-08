@@ -15,7 +15,9 @@ from azure.kusto.data._models import KustoResultTable, KustoResultRow
 from azure.kusto.data.response import KustoResponseDataSet
 
 # noinspection PyProtectedMember
-from pykusto._src.client import Table, Database, PyKustoClient
+from pykusto._src.client import PyKustoClient
+# noinspection PyProtectedMember
+from pykusto._src.client_base import Table, Database
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _NumberColumn, _BooleanColumn, _ArrayColumn, _MappingColumn, _StringColumn, _DatetimeColumn, _TimespanColumn, _DynamicColumn
 # noinspection PyProtectedMember

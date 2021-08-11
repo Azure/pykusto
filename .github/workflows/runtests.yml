@@ -8,6 +8,8 @@ on:
     branches: [ master, release ]
   pull_request:
     branches: [ master ]
+  # This allows running the workflow manually on demand from the GitHub UI:
+  workflow_dispatch
 
 jobs:
   build:

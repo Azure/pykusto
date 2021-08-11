@@ -30,7 +30,7 @@ non_pyspark_requires = [
     'pandas>=0.25.0,<1.2.0; python_version<="3.6"',
     # In numpy the support was dropped in 1.20.0, and also the transitive dependency in pandas is not correctly restricted
     'numpy<1.20.0; python_version<="3.6"'
-    
+
     # Python version > 3.6
     'pandas>=0.25.0,<=1.2.4; python_version>"3.6"'
 ]

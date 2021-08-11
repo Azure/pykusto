@@ -18,21 +18,22 @@ core_requires = [
 ]
 
 non_pyspark_requires = [
-    # Not required in PySpark, because authentication is handled differently there.
+    # azure-kusto-data not required in PySpark, because authentication is handled differently there.
     # Release notes: https://github.com/Azure/azure-kusto-python/releases
     'azure-kusto-data==2.1.1',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
-]
 
-# Not required in PySpark because it is already installed there.
-# pandas release notes: https://pandas.pydata.org/docs/whatsnew/index.html
-# Tests use DataFrame constructor options introduced in 0.25.0
-if sys.version_info[1] <= 6:
+    # pandas not required in PySpark because it is already installed there.
+    # Tests use DataFrame constructor options introduced in 0.25.0
+
+    # Python version <= 3.6
     # pandas support for Python 3.6 was dropped starting from version 1.2.0
-    non_pyspark_requires.append('pandas>=0.25.0,<1.2.0')
+    'pandas>=0.25.0,<1.2.0; python_version<="3.6"',
     # In numpy the support was dropped in 1.20.0, and also the transitive dependency in pandas is not correctly restricted
-    non_pyspark_requires.append('numpy<1.20.0')
-else:
-    non_pyspark_requires.append('pandas>=0.25.0,<=1.2.4')
+    'numpy<1.20.0; python_version<="3.6"'
+    
+    # Python version > 3.6
+    'pandas>=0.25.0,<=1.2.4; python_version>"3.6"'
+]
 
 
 # Allows installing with '--pyspark' to avoid unneeded dependencies.

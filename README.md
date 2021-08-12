@@ -17,7 +17,8 @@ pip install pykusto[test]
 ```
 Without dependencies which are not needed in PySpark:
 ```bash
-pip install pykusto --global-option pyspark
+PYSPARK=1
+pip install pykusto
 ```
 
 

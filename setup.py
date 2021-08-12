@@ -17,7 +17,6 @@ core_requires = [
 ]
 
 # Set PYSPARK=1 as an environment variable to avoid the following dependencies
-# TODO: Update README
 non_pyspark_requires = [
     # Not required in PySpark, because authentication is handled differently there.
     # Release notes: https://github.com/Azure/azure-kusto-python/releases

@@ -46,7 +46,7 @@ setup_kwargs = dict(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
-    install_requires=core_requires + non_pyspark_requires,
+    install_requires=core_requires + ([] if os.getenv('PYSPARK', False) else non_pyspark_requires),
     extras_require={
         'test': [
             'pytest',

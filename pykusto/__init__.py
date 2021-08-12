@@ -12,5 +12,5 @@ from ._src.functions import *
 from ._src.pyspark_client import *
 from ._src.query import *
 
-__version__ = 'dev'  # Version number is managed in the 'release' branch
+__version__ = '0.0.dev'  # Version number is managed in the 'release' branch
 name = "pykusto"

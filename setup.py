@@ -16,6 +16,8 @@ core_requires = [
     'redo==2.0.4',
 ]
 
+# Set PYSPARK=1 as an environment variable to avoid the following dependencies
+# TODO: Update README
 non_pyspark_requires = [
     # Not required in PySpark, because authentication is handled differently there.
     # Release notes: https://github.com/Azure/azure-kusto-python/releases
@@ -33,8 +35,7 @@ if sys.version_info[1] <= 6:
 else:
     non_pyspark_requires.append('pandas>=0.25.0,<=1.2.4')
 
-
-setup_kwargs = dict(
+setup(
     name='pykusto',
     version=__version__,
     packages=['pykusto'],
@@ -68,5 +69,3 @@ setup_kwargs = dict(
         "License :: OSI Approved :: MIT License",
     ],
 )
-
-setup(**setup_kwargs)

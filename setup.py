@@ -1,8 +1,7 @@
 import os
 import sys
 
-from setuptools import setup, find_packages
-from setuptools.command.install import install
+from setuptools import setup
 
 assert sys.version_info[0] == 3
 __version__ = None
@@ -35,30 +34,10 @@ else:
     non_pyspark_requires.append('pandas>=0.25.0,<=1.2.4')
 
 
-# Allows installing with '--pyspark' to avoid unneeded dependencies.
-# Usage:
-#   pip install pykusto --global-option pyspark
-# OR
-#   python setup.py install --pyspark
-class CustomInstall(install):
-    user_options = install.user_options + [('pyspark', None, None)]
-
-    def initialize_options(self):
-        super().initialize_options()
-        # noinspection PyAttributeOutsideInit
-        self.pyspark = None
-
-    def run(self):
-        if self.pyspark:
-            # noinspection PyUnresolvedReferences
-            self.distribution.install_requires = core_requires
-        super().run()
-
-
-setup(
+setup_kwargs = dict(
     name='pykusto',
     version=__version__,
-    packages=find_packages(exclude=['test']),
+    packages=['pykusto'],
     url='https://github.com/Azure/pykusto',
     license='MIT License',
     author='Microsoft Corporation',
@@ -67,7 +46,6 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="kusto azure-data-explorer client library query",
-    cmdclass={'install': CustomInstall},
     install_requires=core_requires + non_pyspark_requires,
     extras_require={
         'test': [
@@ -90,3 +68,5 @@ setup(
         "License :: OSI Approved :: MIT License",
     ],
 )
+
+setup(**setup_kwargs)

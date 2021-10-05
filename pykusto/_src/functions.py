@@ -1121,7 +1121,7 @@ class Functions:
         raise NotImplementedError()
 
     @staticmethod
-    def day_of_week(a_date: DatetimeType) -> _NumberExpression:
+    def day_of_week(a_date: DatetimeType) -> TimespanType:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dayofweekfunction
         """

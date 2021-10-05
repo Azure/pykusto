@@ -98,8 +98,8 @@ class TestFunction(TestBase):
 
     def test_dayofweek(self):
         self.assertEqual(
-            " | where (dayofweek(dateField)) == 1",
-            Query().where(f.day_of_week(t.dateField) == 1).render()
+            " | where (dayofweek(dateField)) == time(1.0:0:0.0)",
+            Query().where(f.day_of_week(t.dateField) == timedelta(1)).render()
         )
 
     def test_exp(self):

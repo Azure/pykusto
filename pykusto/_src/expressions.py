@@ -691,6 +691,12 @@ class _DatetimeExpression(BaseExpression):
         """
         return _DatetimeExpression(KQL(f'startofyear({self.kql})' if offset is None else 'startofyear({self.kql}, {to_kql(offset)})'))
 
+    def day_of_week(self) -> _NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dayofweekfunction
+        """
+        return _NumberExpression(KQL(f'dayofweek({self.kql})'))
+
 
 @_plain_expression(_KustoType.TIMESPAN)
 class _TimespanExpression(BaseExpression):

@@ -96,6 +96,12 @@ class TestFunction(TestBase):
             Query().where(f.end_of_year(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
+    def test_dayofweek(self):
+        self.assertEqual(
+            " | where (dayofweek(dateField)) == 1",
+            Query().where(f.day_of_week(t.dateField) == 1).render()
+        )
+
     def test_exp(self):
         self.assertEqual(
             " | where (exp(numField)) > 4",

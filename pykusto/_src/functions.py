@@ -1120,6 +1120,13 @@ class Functions:
         """
         raise NotImplementedError()
 
+    @staticmethod
+    def day_of_week(a_date: DatetimeType) -> _NumberExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dayofweekfunction
+        """
+        return a_date.day_of_week()
+
     # def welch_test(self): return
 
     @staticmethod

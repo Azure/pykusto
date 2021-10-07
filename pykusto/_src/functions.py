@@ -1,4 +1,3 @@
-import datetime
 from itertools import chain
 from typing import Union, List, Pattern, Type
 
@@ -6,7 +5,8 @@ from .enums import Kind
 from .expressions import NumberType, _NumberExpression, TimespanType, \
     _DatetimeExpression, _TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, _StringExpression, _BooleanExpression, \
-    _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, _DynamicExpression, \
+    _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, \
+    _DynamicExpression, \
     _ArrayExpression, _ColumnToType, BaseColumn, AnyExpression, _AnyAggregationExpression, _MappingExpression
 from .kql_converters import KQL
 from .logger import _logger

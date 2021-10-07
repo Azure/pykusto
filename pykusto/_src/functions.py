@@ -5,7 +5,8 @@ from .enums import Kind
 from .expressions import NumberType, _NumberExpression, TimespanType, \
     _DatetimeExpression, _TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, _StringExpression, _BooleanExpression, \
-    _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, _DynamicExpression, \
+    _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, \
+    _DynamicExpression, \
     _ArrayExpression, _ColumnToType, BaseColumn, AnyExpression, _AnyAggregationExpression, _MappingExpression
 from .kql_converters import KQL
 from .logger import _logger
@@ -1119,6 +1120,13 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/weekofyearfunction
         """
         raise NotImplementedError()
+
+    @staticmethod
+    def day_of_week(a_date: DatetimeType) -> '_TimespanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dayofweekfunction
+        """
+        return _DatetimeExpression(_to_kql(a_date)).day_of_week()
 
     # def welch_test(self): return
 

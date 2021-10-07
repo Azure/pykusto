@@ -1126,8 +1126,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dayofweekfunction
         """
-        date_time_expr = a_date if not isinstance(a_date, datetime.datetime) else _DatetimeExpression(_to_kql(a_date))
-        return date_time_expr.day_of_week()
+        return _DatetimeExpression(_to_kql(a_date)).day_of_week()
 
     # def welch_test(self): return
 

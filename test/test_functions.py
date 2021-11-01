@@ -832,8 +832,8 @@ class TestFunction(TestBase):
 
     def test_take_any_multiple_expr(self):
         self.assertEqual(
-            " | summarize take_any(numField, stringField)",
-            Query().summarize(f.take_any(t.numField, t.stringField)).render()
+            " | summarize take_any(numField, stringField, boolField)",
+            Query().summarize(f.take_any(t.numField, t.stringField, t.boolField)).render()
         )
 
     def test_take_any_all(self):

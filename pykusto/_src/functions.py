@@ -1266,7 +1266,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/take-any-aggfunction
         """
-        return _AnyAggregationExpression(KQL(f'take_any(*)'))
+        return _AnyAggregationExpression(KQL('take_any(*)'))
 
     @staticmethod
     def max(expr: ExpressionType) -> _AnyAggregationExpression:

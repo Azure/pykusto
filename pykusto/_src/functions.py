@@ -1258,7 +1258,7 @@ class Functions:
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/take-any-aggfunction
         """
         all_expr = (expr,) + expr_n
-        kql_expr = (str(_to_kql(exp)) for exp in all_expr)
+        kql_expr = (_to_kql(exp) for exp in all_expr)
         return _AnyAggregationExpression(KQL(f'take_any({", ".join(kql_expr)})'))
 
     @staticmethod

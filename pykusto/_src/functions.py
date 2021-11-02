@@ -1253,6 +1253,22 @@ class Functions:
         return _ArrayAggregationExpression(KQL(f'make_set({_to_kql(expr)})'))
 
     @staticmethod
+    def take_any(expr: ExpressionType, *expr_n: ExpressionType) -> _AnyAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/take-any-aggfunction
+        """
+        all_expr = (expr,) + expr_n
+        kql_expr = (_to_kql(exp) for exp in all_expr)
+        return _AnyAggregationExpression(KQL(f'take_any({", ".join(kql_expr)})'))
+
+    @staticmethod
+    def take_any_all() -> _AnyAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/take-any-aggfunction
+        """
+        return _AnyAggregationExpression(KQL('take_any(*)'))
+
+    @staticmethod
     def max(expr: ExpressionType) -> _AnyAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction

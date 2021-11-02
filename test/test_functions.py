@@ -824,6 +824,24 @@ class TestFunction(TestBase):
             Query().summarize(f.make_set(t.stringField, t.numField)).render()
         )
 
+    def test_take_any_single_expr(self):
+        self.assertEqual(
+            " | summarize take_any(numField)",
+            Query().summarize(f.take_any(t.numField)).render()
+        )
+
+    def test_take_any_multiple_expr(self):
+        self.assertEqual(
+            " | summarize take_any(numField, stringField, boolField)",
+            Query().summarize(f.take_any(t.numField, t.stringField, t.boolField)).render()
+        )
+
+    def test_take_any_all(self):
+        self.assertEqual(
+            " | summarize take_any(*)",
+            Query().summarize(f.take_any_all()).render()
+        )
+
     def test_max(self):
         self.assertEqual(
             " | summarize max(numField)",

@@ -12,5 +12,5 @@ from ._src.functions import *
 from ._src.pyspark_client import *
 from ._src.query import *
 
-__version__ = '0.0.31'
+__version__ = '0.0.32'
 name = "pykusto"

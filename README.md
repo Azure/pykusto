@@ -7,11 +7,22 @@ Started as a project in the 2019 Microsoft Hackathon.
 
 # Getting Started
 ### Installation
+Default installation:
 ```bash
 pip install pykusto
 ```
+With dependencies required for running the tests:
+```bash
+pip install pykusto[test]
+```
+Without dependencies which are not needed in PySpark:
+```bash
+pip install pykusto --global-option pyspark
+```
+
 
 ### Basic usage
+
 ```python
 from datetime import timedelta
 from pykusto import PyKustoClient, Query
@@ -31,7 +42,7 @@ t = client.Samples.StormEvents
 
 # Build query
 (
-    Query(t)        
+    Query(t)
         # Access columns using table variable 
         .project(t.StartTime, t.EndTime, t.EventType, t.Source)
         # Specify new column name using Python keyword argument   
@@ -46,9 +57,11 @@ t = client.Samples.StormEvents
 
 ### Retrying failed queries
 ```python
-# Turn on retrying for all queries 
+# Turn on retrying for all queries
+from pykusto import PyKustoClient, RetryConfig, Query
+
 client = PyKustoClient(
-    'https://help.kusto.windows.net',
+    "https://help.kusto.windows.net",
     retry_config=RetryConfig()  # Use default retry config 
 )
 

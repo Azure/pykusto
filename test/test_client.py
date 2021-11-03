@@ -5,7 +5,7 @@ from unittest.mock import patch
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.kusto.data.exceptions import KustoError
 
-from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES
+from pykusto import PyKustoClient, column_generator as col, Query, KustoServiceError, RetryConfig, NO_RETRIES, ClientRequestProperties
 # noinspection PyProtectedMember
 from pykusto._src.logger import _logger
 # noinspection PyProtectedMember
@@ -168,6 +168,19 @@ class TestClient(TestBase):
             self.assertIsInstance(client._PyKustoClient__client, KustoClient)
             self.assertEqual('https://help.kusto.windows.net', client.get_cluster_name())
         self.assertEqual([], cm.output)
+
+    def test_request_properties(self):
+        properties = ClientRequestProperties()
+        properties.set_option(ClientRequestProperties.results_defer_partial_query_failures_option_name, False)
+        properties.set_parameter('xIntValue', 11)
+
+        mock_kusto_client = MockKustoClient()
+        table = PyKustoClient(mock_kusto_client)['test_db']['mock_table']
+        Query(table).take(5).execute(properties=properties)
+        self.assertEqual(
+            [RecordedQuery('test_db', 'mock_table | take 5', properties)],
+            mock_kusto_client.recorded_queries
+        )
 
     @staticmethod
     def unreliable_mock_kusto_client(number_of_failures: int, exception_type: Type[Exception] = KustoServiceError):

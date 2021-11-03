@@ -56,6 +56,7 @@
       <w>rightantisemi</w>
       <w>rightouter</w>
       <w>rightsemi</w>
+      <w>runtests</w>
       <w>sqrt</w>
       <w>startofday</w>
       <w>startofmonth</w>
@@ -92,6 +93,7 @@
       <w>totimespan</w>
       <w>toupper</w>
       <w>treepath</w>
+      <w>typeguard</w>
       <w>uint</w>
       <w>urlquery</w>
       <w>varianceif</w>

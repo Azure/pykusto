@@ -1,6 +1,8 @@
+from datetime import timedelta
 from os import linesep
 
 import pandas as pd
+import pytest
 
 from pykusto import PyKustoClient, Order, Nulls, JoinKind, Distribution, BagExpansion, column_generator as col, Functions as f, Query, JoinException
 # noinspection PyProtectedMember
@@ -195,13 +197,16 @@ class TestQuery(TestBase):
     def test_join_with_table(self):
         table = PyKustoClient(MockKustoClient(columns_response=mock_columns_response([('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)])))['test_db'][
             'mock_table']
-
         self.assertEqual(
             'mock_table | where numField > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table")) '
             'on numField, $left.stringField==$right.tableStringField',
-            Query(t).where(t.numField > 4).take(5).join(
-                Query(table), kind=JoinKind.INNER
-            ).on(t.numField).on(t.stringField, table.tableStringField).render(),
+            (
+                Query(t)
+                .where(t.numField > 4).take(5)
+                .join(Query(table), kind=JoinKind.INNER)
+                .on(t.numField, (t.stringField, table.tableStringField))
+                .render()
+            )
         )
 
     def test_join_with_table_and_query(self):
@@ -212,15 +217,47 @@ class TestQuery(TestBase):
         self.assertEqual(
             'mock_table | where numField > 4 | take 5 | join kind=inner (cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table") | where numField == 2 '
             '| take 6) on numField, $left.stringField==$right.tableStringField',
-            Query(t).where(t.numField > 4).take(5).join(
-                Query(table).where(table.numField == 2).take(6), kind=JoinKind.INNER
-            ).on(t.numField).on(t.stringField, table.tableStringField).render(),
+            (
+                Query(t)
+                .where(t.numField > 4)
+                .take(5)
+                .join(Query(table).where(table.numField == 2).take(6), kind=JoinKind.INNER)
+                .on(t.numField, (t.stringField, table.tableStringField))
+                .render()
+            )
         )
+
+    def test_join_chained_on(self):
+        mock_client = PyKustoClient(
+            MockKustoClient(
+                columns_response=mock_columns_response(
+                    [('tableStringField', _KustoType.STRING), ('numField', _KustoType.INT)]
+                )
+            )
+        )
+        mock_table = mock_client['test_db']['mock_table']
+
+        expected_query = (
+            'mock_table | where numField > 4 | take 5 | join kind=inner '
+            '(cluster("test_cluster.kusto.windows.net").database("test_db").table("mock_table")'
+            ' | where numField == 2 | take 6) on numField, $left.stringField==$right.tableStringField'
+        )
+        actual_query = (
+            Query(t)
+            .where(t.numField > 4)
+            .take(5)
+            .join(Query(mock_table).where(mock_table.numField == 2).take(6), kind=JoinKind.INNER)
+            .on(t.numField)
+            .on((t.stringField, mock_table.tableStringField))
+            .render()
+        )
+
+        self.assertEqual(expected_query, actual_query)
 
     def test_join_no_joined_table(self):
         self.assertRaises(
             JoinException("The joined query must have a table"),
-            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on(t.numField).on(t.stringField, t.stringField2).render()
+            lambda: Query(t).where(t.numField > 4).take(5).join(Query().take(2), kind=JoinKind.INNER).on(t.numField, (t.stringField, t.stringField2)).render()
         )
 
     def test_join_no_on(self):
@@ -228,6 +265,25 @@ class TestQuery(TestBase):
             JoinException("A call to join() must be followed by a call to on()"),
             Query(t).where(t.numField > 4).take(5).join(
                 Query(t).take(2), kind=JoinKind.INNER).render
+        )
+
+    @pytest.mark.skip(reason="Re-enable once this is resoled: https://github.com/agronholm/typeguard/issues/159")
+    def test_join_wrong_arguments_type(self):
+        col_name_str = "numField"
+        # noinspection PyTypeChecker
+        self.assertRaises(
+            JoinException(
+                "A join argument could be a column, or a tuple of two columns corresponding to the input and join "
+                f"tables column names. However, the join argument provided is {col_name_str} of type {type(col_name_str)}"
+            ),
+            lambda: (
+                Query(t)
+                .where(t.numField > 4)
+                .take(5)
+                .join(Query(t).take(2), kind=JoinKind.INNER)
+                .on(col_name_str)
+                .render()
+            )
         )
 
     def test_extend(self):
@@ -268,8 +324,11 @@ class TestQuery(TestBase):
 
     def test_summarize_by(self):
         self.assertEqual(
-            "mock_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, 10)",
-            Query(t).summarize(f.count(t.stringField), my_count=f.count(t.stringField2)).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, 10)).render(),
+            "mock_table | summarize count(stringField), my_count = count(stringField2) by boolField, bin(numField, 1), time_range = bin(dateField, time(0.0:0:10.0))",
+            Query(t).summarize(
+                f.count(t.stringField),
+                my_count=f.count(t.stringField2)
+            ).by(t.boolField, f.bin(t.numField, 1), time_range=f.bin(t.dateField, timedelta(seconds=10))).render(),
         )
 
     def test_summarize_by_expression(self):
@@ -396,8 +455,8 @@ class TestQuery(TestBase):
 
     def test_distinct(self):
         self.assertEqual(
-            "mock_table | distinct stringField, numField * 2",
-            Query(t).distinct(t.stringField, t.numField * 2).render(),
+            "mock_table | distinct stringField, numField",
+            Query(t).distinct(t.stringField, t.numField).render(),
         )
 
     def test_distinct_sample(self):
@@ -437,12 +496,16 @@ class TestQuery(TestBase):
         )
 
     def test_udf(self):
+        # The static type checker mistakenly thinks func is not of type "FunctionType"
+        # noinspection PyTypeChecker
         self.assertEqual(
             f"mock_table | evaluate python(typeof(*, StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, StateZone=_KustoType.STRING).render(),
         )
 
     def test_udf_no_extend(self):
+        # The static type checker mistakenly thinks func is not of type "FunctionType"
+        # noinspection PyTypeChecker
         self.assertEqual(
             f"mock_table | evaluate python(typeof(StateZone:string), {STRINGIFIED})",
             Query(t).evaluate_udf(func, extend=False, StateZone=_KustoType.STRING).render(),

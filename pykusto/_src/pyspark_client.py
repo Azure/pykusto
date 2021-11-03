@@ -3,13 +3,12 @@ from typing import Dict, Callable, Union, Tuple
 
 import numpy as np
 import pandas as pd
-from azure.kusto.data import ClientRequestProperties, KustoClient
 
-from pykusto import PyKustoClient, NO_RETRIES, KustoResponse, KQL, RetryConfig
-from .logger import _logger
+from pykusto import NO_RETRIES, KQL, RetryConfig, KustoResponseBase, PyKustoClientBase
+from pykusto._src.client_base import ClientRequestProperties
 
 
-class DataframeBasedKustoResponse(KustoResponse):
+class DataframeBasedKustoResponse(KustoResponseBase):
     """
     In PySpark Kusto results are returned as dataframes. We wrap the dataframe with this object for compatibility with :class:`PyKustoClient`.
     """
@@ -26,24 +25,21 @@ class DataframeBasedKustoResponse(KustoResponse):
         return self.__dataframe
 
 
-class PySparkKustoClient(PyKustoClient):
+class PySparkKustoClient(PyKustoClientBase):
     """
     Handle to a Kusto cluster, to be used inside a PySpark notebook.
     """
-    def __init__(self, cluster: str, linked_service: str = None, fetch_by_default: bool = True) -> None:
+
+    def __init__(self, cluster_name: str, linked_service: str = None, fetch_by_default: bool = True) -> None:
         """
         Create a new handle to a Kusto cluster. The value of "fetch_by_default" is used for current instance, and also passed on to database instances.
 
-        :param cluster: a cluster URL.
+        :param cluster_name: a cluster URL.
         :param linked_service: If provided, the connection to Kusto will be made via a pre-configured link (used only for Synapse). Otherwise, device authentication will be used
         (tested only for Synapse, but should work for any PySpark notebook).
         """
         self.__linked_service = linked_service
-        super().__init__(cluster, fetch_by_default, False, NO_RETRIES, None)
-
-    def _internal_init(self, client_or_cluster: Union[str, KustoClient], use_global_cache: bool):
-        assert isinstance(client_or_cluster, str), "PySparkKustoClient must be initialized with a cluster name"
-        self.__cluster_name = client_or_cluster
+        super().__init__(cluster_name, fetch_by_default, NO_RETRIES)
         self.__options: Dict[str, Callable[[], str]] = {}
         self.__kusto_session, self.__spark_context = self.__get_spark_session_and_context()
 
@@ -51,11 +47,18 @@ class PySparkKustoClient(PyKustoClient):
             # Connect via device authentication
             self.refresh_device_auth()
             self.__format = 'com.microsoft.kusto.spark.datasource'
-            self.option('kustoCluster', self.__cluster_name)
+            self.option('kustoCluster', self._cluster_name)
         else:
             # Connect via pre-configured link
             self.__format = 'com.microsoft.kusto.spark.synapse.datasource'
             self.option('spark.synapse.linkedService', self.__linked_service)
+
+    def __repr__(self) -> str:
+        items = [self._cluster_name]
+        if self.__linked_service is not None:
+            items.append(self.__linked_service)
+        item_string = ', '.join(f"'{item}'" for item in items)
+        return f"PySparkKustoClient({item_string})"
 
     def refresh_device_auth(self) -> None:
         """
@@ -63,8 +66,8 @@ class PySparkKustoClient(PyKustoClient):
         """
         assert self.__linked_service is None, "Device authentication can be used only when a linked_service was not provided to the client constructor"
         # noinspection PyProtectedMember
-        device_auth = self.__spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self.__cluster_name, "common")
-        _logger.info(device_auth.getDeviceCodeMessage())
+        device_auth = self.__spark_context._jvm.com.microsoft.kusto.spark.authentication.DeviceAuthentication(self._cluster_name, "common")
+        print(device_auth.getDeviceCodeMessage())  # Logging is better than printing, but the PySpark notebook does not display logs by default
         self.option('accessToken', device_auth.acquireToken)
 
     # noinspection PyUnresolvedReferences,PyPackageRequirements
@@ -104,8 +107,10 @@ class PySparkKustoClient(PyKustoClient):
         """
         return {key: value_producer() for key, value_producer in self.__options.items()}
 
-    def _internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> KustoResponse:
+    def _internal_execute(self, database: str, query: KQL, properties: ClientRequestProperties = None, retry_config: RetryConfig = None) -> DataframeBasedKustoResponse:
         resolved_options = self.get_options()
+        if properties is not None:
+            resolved_options['clientRequestPropertiesJson'] = properties.to_json()
         resolved_options['kustoDatabase'] = database
         resolved_options['kustoQuery'] = query
         kusto_read_session = self.__kusto_session.read.format(self.__format)

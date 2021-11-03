@@ -12,8 +12,8 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/venv/Scripts/pytest.exe" />
-    <option name="PARAMETERS" value="--cov=pykusto --cov-report term-missing --cov-fail-under=100" />
+    <option name="SCRIPT_NAME" value="" />
+    <option name="PARAMETERS" value="-m pytest --cov=pykusto --cov-report term-missing --cov-fail-under=100" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

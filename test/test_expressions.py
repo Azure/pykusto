@@ -1,5 +1,7 @@
 from datetime import timedelta, datetime
 
+import pytest
+
 from pykusto import Functions as f
 from pykusto import column_generator as col, Query
 # noinspection PyProtectedMember
@@ -88,8 +90,8 @@ class TestExpressions(TestBase):
 
     def test_swapped_and(self):
         self.assertEqual(
-            ' | where 1 and boolField',
-            Query().where(1 & t.boolField).render(),
+            ' | where true and boolField',
+            Query().where(True & t.boolField).render(),
         )
 
     def test_or(self):
@@ -100,8 +102,8 @@ class TestExpressions(TestBase):
 
     def test_swapped_or(self):
         self.assertEqual(
-            ' | where 0 or boolField',
-            Query().where(0 | t.boolField).render(),
+            ' | where false or boolField',
+            Query().where(False | t.boolField).render(),
         )
 
     def test_not(self):
@@ -210,6 +212,54 @@ class TestExpressions(TestBase):
         self.assertEqual(
             ' | where dateField > datetime(2000-01-01 00:00:00.000000)',
             Query().where(t.dateField > datetime(2000, 1, 1)).render(),
+        )
+
+    def test_le_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField <= time(0.0:15:0.0)',
+            Query(t).where(t.timespanField <= timedelta(minutes=15)).render(),
+        )
+
+    def test_lt_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField < time(0.0:15:0.0)',
+            Query(t).where(t.timespanField < timedelta(minutes=15)).render(),
+        )
+
+    def test_ge_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField >= time(0.0:15:0.0)',
+            Query(t).where(t.timespanField >= timedelta(minutes=15)).render(),
+        )
+
+    def test_gt_timespan(self):
+        self.assertEqual(
+            'mock_table | where timespanField > time(0.0:15:0.0)',
+            Query(t).where(t.timespanField > timedelta(minutes=15)).render(),
+        )
+
+    def test_le_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn <= 10',
+            Query(t).where(col['someColumn'] <= 10).render(),
+        )
+
+    def test_lt_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn < 10',
+            Query(t).where(col['someColumn'] < 10).render(),
+        )
+
+    def test_ge_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn >= 10',
+            Query(t).where(col['someColumn'] >= 10).render(),
+        )
+
+    def test_gt_unknown_type(self):
+        self.assertEqual(
+            'mock_table | where someColumn > 10',
+            Query(t).where(col['someColumn'] > 10).render(),
         )
 
     def test_add_timespan_to_date(self):
@@ -455,6 +505,9 @@ class TestExpressions(TestBase):
             ' | where stringField has_any ("field", "string")',
             Query().where(t.stringField.has_any(["field", "string"])).render()
         )
+
+    @pytest.mark.skip(reason="Re-enable once this is resoled: https://github.com/agronholm/typeguard/issues/159")
+    def test_has_any_bad_argument(self):
         self.assertRaises(
             AssertionError("Compared array must be a list of tabular, scalar, or literal expressions"),
             lambda: t.stringField.has_any(t.stringField2)

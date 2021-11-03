@@ -2,10 +2,11 @@ from itertools import chain
 from typing import Union, List, Pattern, Type
 
 from .enums import Kind
-from .expressions import _AnyTypeColumn, NumberType, _NumberExpression, TimespanType, \
+from .expressions import NumberType, _NumberExpression, TimespanType, \
     _DatetimeExpression, _TimespanExpression, ArrayType, DynamicType, DatetimeType, BaseExpression, BooleanType, \
     ExpressionType, StringType, _StringExpression, _BooleanExpression, \
-    _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, _DynamicExpression, \
+    _NumberAggregationExpression, _MappingAggregationExpression, _ArrayAggregationExpression, _to_kql, \
+    _DynamicExpression, \
     _ArrayExpression, _ColumnToType, BaseColumn, AnyExpression, _AnyAggregationExpression, _MappingExpression
 from .kql_converters import KQL
 from .logger import _logger
@@ -534,7 +535,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-timespanfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     # def max_of(self): return
     #
@@ -553,7 +554,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/newguidfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def now(offset: TimespanType = None) -> _DatetimeExpression:
@@ -628,14 +629,14 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentile-tdigestfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def percentrank_tdigest() -> AnyExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/percentrank-tdigestfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def pow(expr1: NumberType, expr2: NumberType) -> _NumberExpression:
@@ -996,14 +997,14 @@ class Functions:
         return _DatetimeExpression(KQL(f'todatetime({_to_kql(expr)})'))
 
     @staticmethod
-    def to_decimal(expr: NumberType) -> _NumberExpression:
+    def to_decimal(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todecimalfunction
         """
         return _NumberExpression(KQL(f"todecimal({_to_kql(expr)})"))
 
     @staticmethod
-    def to_double(expr: NumberType) -> _NumberExpression:
+    def to_double(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
@@ -1021,7 +1022,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/toguidfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def to_hex(expr1: NumberType, expr2: NumberType = None) -> _StringExpression:
@@ -1031,14 +1032,14 @@ class Functions:
         return _StringExpression(KQL(f'tohex({_to_kql(expr1)})' if expr2 is None else 'tohex({to_kql(expr1)}, {to_kql(expr2)})'))
 
     @staticmethod
-    def to_int(expr: NumberType) -> _NumberExpression:
+    def to_int(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tointfunction
         """
         return _NumberExpression(KQL(f"toint({_to_kql(expr)})"))
 
     @staticmethod
-    def to_long(expr: NumberType) -> _NumberExpression:
+    def to_long(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/tolongfunction
         """
@@ -1052,7 +1053,7 @@ class Functions:
         return expr.lower()
 
     @staticmethod
-    def to_real(expr: NumberType) -> _NumberExpression:
+    def to_real(expr: ExpressionType) -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/todoublefunction
         """
@@ -1104,21 +1105,28 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/urldecodefunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def url_encode() -> _StringExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/urlencodefunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     @staticmethod
     def week_of_year() -> _NumberExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/weekofyearfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
+
+    @staticmethod
+    def day_of_week(a_date: DatetimeType) -> '_TimespanExpression':
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/dayofweekfunction
+        """
+        return _DatetimeExpression(_to_kql(a_date)).day_of_week()
 
     # def welch_test(self): return
 
@@ -1127,7 +1135,7 @@ class Functions:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/zipfunction
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError()
 
     # ----------------------------------------------------
     # Aggregation functions
@@ -1190,7 +1198,7 @@ class Functions:
     #     return
 
     @staticmethod
-    def count(col: _AnyTypeColumn = None) -> _NumberAggregationExpression:
+    def count(col: BaseColumn = None) -> _NumberAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/count-aggfunction
         """
@@ -1243,6 +1251,22 @@ class Functions:
         if max_size is not None:
             return _ArrayAggregationExpression(KQL(f'make_set({_to_kql(expr)}, {_to_kql(max_size)})'))
         return _ArrayAggregationExpression(KQL(f'make_set({_to_kql(expr)})'))
+
+    @staticmethod
+    def take_any(expr: ExpressionType, *expr_n: ExpressionType) -> _AnyAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/take-any-aggfunction
+        """
+        all_expr = (expr,) + expr_n
+        kql_expr = (_to_kql(exp) for exp in all_expr)
+        return _AnyAggregationExpression(KQL(f'take_any({", ".join(kql_expr)})'))
+
+    @staticmethod
+    def take_any_all() -> _AnyAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/take-any-aggfunction
+        """
+        return _AnyAggregationExpression(KQL('take_any(*)'))
 
     @staticmethod
     def max(expr: ExpressionType) -> _AnyAggregationExpression:

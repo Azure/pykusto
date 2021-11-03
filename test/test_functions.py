@@ -96,6 +96,17 @@ class TestFunction(TestBase):
             Query().where(f.end_of_year(t.dateField, 2) > datetime(2019, 7, 23)).render()
         )
 
+    def test_dayofweek(self):
+        self.assertEqual(
+            " | where (dayofweek(datetime(2019-07-23 00:00:00.000000))) == time(1.0:0:0.0)",
+            Query().where(f.day_of_week(datetime(2019, 7, 23)) == timedelta(1)).render()
+        )
+
+        self.assertEqual(
+            " | where (dayofweek(dateField)) == time(1.0:0:0.0)",
+            Query().where(f.day_of_week(t.dateField) == timedelta(1)).render()
+        )
+
     def test_exp(self):
         self.assertEqual(
             " | where (exp(numField)) > 4",
@@ -732,16 +743,12 @@ class TestFunction(TestBase):
             Query().summarize(f.avg(t.numField)).by(f.bin_at(t.numField2, 0.1, 1)).render()
         )
         self.assertEqual(
-            " | summarize avg(numField) by bin_at(dateField, time(0.12:0:0.0), time(0.2:24:0.0))",
-            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.dateField, timedelta(0.5), timedelta(0.1))).render()
-        )
-        self.assertEqual(
             " | summarize avg(numField) by bin_at(dateField, time(0.12:0:0.0), datetime(2019-07-08 00:00:00.000000))",
             Query().summarize(f.avg(t.numField)).by(f.bin_at(t.dateField, timedelta(0.5), datetime(2019, 7, 8))).render()
         )
         self.assertEqual(
-            " | summarize avg(numField) by bin_at(timespanField, 0.1, 1)",
-            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.timespanField, 0.1, 1)).render()
+            " | summarize avg(numField) by bin_at(timespanField, time(0.12:0:0.0), time(1.0:0:0.0))",
+            Query().summarize(f.avg(t.numField)).by(f.bin_at(t.timespanField, timedelta(0.5), timedelta(days=1))).render()
         )
 
     def test_bin_auto(self):
@@ -815,6 +822,24 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize make_set(stringField, numField)",
             Query().summarize(f.make_set(t.stringField, t.numField)).render()
+        )
+
+    def test_take_any_single_expr(self):
+        self.assertEqual(
+            " | summarize take_any(numField)",
+            Query().summarize(f.take_any(t.numField)).render()
+        )
+
+    def test_take_any_multiple_expr(self):
+        self.assertEqual(
+            " | summarize take_any(numField, stringField, boolField)",
+            Query().summarize(f.take_any(t.numField, t.stringField, t.boolField)).render()
+        )
+
+    def test_take_any_all(self):
+        self.assertEqual(
+            " | summarize take_any(*)",
+            Query().summarize(f.take_any_all()).render()
         )
 
     def test_max(self):

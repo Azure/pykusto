@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from pykusto import PyKustoClient, Query
 # noinspection PyProtectedMember
-from pykusto._src.client import Database
+from pykusto._src.client_base import Database
 # noinspection PyProtectedMember
 from pykusto._src.expressions import _StringColumn, _NumberColumn, _AnyTypeColumn, _BooleanColumn
 # noinspection PyProtectedMember
@@ -134,7 +134,7 @@ class TestClientFetch(TestBase):
         self.assertType(db['other_table']['foo'], _AnyTypeColumn)
         # Dot notation error
         self.assertRaises(
-            AttributeError("PyKustoClient(test_cluster.kusto.windows.net).Database(test_db) has no attribute 'test_table_1'"),
+            AttributeError("PyKustoClient('test_cluster.kusto.windows.net').Database('test_db') has no attribute 'test_table_1'"),
             lambda: db.test_table_1
         )
 
@@ -225,7 +225,7 @@ class TestClientFetch(TestBase):
         self.assertEqual(('mock_table', 'other_table'), tuple(client.test_db.get_table_names()))
         self.assertEqual(('foo', 'bar', 'baz'), tuple(client.test_db.mock_table.get_columns_names()))
         self.assertTrue({'foo', 'bar'} < set(dir(client.test_db.mock_table)))
-        self.assertEqual('PyKustoClient(test_cluster.kusto.windows.net).Database(test_db).Table(mock_table)', repr(client.test_db.mock_table))
+        self.assertEqual("PyKustoClient('test_cluster.kusto.windows.net').Database('test_db').Table('mock_table')", repr(client.test_db.mock_table))
 
     def test_autocomplete_with_dot(self):
         mock_client = MockKustoClient(

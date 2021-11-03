@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set, FrozenSet
+from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set, FrozenSet, Any
 
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
 
@@ -42,7 +42,7 @@ class _KustoType(Enum):
         self.dot_net_name = dot_net_name
         self.python_types = python_types
 
-    def is_type_of(self, obj) -> bool:
+    def is_type_of(self, obj: Any) -> bool:
         for python_type in self.python_types:
             if python_type is not None and isinstance(obj, python_type):
                 return True
@@ -97,7 +97,7 @@ class _TypeRegistrar:
 
         return inner
 
-    def for_obj(self, obj: PythonTypes) -> Union[Type, Callable]:
+    def for_obj(self, obj: PythonTypes) -> Any:
         """
         Given an object of Kusto type, retrieve the python type or function associated with the object's type, and call
         it with the given object as a parameter
@@ -110,7 +110,7 @@ class _TypeRegistrar:
                 return registered_callable(obj)
         raise ValueError(f"{self}: no registered callable for object {obj} of type {type(obj).__name__}")
 
-    def for_type(self, t: Type[PythonTypes]) -> Union[Type, Callable]:
+    def for_type(self, t: Type) -> Union[Type, Callable]:
         """
         Given a Kusto type, retrieve the associated python type or function
 
@@ -122,14 +122,14 @@ class _TypeRegistrar:
                 return registered_callable
         raise ValueError(f"{self}: no registered callable for type {t.__name__}")
 
-    def inverse(self, target_callable: Union[Type, Callable]) -> Set[_KustoType]:
+    def inverse(self, target_callable: Any) -> Set[_KustoType]:
         result: Set[_KustoType] = set()
         for kusto_type, associated_callable in self.registry.items():
             if isinstance(target_callable, associated_callable):
                 result.add(kusto_type)
         return result
 
-    def get_base_types(self, obj: Union[Type, Callable]) -> Set[_KustoType]:
+    def get_base_types(self, obj: Any) -> Set[_KustoType]:
         """
         For a given object, return the associated basic type, which is a member of :class:`KustoType`
 
@@ -156,7 +156,7 @@ _plain_expression = _TypeRegistrar("Plain expression")
 _aggregation_expression = _TypeRegistrar("Aggregation expression")
 
 
-def _get_base_types(obj: Union[Type, Callable]) -> Set[_KustoType]:
+def _get_base_types(obj: Any) -> Set[_KustoType]:
     """
     A registrar-agnostic version of TypeRegistrar.get_base_types
     """

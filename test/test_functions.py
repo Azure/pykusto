@@ -842,6 +842,16 @@ class TestFunction(TestBase):
             Query().summarize(f.take_any_all()).render()
         )
 
+    def test_make_set_if(self):
+        self.assertEqual(
+            " | summarize make_set_if(stringField, numField == 1)",
+            Query().summarize(f.make_set_if(t.stringField, t.numField == 1)).render()
+        )
+        self.assertEqual(
+            " | summarize make_set_if(stringField, numField == 1, numField)",
+            Query().summarize(f.make_set_if(t.stringField, t.numField == 1, t.numField)).render()
+        )
+
     def test_max(self):
         self.assertEqual(
             " | summarize max(numField)",

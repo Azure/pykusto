@@ -804,6 +804,16 @@ class TestFunction(TestBase):
             Query().summarize(f.make_bag(t.stringField, t.numField)).render()
         )
 
+    def test_make_bag_if(self):
+        self.assertEqual(
+            " | summarize make_bag_if(stringField, numField == 1)",
+            Query().summarize(f.make_bag_if(t.stringField, t.numField == 1)).render()
+        )
+        self.assertEqual(
+            " | summarize make_bag_if(stringField, numField == 1, numField)",
+            Query().summarize(f.make_bag_if(t.stringField, t.numField == 1, t.numField)).render()
+        )
+
     def test_make_list(self):
         self.assertEqual(
             " | summarize make_list(stringField)",
@@ -814,6 +824,16 @@ class TestFunction(TestBase):
             Query().summarize(f.make_list(t.stringField, t.numField)).render()
         )
 
+    def test_make_list_if(self):
+        self.assertEqual(
+            " | summarize make_list_if(stringField, numField == 1)",
+            Query().summarize(f.make_list_if(t.stringField, t.numField == 1)).render()
+        )
+        self.assertEqual(
+            " | summarize make_list_if(stringField, numField == 1, numField)",
+            Query().summarize(f.make_list_if(t.stringField, t.numField == 1, t.numField)).render()
+        )
+
     def test_make_set(self):
         self.assertEqual(
             " | summarize make_set(stringField)",
@@ -822,6 +842,16 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize make_set(stringField, numField)",
             Query().summarize(f.make_set(t.stringField, t.numField)).render()
+        )
+
+    def test_make_set_if(self):
+        self.assertEqual(
+            " | summarize make_set_if(stringField, numField == 1)",
+            Query().summarize(f.make_set_if(t.stringField, t.numField == 1)).render()
+        )
+        self.assertEqual(
+            " | summarize make_set_if(stringField, numField == 1, numField)",
+            Query().summarize(f.make_set_if(t.stringField, t.numField == 1, t.numField)).render()
         )
 
     def test_take_any_single_expr(self):
@@ -840,16 +870,6 @@ class TestFunction(TestBase):
         self.assertEqual(
             " | summarize take_any(*)",
             Query().summarize(f.take_any_all()).render()
-        )
-
-    def test_make_set_if(self):
-        self.assertEqual(
-            " | summarize make_set_if(stringField, numField == 1)",
-            Query().summarize(f.make_set_if(t.stringField, t.numField == 1)).render()
-        )
-        self.assertEqual(
-            " | summarize make_set_if(stringField, numField == 1, numField)",
-            Query().summarize(f.make_set_if(t.stringField, t.numField == 1, t.numField)).render()
         )
 
     def test_max(self):

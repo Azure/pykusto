@@ -32,12 +32,6 @@ class TestFunction(TestBase):
             Query().where(f.array_length(t.arrayField) > 4).render()
         )
 
-    def test_array_slice(self):
-        self.assertEqual(
-            " | extend sliced = (array_slice(arrayField, 1, 2))",
-            Query().extend(sliced=f.array_slice(t.arrayField, 1, 2)).render()
-        )
-
     def test_bag_keys(self):
         self.assertEqual(
             " | where (array_length(bag_keys(mapField))) > 4",

@@ -42,12 +42,9 @@ class Functions:
         """
         return _ArrayExpression(expr).array_length()
 
-    def array_slice(expr: ArrayType, start: NumberType, end: NumberType) -> ArrayType:
-        """
-        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arrayslicefunction
-        """
-        return _ArrayExpression(expr)[start, end]
-
+    # def array_slice(): return
+    #
+    #
     # def array_split(): return
     #
     #

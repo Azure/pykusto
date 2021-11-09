@@ -810,8 +810,8 @@ class TestFunction(TestBase):
             Query().summarize(f.make_bag_if(t.stringField, t.numField == 1)).render()
         )
         self.assertEqual(
-            " | summarize make_bag_if(stringField, numField == 1, numField)",
-            Query().summarize(f.make_bag_if(t.stringField, t.numField == 1, t.numField)).render()
+            " | summarize make_bag_if(stringField, numField == 1, 5)",
+            Query().summarize(f.make_bag_if(t.stringField, t.numField == 1, 5)).render()
         )
 
     def test_make_list(self):
@@ -830,8 +830,8 @@ class TestFunction(TestBase):
             Query().summarize(f.make_list_if(t.stringField, t.numField == 1)).render()
         )
         self.assertEqual(
-            " | summarize make_list_if(stringField, numField == 1, numField)",
-            Query().summarize(f.make_list_if(t.stringField, t.numField == 1, t.numField)).render()
+            " | summarize make_list_if(stringField, numField == 1, 5)",
+            Query().summarize(f.make_list_if(t.stringField, t.numField == 1, 5)).render()
         )
 
     def test_make_set(self):
@@ -850,8 +850,8 @@ class TestFunction(TestBase):
             Query().summarize(f.make_set_if(t.stringField, t.numField == 1)).render()
         )
         self.assertEqual(
-            " | summarize make_set_if(stringField, numField == 1, numField)",
-            Query().summarize(f.make_set_if(t.stringField, t.numField == 1, t.numField)).render()
+            " | summarize make_set_if(stringField, numField == 1, 5)",
+            Query().summarize(f.make_set_if(t.stringField, t.numField == 1, 5)).render()
         )
 
     def test_take_any_single_expr(self):

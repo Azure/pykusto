@@ -1235,6 +1235,17 @@ class Functions:
         return _MappingAggregationExpression(KQL(f'make_bag({_to_kql(expr)})'))
 
     @staticmethod
+    def make_bag_if(expr: ExpressionType, predicate: BooleanType,
+                    max_size: NumberType = None) -> _MappingAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/make-bag-if-aggfunction
+        """
+        if max_size is not None:
+            return _MappingAggregationExpression(
+                KQL(f'make_bag_if({_to_kql(expr)}, {_to_kql(predicate)}, {_to_kql(max_size)})'))
+        return _MappingAggregationExpression(KQL(f'make_bag_if({_to_kql(expr)}, {_to_kql(predicate)})'))
+
+    @staticmethod
     def make_list(expr: ExpressionType, max_size: NumberType = None) -> _ArrayAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makelist-aggfunction
@@ -1244,6 +1255,17 @@ class Functions:
         return _ArrayAggregationExpression(KQL(f'make_list({_to_kql(expr)})'))
 
     @staticmethod
+    def make_list_if(expr: ExpressionType, predicate: BooleanType,
+                     max_size: NumberType = None) -> _ArrayAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makelistif-aggfunction
+        """
+        if max_size is not None:
+            return _ArrayAggregationExpression(KQL(f'make_list_if({_to_kql(expr)}, {_to_kql(predicate)},'
+                                                   f' {_to_kql(max_size)})'))
+        return _ArrayAggregationExpression(KQL(f'make_list_if({_to_kql(expr)}, {_to_kql(predicate)})'))
+
+    @staticmethod
     def make_set(expr: ExpressionType, max_size: NumberType = None) -> _ArrayAggregationExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makeset-aggfunction
@@ -1251,6 +1273,16 @@ class Functions:
         if max_size is not None:
             return _ArrayAggregationExpression(KQL(f'make_set({_to_kql(expr)}, {_to_kql(max_size)})'))
         return _ArrayAggregationExpression(KQL(f'make_set({_to_kql(expr)})'))
+
+    @staticmethod
+    def make_set_if(expr: ExpressionType, predicate: BooleanType, max_size: NumberType = None) -> _ArrayAggregationExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/makesetif-aggfunction
+        """
+        if max_size is not None:
+            return _ArrayAggregationExpression(KQL(f'make_set_if({_to_kql(expr)}, {_to_kql(predicate)},'
+                                                   f' {_to_kql(max_size)})'))
+        return _ArrayAggregationExpression(KQL(f'make_set_if({_to_kql(expr)}, {_to_kql(predicate)})'))
 
     @staticmethod
     def take_any(expr: ExpressionType, *expr_n: ExpressionType) -> _AnyAggregationExpression:

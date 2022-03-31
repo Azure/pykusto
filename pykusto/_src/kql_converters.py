@@ -49,7 +49,7 @@ def _bool_to_kql(b: bool) -> KQL:
     return KQL('true') if b else KQL('false')
 
 
-@_kql_converter(_KustoType.STRING)
+@_kql_converter(_KustoType.STRING, _KustoType.GUID)
 def _str_to_kql(s: str) -> KQL:
     return KQL(f'"{s}"')
 

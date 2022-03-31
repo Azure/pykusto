@@ -20,7 +20,7 @@ class _KustoType(Enum):
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
     DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', int)
-    GUID = ('guid', 'UniqueId', 'System.Guid')  # Not supported by Kusto yet
+    GUID = ('guid', 'UniqueId', 'System.Guid', str)  # Converted to string and not uuid for now
 
     # Deprecated types, kept here for back compatibility
     # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/unsupported-data-types

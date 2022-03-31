@@ -407,7 +407,7 @@ class _NumberExpression(BaseExpression):
         return _NumberExpression(KQL(f'round({self.kql})' if precision is None else f'round({self.kql}, {_to_kql(precision)})'))
 
 
-@_plain_expression(_KustoType.STRING)
+@_plain_expression(_KustoType.STRING, _KustoType.GUID)
 class _StringExpression(BaseExpression):
     # We would like to allow using len(), but Python requires it to return an int, so we can't
     def string_size(self) -> _NumberExpression:
@@ -894,7 +894,7 @@ class _NumberAggregationExpression(AggregationExpression, _NumberExpression):
     pass
 
 
-@_aggregation_expression(_KustoType.STRING)
+@_aggregation_expression(_KustoType.STRING, _KustoType.GUID)
 class _StringAggregationExpression(AggregationExpression, _StringExpression):
     pass
 
@@ -1013,7 +1013,7 @@ class _DynamicColumn(_ArrayColumn, _MappingColumn):
     pass
 
 
-@_typed_column(_KustoType.STRING)
+@_typed_column(_KustoType.STRING, _KustoType.GUID)
 class _StringColumn(BaseColumn, _StringExpression):
     pass
 

@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Union, Mapping, Type, Dict, Callable, Tuple, List, Set, FrozenSet, Any
 
+import numpy as np
+
 PythonTypes = Union[str, int, float, bool, datetime, Mapping, List, Tuple, timedelta]
 
 
@@ -15,12 +17,12 @@ class _KustoType(Enum):
     ARRAY = ('dynamic', 'Dynamic', 'System.Object', List, Tuple)
     MAPPING = ('dynamic', 'Dynamic', 'System.Object', Mapping)
     LONG = ('long', 'I64', 'System.Int64', int)
-    INT = ('int', 'I32', 'System.Int32', int)
+    INT = ('int', 'I32', 'System.Int32', int, np.int32)
     REAL = ('real', 'R64', 'System.Double', float)
     STRING = ('string', 'StringBuffer', 'System.String', str)
     TIMESPAN = ('timespan', 'TimeSpan', 'System.TimeSpan', timedelta)
     DECIMAL = ('decimal', 'Decimal', 'System.Data.SqlTypes.SqlDecimal', int)
-    GUID = ('guid', 'UniqueId', 'System.Guid')  # Not supported by Kusto yet
+    GUID = ('guid', 'UniqueId', 'System.Guid', str)  # Converted to string and not uuid for now
 
     # Deprecated types, kept here for back compatibility
     # https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/scalar-data-types/unsupported-data-types

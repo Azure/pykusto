@@ -600,12 +600,17 @@ class _SummarizeQuery(Query):
     _by_columns: List[Union[BaseColumn, BaseExpression]]
     _by_assignments: List[_AssignmentToSingleColumn]
 
-    def __init__(self, head: Query,
-                 assignments: List[_AssignmentFromAggregationToColumn]):
+    def __init__(
+            self,
+            head: Query,
+            assignments: List[_AssignmentFromAggregationToColumn],
+    ):
         super(_SummarizeQuery, self).__init__(head)
         self._assignments = assignments
         self._by_columns = []
         self._by_assignments = []
+        self._shuffle_by_keys = False
+        self._shuffle_keys = []
 
     def by(self, *args: Union[_AssignmentToSingleColumn, BaseColumn, BaseExpression],
            **kwargs: BaseExpression):
@@ -619,11 +624,27 @@ class _SummarizeQuery(Query):
             self._by_assignments.append(_AssignmentToSingleColumn(_AnyTypeColumn(column_name), group_exp))
         return self
 
+    def shuffle_key(self, *keys: Union[_AssignmentToSingleColumn, BaseColumn, BaseExpression]):
+        if keys is not None:
+            for key in keys:
+                self._shuffle_keys.append(key)
+
+        self._shuffle_by_keys = True
+        return self
+
     def _compile(self) -> KQL:
-        result = f"summarize {', '.join(a.to_kql() for a in self._assignments)}"
+        result = f"{self._compile_summarize_with_shuffle_hint()} {', '.join(a.to_kql() for a in self._assignments)}"
         if len(self._by_assignments) != 0 or len(self._by_columns) != 0:
             result += f' by {", ".join(chain((c.kql for c in self._by_columns), (a.to_kql() for a in self._by_assignments)))}'
         return KQL(result)
+
+    def _compile_summarize_with_shuffle_hint(self) -> str:
+        if not self._shuffle_by_keys:
+            return "summarize"
+        if len(self._shuffle_keys) == 0:
+            return "summarize hint.strategy = shuffle"
+        else:
+            return "summarize " + " ".join([f"hint.shufflekey = {k.kql}" for k in self._shuffle_keys])
 
 
 class _MvExpandQuery(Query):

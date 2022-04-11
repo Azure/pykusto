@@ -633,19 +633,18 @@ class _SummarizeQuery(Query):
         return self
 
     def _compile(self) -> KQL:
-        result = "summarize"
-        if self._shuffle_by_keys:
-            result += self._compile_shuffle_hint()
-        result += f' {", ".join(a.to_kql() for a in self._assignments)}'
+        result = f'summarize {self._compile_shuffle_hint()}{", ".join(a.to_kql() for a in self._assignments)}'
         if len(self._by_assignments) != 0 or len(self._by_columns) != 0:
             result += f' by {", ".join(chain((c.kql for c in self._by_columns), (a.to_kql() for a in self._by_assignments)))}'
         return KQL(result)
 
     def _compile_shuffle_hint(self) -> str:
+        if not self._shuffle_by_keys:
+            return ""
         if len(self._shuffle_keys) == 0:
-            return " hint.strategy = shuffle"
+            return "hint.strategy = shuffle "
         else:
-            return f' {" ".join([f"hint.shufflekey = {k.kql}" for k in self._shuffle_keys])}'
+            return f'{" ".join([f"hint.shufflekey = {k.kql}" for k in self._shuffle_keys])} '
 
 
 class _MvExpandQuery(Query):

@@ -337,6 +337,34 @@ class TestQuery(TestBase):
             Query(t).summarize(f.count(t.stringField)).by(f.to_string(t.mapField)).render(),
         )
 
+    def test_summarize_by_with_shuffle_hint(self):
+        self.assertEqual(
+            "mock_table | summarize hint.strategy = shuffle count(stringField) by tostring(mapField)",
+            Query(t).summarize(f.count(t.stringField)).by(f.to_string(t.mapField)).shuffle_key().render()
+        )
+
+    def test_summarize_by_with_shuffle_hint_specific_key(self):
+        self.assertEqual(
+            "mock_table | summarize hint.shufflekey = boolField count(stringField) by boolField, time_range = bin(dateField, time(0.0:0:10.0))",
+            (Query(t)
+             .summarize(f.count(t.stringField))
+             .by(t.boolField, time_range=f.bin(t.dateField, timedelta(seconds=10)))
+             .shuffle_key(t.boolField)
+             .render()
+             )
+        )
+
+    def test_summarize_by_with_shuffle_hint_multiple_specific_keys(self):
+        self.assertEqual(
+            "mock_table | summarize hint.shufflekey = boolField hint.shufflekey = stringField count(stringField) by boolField, stringField, numField",
+            (Query(t)
+             .summarize(f.count(t.stringField))
+             .by(t.boolField, t.stringField, t.numField)
+             .shuffle_key(t.boolField, t.stringField)
+             .render()
+             )
+        )
+
     def test_mv_expand(self):
         self.assertEqual(
             "mock_table | mv-expand arrayField, arrayField2, arrayField3",

@@ -850,6 +850,18 @@ class Functions:
         return _ArrayExpression(KQL(f'array_slice({_to_kql(array)}, {_to_kql(start)}, {_to_kql(end)})'))
 
     @staticmethod
+    def array_sort_asc(array1: ArrayType, nulls_last: BooleanType = None, *more_arrays: ArrayType) -> _ArrayExpression:
+        """
+        https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arraysortascfunction
+        """
+        res = f'array_sort_asc({_to_kql(array1)}'
+        if len(more_arrays) > 0:
+            res = res + ', ' + ', '.join(_to_kql(array) for array in more_arrays)
+        if nulls_last is not None:
+            res = res + ', ' + f'{_to_kql(nulls_last)}'
+        return _ArrayExpression(KQL(res + ')'))
+
+    @staticmethod
     def array_split(array: ArrayType, indices: Union[NumberType, ArrayType]) -> _ArrayExpression:
         """
         https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/arraysplitfunction

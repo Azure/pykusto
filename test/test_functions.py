@@ -1097,6 +1097,22 @@ class TestFunction(TestBase):
             Query().extend(foo=f.array_slice(t.arrayField, t.numField, t.numField2)).render()
         )
 
+    def test_array_sort_asc(self):
+        self.assertEqual(
+            ' | extend foo = array_sort_asc(arrayField1, arrayField2, boolField)',
+            Query().extend(foo=f.array_sort_asc(t.arrayField1, t.boolField, t.arrayField2)).render())
+        self.assertEqual(
+            ' | extend foo = array_sort_asc(arrayField1, arrayField2)',
+            Query().extend(foo=f.array_sort_asc(t.arrayField1, t.arrayField2)).render())
+        self.assertEqual(
+            ' | extend foo = array_sort_asc(arrayField1, boolField)',
+            Query().extend(foo=f.array_sort_asc(t.arrayField1, t.boolField)).render()
+        )
+        self.assertEqual(
+            ' | extend foo = array_sort_asc(arrayField1)',
+            Query().extend(foo=f.array_sort_asc(t.arrayField1)).render()
+        )
+
     def test_array_split(self):
         self.assertEqual(
             ' | extend foo = array_split(arrayField, numField)',

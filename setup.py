@@ -20,7 +20,7 @@ core_requires = [
 non_pyspark_requires = [
     # Not required in PySpark, because authentication is handled differently there.
     # Release notes: https://github.com/Azure/azure-kusto-python/releases
-    'azure-kusto-data==3.1.0',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
+    'azure-kusto-data==4.1.2',  # Earlier versions not supported because of: https://github.com/Azure/azure-kusto-python/issues/312
 ]
 
 # Not required in PySpark because it is already installed there.
